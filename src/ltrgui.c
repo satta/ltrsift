@@ -1,7 +1,7 @@
 /*
 Then save this file as main.c and compile it using this command
 (those are backticks, not single quotes):
-  gcc -Wall -g -o gui_test ltrgui.c `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
+  gcc -Wall -g -o gui_test ltrgui.c `pkg-config --cflags --libs gtk+-2.20` -export-dynamic
 
 */
 #include <gtk/gtk.h>
@@ -40,13 +40,16 @@ gboolean init_gui(LTRData *ltrgui)
     return FALSE;
   }
 
-
   /* Get objects from UI */
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
   GW(window_main);
-  GW(statusbar_main);
+  GW(sb_main);
+  GW(assistant_project);
 #undef GW
-  menubar_main_get_widgets(builder, ltrgui);
+  mb_main_get_widgets(builder, ltrgui);
+
+  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant_project),
+                               GTK_WINDOW(ltrgui->window_main));
 
   gtk_builder_connect_signals(builder, ltrgui);
 
@@ -55,12 +58,14 @@ gboolean init_gui(LTRData *ltrgui)
   /* set the default icon to the GTK "edit" icon */
   gtk_window_set_default_icon_name (GTK_STOCK_EDIT);
 
+  ltrgui->filename = NULL;
+
   /* setup and initialize our statusbar */
-  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->statusbar_main),
+  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->sb_main),
                                           "LTRGui");
-  ltrgui->statusbar_main_context_id = id;
-  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->statusbar_main),
-                     ltrgui->statusbar_main_context_id,
+  ltrgui->sb_main_context_id = id;
+  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
+                     ltrgui->sb_main_context_id,
                      "Welcome to LTRGui");
     return TRUE;
 }

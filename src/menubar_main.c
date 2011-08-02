@@ -1,24 +1,122 @@
 #include "menubar_main.h"
 
-void menubar_main_get_widgets(GtkBuilder *builder, LTRData *ltrgui)
+void mb_main_get_widgets(GtkBuilder *builder, LTRData *ltrgui)
 {
 
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
-  GW(menubar_main_project_new);
-  GW(menubar_main_project_open);
-  GW(menubar_main_project_save);
-  GW(menubar_main_project_save_as);
-  GW(menubar_main_project_quit);
+  GW(mb_main);
+  GW(mb_main_project_new);
+  GW(mb_main_project_open);
+  GW(mb_main_project_save);
+  GW(mb_main_project_save_as);
+  GW(mb_main_project_quit);
 #undef GW
 
-  g_object_set_data(G_OBJECT(ltrgui->menubar_main_project_new), "menuhint",
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_new), "menuhint",
                     (gpointer) "Create a new project.");
-  g_object_set_data(G_OBJECT(ltrgui->menubar_main_project_open), "menuhint",
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_open), "menuhint",
                     (gpointer) "Open an existing project.");
-  g_object_set_data(G_OBJECT(ltrgui->menubar_main_project_save), "menuhint",
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save), "menuhint",
                     (gpointer) "Save current project.");
-  g_object_set_data(G_OBJECT(ltrgui->menubar_main_project_save_as), "menuhint",
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save_as), "menuhint",
                     (gpointer) "Save current project.");
-  g_object_set_data(G_OBJECT(ltrgui->menubar_main_project_quit), "menuhint",
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_quit), "menuhint",
                     (gpointer) "Quit the application.");
+}
+
+gchar* mb_main_project_open_get_filename(LTRData *ltrgui)
+{
+  GtkWidget *filechooser;
+  gchar *filename = NULL;
+
+  filechooser = gtk_file_chooser_dialog_new("Open file...",
+                                            GTK_WINDOW (ltrgui->window_main),
+                                            GTK_FILE_CHOOSER_ACTION_OPEN,
+                                            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                            GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                            NULL);
+
+  if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+  }
+
+  gtk_widget_destroy(filechooser);
+
+  return filename;
+}
+
+gchar* mb_main_project_save_as_get_filename(LTRData *ltrgui)
+{
+  GtkWidget *filechooser;
+  gchar *filename = NULL;
+
+  filechooser = gtk_file_chooser_dialog_new("Save file as...",
+                                            GTK_WINDOW (ltrgui->window_main),
+                                            GTK_FILE_CHOOSER_ACTION_SAVE,
+                                            GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                            GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+                                            NULL);
+
+  if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+  }
+
+  gtk_widget_destroy(filechooser);
+
+  return filename;
+}
+
+void mb_main_project_save_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+{
+  gchar *filename;
+
+  if (ltrgui->filename == NULL) {
+    filename = mb_main_project_save_as_get_filename(ltrgui);
+    if (filename != NULL) ltrgui->filename = filename;
+    /* TODO: if (filename != NULL) Save project data */
+  } /* TODO: else Save project data*/
+
+}
+
+void mb_main_project_save_as_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+{
+  gchar *filename;
+
+  filename = mb_main_project_save_as_get_filename(ltrgui);
+
+  if (filename != NULL) {
+    gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
+                       ltrgui->sb_main_context_id, filename);
+
+    if (ltrgui->filename != NULL) g_free(ltrgui->filename);
+    ltrgui->filename = filename;
+  }
+
+  /* TODO: - Check for overwriting existing file
+           - Save project data */
+}
+
+void mb_main_project_open_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+{
+  gchar *filename;
+
+  /* TODO: check for modified project (check for save) */
+
+  filename = mb_main_project_open_get_filename(ltrgui);
+
+  if (filename != NULL) {
+    gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
+                       ltrgui->sb_main_context_id, filename);
+
+    if (ltrgui->filename != NULL) g_free(ltrgui->filename);
+    ltrgui->filename = filename;
+  }
+
+  /* TODO: Load project data */
+
+}
+
+void mb_main_project_new_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+{
+  gtk_widget_show(ltrgui->assistant_project);
 }
