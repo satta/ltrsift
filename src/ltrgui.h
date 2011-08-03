@@ -22,8 +22,10 @@ struct _LTRData
   GtkWidget *sb_main;
   GtkWidget *window_main;
   GtkWidget *assistant_project;
+  GtkWidget *assistant_project_treeview;
   guint sb_main_context_id;
-  gchar *filename;
+  GSList *project_files;
+  gchar *project_filename;
 };
 
 #endif // GUI_TEST_H

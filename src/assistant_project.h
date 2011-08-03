@@ -2,7 +2,16 @@
 #define ASSISTANT_PROJECT_H
 
 #include <gtk/gtk.h>
+#include "ltrgui.h"
+
+void assistant_project_get_widgets(GtkBuilder *builder, LTRData *ltrgui);
 
 void assistant_project_cancel(GtkAssistant *assistant, gpointer *data);
+
+void assistant_project_file_add_button_clicked(GtkButton *button,
+                                               LTRData *ltrgui);
+
+void assistant_project_file_remove_button_clicked(GtkButton *button,
+                                                  LTRData *ltrgui);
 
 #endif // ASSISTANT_PROJECT_H

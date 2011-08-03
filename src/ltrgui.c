@@ -8,6 +8,9 @@ Then save this file as main.c and compile it using this command
 #include "ltrgui.h"
 #include "statusbar_main.h"
 #include "menubar_main.h"
+#include "assistant_project.h"
+
+/* TODO: Error handling */
 
 void error_message(const gchar *message)
 {
@@ -44,40 +47,32 @@ gboolean init_gui(LTRData *ltrgui)
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
   GW(window_main);
   GW(sb_main);
-  GW(assistant_project);
 #undef GW
   mb_main_get_widgets(builder, ltrgui);
+  assistant_project_get_widgets(builder, ltrgui);
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant_project),
                                GTK_WINDOW(ltrgui->window_main));
 
   gtk_builder_connect_signals(builder, ltrgui);
 
-  g_object_unref(G_OBJECT (builder));
+  g_object_unref(G_OBJECT(builder));
 
-  /* set the default icon to the GTK "edit" icon */
-  gtk_window_set_default_icon_name (GTK_STOCK_EDIT);
+  ltrgui->project_filename = NULL;
 
-  ltrgui->filename = NULL;
-
-  /* setup and initialize our statusbar */
-  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->sb_main),
-                                          "LTRGui");
+  /* setup and initialize statusbar */
+  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->sb_main), "LTRGui");
   ltrgui->sb_main_context_id = id;
-  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
-                     ltrgui->sb_main_context_id,
+  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main), ltrgui->sb_main_context_id,
                      "Welcome to LTRGui");
     return TRUE;
 }
-
-
-
 
 int main(int argc, char *argv[])
 {
   LTRData *ltrgui;
 
-  /* allocate the memory needed by our TutorialTextEditor struct */
+  /* allocate the memory needed by our LTRData struct */
   ltrgui = g_slice_new(LTRData);
 
   /* initialize GTK+ libraries */
@@ -91,7 +86,7 @@ int main(int argc, char *argv[])
   /* enter GTK+ main loop */
   gtk_main();
 
-  /* free memory we allocated for TutorialTextEditor struct */
+  /* free memory we allocated for LTRData struct */
   g_slice_free(LTRData, ltrgui);
 
   return 0;
