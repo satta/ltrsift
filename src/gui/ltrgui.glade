@@ -74,12 +74,11 @@
             <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="assistant_project_file_add_button">
-                <property name="label">gtk-add</property>
+                <property name="label">Select</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <property name="use_stock">True</property>
                 <signal name="clicked" handler="assistant_project_file_add_button_clicked" swapped="no"/>
               </object>
               <packing>
@@ -112,8 +111,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="checkbutton1">
-            <property name="label" translatable="yes">checkbutton</property>
+          <object class="GtkCheckButton" id="assistant_project_class_cb">
+            <property name="label" translatable="yes">Do classification?</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>

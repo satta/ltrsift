@@ -59,13 +59,15 @@ gboolean init_gui(LTRData *ltrgui)
   g_object_unref(G_OBJECT(builder));
 
   ltrgui->project_filename = NULL;
+  //ltrgui->project_files = NULL;
 
   /* setup and initialize statusbar */
   id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->sb_main), "LTRGui");
   ltrgui->sb_main_context_id = id;
   gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main), ltrgui->sb_main_context_id,
                      "Welcome to LTRGui");
-    return TRUE;
+
+  return TRUE;
 }
 
 int main(int argc, char *argv[])

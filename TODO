@@ -1,0 +1,3 @@
+GtkAssistant
+  GtkListStore/GtkTreeView:
+    change to add files and avoid duplicate entries
