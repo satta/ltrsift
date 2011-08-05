@@ -1,6 +1,6 @@
 #include "menubar_main.h"
 
-void mb_main_get_widgets(GtkBuilder *builder, GUIWidgets *ltrgui)
+void mb_main_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
 {
 
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
@@ -24,13 +24,13 @@ void mb_main_get_widgets(GtkBuilder *builder, GUIWidgets *ltrgui)
                     (gpointer) "Quit the application.");
 }
 
-gchar* mb_main_project_open_get_filename(GUIWidgets *ltrgui)
+gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
 
   filechooser = gtk_file_chooser_dialog_new("Open file...",
-                                            GTK_WINDOW (ltrgui->window_main),
+                                            GTK_WINDOW (ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_OPEN,
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN,
@@ -45,13 +45,13 @@ gchar* mb_main_project_open_get_filename(GUIWidgets *ltrgui)
   return filename;
 }
 
-gchar* mb_main_project_save_as_get_filename(GUIWidgets *ltrgui)
+gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
 
   filechooser = gtk_file_chooser_dialog_new("Save file as...",
-                                            GTK_WINDOW (ltrgui->window_main),
+                                            GTK_WINDOW (ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_SAVE,
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE,
@@ -66,7 +66,7 @@ gchar* mb_main_project_save_as_get_filename(GUIWidgets *ltrgui)
   return filename;
 }
 
-void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
+void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -78,7 +78,7 @@ void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
 
 }
 
-void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
+void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -96,7 +96,7 @@ void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
            - Save project data */
 }
 
-void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
+void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -117,7 +117,7 @@ void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
 }
 
 void mb_main_project_new_activate(GtkMenuItem *menuitem,
-                                  GUIWidgets *ltrgui)
+                                  GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);
 }

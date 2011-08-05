@@ -10,8 +10,8 @@
 
 #define GUI_FILE "gui/ltrgui.glade"
 
-typedef struct _GUIWidgets GUIWidgets;
-struct _GUIWidgets
+typedef struct _GUIData GUIData;
+struct _GUIData
 {
   GtkWidget *mb_main;
   GtkWidget *mb_main_project_new;
@@ -20,7 +20,7 @@ struct _GUIWidgets
   GtkWidget *mb_main_project_save_as;
   GtkWidget *mb_main_project_quit;
   GtkWidget *sb_main;
-  GtkWidget *window_main;
+  GtkWidget *main_window;
   GtkWidget *pw_window;
   GtkWidget *pw_treeview;
   GtkWidget *pw_do_classification_cb;
@@ -28,5 +28,7 @@ struct _GUIWidgets
   GSList *project_files;
   gchar *project_filename;
 };
+
+gboolean init_gui(GUIData *ltrgui, GError **err);
 
 #endif // GUI_TEST_H

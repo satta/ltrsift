@@ -1,6 +1,6 @@
 #include "project_wizard.h"
 
-void pw_get_widgets(GtkBuilder *builder, GUIWidgets *ltrgui)
+void pw_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
 {
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
   GW(pw_window);
@@ -16,7 +16,7 @@ void pw_get_widgets(GtkBuilder *builder, GUIWidgets *ltrgui)
                                (GtkAssistantPageFunc) pw_forward, ltrgui, NULL);
 }
 
-void pw_reset_defaults(GUIWidgets *ltrgui)
+void pw_reset_defaults(GUIData *ltrgui)
 {
   GtkTreeModel *model;
 
@@ -30,13 +30,13 @@ void pw_reset_defaults(GUIWidgets *ltrgui)
       gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window), 2), FALSE);
 }
 
-void pw_cancel(GtkAssistant *assistant, GUIWidgets *ltrgui)
+void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
 {
   gtk_widget_hide(GTK_WIDGET(assistant));
   pw_reset_defaults(ltrgui);
 }
 
-gint pw_forward(gint current_page, GUIWidgets *ltrgui)
+gint pw_forward(gint current_page, GUIData *ltrgui)
 {
   gint next_page = 0;
 
@@ -57,7 +57,7 @@ gint pw_forward(gint current_page, GUIWidgets *ltrgui)
   return next_page;
 }
 
-void pw_file_add_button_clicked(GtkButton *button, GUIWidgets *ltrgui)
+void pw_file_add_button_clicked(GtkButton *button, GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   GSList *filenames;
@@ -98,7 +98,7 @@ void pw_file_add_button_clicked(GtkButton *button, GUIWidgets *ltrgui)
 
 }
 
-void pw_remove_row(GtkTreeRowReference *rowref, GUIWidgets *ltrgui)
+void pw_remove_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
 {
   GtkTreeIter iter, tmp;
   GtkTreePath *path;
@@ -122,7 +122,7 @@ void pw_remove_row(GtkTreeRowReference *rowref, GUIWidgets *ltrgui)
 
 }
 
-void pw_file_remove_button_clicked(GtkButton *button, GUIWidgets *ltrgui)
+void pw_file_remove_button_clicked(GtkButton *button, GUIData *ltrgui)
 {
   GtkTreeModel *model;
   GtkTreeSelection *sel;

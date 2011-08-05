@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -g -Wall `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
 LDFLAGS =
-SOURCES = ltrgui.c statusbar_main.c menubar_main.c project_wizard.c
+SOURCES = ltrgui.c statusbar_main.c menubar_main.c project_wizard.c error.c
 OBJECTS = $(SOURCES:.c=.o)
 EXECUTABLE = ltrgui
 

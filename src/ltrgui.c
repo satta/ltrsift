@@ -3,50 +3,27 @@
 #include "statusbar_main.h"
 #include "menubar_main.h"
 #include "project_wizard.h"
+#include "error.h"
 
-/* TODO: Error handling */
-
-void error_message(const gchar *message)
-{
-  GtkWidget *dialog;
-
-  /* log to terminal window */
-  g_warning("%s", message);
-
-  /* create an error message dialog and display modally to the user */
-  dialog = gtk_message_dialog_new(NULL,
-                                  GTK_DIALOG_MODAL |
-                                                 GTK_DIALOG_DESTROY_WITH_PARENT,
-                                  GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "test");
-  gtk_window_set_title(GTK_WINDOW(dialog), "Error!");
-  gtk_dialog_run(GTK_DIALOG(dialog));
-  gtk_widget_destroy(dialog);
-}
-
-gboolean init_gui(GUIWidgets *ltrgui)
+gboolean init_gui(GUIData *ltrgui, GError **err)
 {
   GtkBuilder *builder;
-  GError *err = NULL;
   guint id;
 
   builder = gtk_builder_new();
 
-  if (gtk_builder_add_from_file(builder, GUI_FILE, &err) == 0) {
-    error_message(err->message);
-    g_error_free(err);
-    return FALSE;
-  }
+  if (gtk_builder_add_from_file(builder, GUI_FILE, err) == 0) return FALSE;
 
   /* Get objects from UI */
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
-  GW(window_main);
+  GW(main_window);
   GW(sb_main);
 #undef GW
   mb_main_get_widgets(builder, ltrgui);
   pw_get_widgets(builder, ltrgui);
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
-                               GTK_WINDOW(ltrgui->window_main));
+                               GTK_WINDOW(ltrgui->main_window));
 
   gtk_builder_connect_signals(builder, ltrgui);
 
@@ -66,24 +43,30 @@ gboolean init_gui(GUIWidgets *ltrgui)
 
 gint main(gint argc, gchar *argv[])
 {
-  GUIWidgets *ltrgui;
+  GUIData *ltrgui;
+  GError *err = NULL;
 
-  /* allocate the memory needed by our GUIWidgets struct */
-  ltrgui = g_slice_new(GUIWidgets);
+  /* allocate the memory needed by our GUIData struct */
+  ltrgui = g_slice_new(GUIData);
 
   /* initialize GTK+ libraries */
   gtk_init(&argc, &argv);
 
-  if (init_gui(ltrgui) == FALSE) return 1; /* error loading UI */
+  if (!init_gui(ltrgui, &err)) {
+    fprintf(stderr, "ERROR: %s\n", err->message);
+    g_error_free(err);
+    g_slice_free(GUIData, ltrgui);
+    return 1;
+  }
 
   /* show the window */
-  gtk_widget_show(ltrgui->window_main);
+  gtk_widget_show(ltrgui->main_window);
 
   /* enter GTK+ main loop */
   gtk_main();
 
-  /* free memory we allocated for GUIWidgets struct */
-  g_slice_free(GUIWidgets, ltrgui);
+  /* free memory we allocated for GUIData struct */
+  g_slice_free(GUIData, ltrgui);
 
   return 0;
 }

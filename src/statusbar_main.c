@@ -1,7 +1,7 @@
 #include "statusbar_main.h"
 
 gboolean sb_main_hints(GtkMenuItem *menuitem, GdkEvent *event,
-                              GUIWidgets *ltrgui)
+                              GUIData *ltrgui)
 {
   gchar *menu_hint;
 
