@@ -1,6 +1,6 @@
 #include "menubar_main.h"
 
-void mb_main_get_widgets(GtkBuilder *builder, LTRData *ltrgui)
+void mb_main_get_widgets(GtkBuilder *builder, GUIWidgets *ltrgui)
 {
 
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
@@ -24,7 +24,7 @@ void mb_main_get_widgets(GtkBuilder *builder, LTRData *ltrgui)
                     (gpointer) "Quit the application.");
 }
 
-gchar* mb_main_project_open_get_filename(LTRData *ltrgui)
+gchar* mb_main_project_open_get_filename(GUIWidgets *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
@@ -45,7 +45,7 @@ gchar* mb_main_project_open_get_filename(LTRData *ltrgui)
   return filename;
 }
 
-gchar* mb_main_project_save_as_get_filename(LTRData *ltrgui)
+gchar* mb_main_project_save_as_get_filename(GUIWidgets *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
@@ -66,7 +66,7 @@ gchar* mb_main_project_save_as_get_filename(LTRData *ltrgui)
   return filename;
 }
 
-void mb_main_project_save_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
 {
   gchar *filename;
 
@@ -78,7 +78,7 @@ void mb_main_project_save_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
 
 }
 
-void mb_main_project_save_as_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
 {
   gchar *filename;
 
@@ -96,7 +96,7 @@ void mb_main_project_save_as_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
            - Save project data */
 }
 
-void mb_main_project_open_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIWidgets *ltrgui)
 {
   gchar *filename;
 
@@ -116,7 +116,8 @@ void mb_main_project_open_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
 
 }
 
-void mb_main_project_new_activate(GtkMenuItem *menuitem, LTRData *ltrgui)
+void mb_main_project_new_activate(GtkMenuItem *menuitem,
+                                  GUIWidgets *ltrgui)
 {
-  gtk_widget_show(ltrgui->assistant_project);
+  gtk_widget_show(ltrgui->pw_window);
 }

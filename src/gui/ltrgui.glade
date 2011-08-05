@@ -2,16 +2,33 @@
 <interface>
   <requires lib="gtk+" version="2.20"/>
   <!-- interface-naming-policy project-wide -->
-  <object class="GtkAssistant" id="assistant_project">
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-save-as</property>
+    <property name="icon-size">1</property>
+  </object>
+  <object class="GtkListStore" id="pw_liststore">
+    <columns>
+      <!-- column-name SelectedFiles -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkAssistant" id="pw_window">
     <property name="can_focus">False</property>
     <property name="border_width">12</property>
-    <property name="modal">True</property>
     <property name="window_position">center-on-parent</property>
     <property name="default_width">440</property>
     <property name="default_height">250</property>
     <property name="destroy_with_parent">True</property>
-    <signal name="destroy-event" handler="assistant_project_cancel" swapped="no"/>
-    <signal name="cancel" handler="assistant_project_cancel" swapped="no"/>
+    <signal name="destroy-event" handler="pw_cancel" swapped="no"/>
+    <signal name="cancel" handler="pw_cancel" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <placeholder/>
     </child>
@@ -44,12 +61,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkTreeView" id="assistant_project_treeview">
+          <object class="GtkTreeView" id="pw_treeview">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="model">assistant_project_liststore</property>
+            <property name="model">pw_liststore</property>
             <child>
-              <object class="GtkTreeViewColumn" id="assistant_project_treeview_selfilecol">
+              <object class="GtkTreeViewColumn" id="pw_treeview_selfilecol">
                 <property name="title" translatable="yes">Selected files</property>
                 <child>
                   <object class="GtkCellRendererText" id="selfilecol_cell"/>
@@ -73,13 +90,13 @@
             <property name="spacing">10</property>
             <property name="homogeneous">True</property>
             <child>
-              <object class="GtkButton" id="assistant_project_file_add_button">
+              <object class="GtkButton" id="pw_file_add_button">
                 <property name="label">Select</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <signal name="clicked" handler="assistant_project_file_add_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_file_add_button_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -88,14 +105,14 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="assistant_project_file_remove_button">
+              <object class="GtkButton" id="pw_file_remove_button">
                 <property name="label">gtk-remove</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="clicked" handler="assistant_project_file_remove_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_file_remove_button_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -111,7 +128,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="assistant_project_class_cb">
+          <object class="GtkCheckButton" id="pw_do_classification_cb">
             <property name="label" translatable="yes">Do classification?</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -152,18 +169,6 @@
         <property name="complete">True</property>
       </packing>
     </child>
-  </object>
-  <object class="GtkListStore" id="assistant_project_liststore">
-    <columns>
-      <!-- column-name SelectedFiles -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
-  <object class="GtkImage" id="image1">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-save-as</property>
-    <property name="icon-size">1</property>
   </object>
   <object class="GtkWindow" id="window_main">
     <property name="can_focus">False</property>

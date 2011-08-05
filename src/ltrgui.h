@@ -10,8 +10,8 @@
 
 #define GUI_FILE "gui/ltrgui.glade"
 
-typedef struct _LTRData LTRData;
-struct _LTRData
+typedef struct _GUIWidgets GUIWidgets;
+struct _GUIWidgets
 {
   GtkWidget *mb_main;
   GtkWidget *mb_main_project_new;
@@ -21,9 +21,9 @@ struct _LTRData
   GtkWidget *mb_main_project_quit;
   GtkWidget *sb_main;
   GtkWidget *window_main;
-  GtkWidget *assistant_project;
-  GtkWidget *assistant_project_treeview;
-  GtkWidget *assistant_project_class_cb;
+  GtkWidget *pw_window;
+  GtkWidget *pw_treeview;
+  GtkWidget *pw_do_classification_cb;
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;

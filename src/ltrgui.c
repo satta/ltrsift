@@ -1,14 +1,8 @@
-/*
-Then save this file as main.c and compile it using this command
-(those are backticks, not single quotes):
-  gcc -Wall -g -o gui_test ltrgui.c `pkg-config --cflags --libs gtk+-2.20` -export-dynamic
-
-*/
 #include <gtk/gtk.h>
 #include "ltrgui.h"
 #include "statusbar_main.h"
 #include "menubar_main.h"
-#include "assistant_project.h"
+#include "project_wizard.h"
 
 /* TODO: Error handling */
 
@@ -29,7 +23,7 @@ void error_message(const gchar *message)
   gtk_widget_destroy(dialog);
 }
 
-gboolean init_gui(LTRData *ltrgui)
+gboolean init_gui(GUIWidgets *ltrgui)
 {
   GtkBuilder *builder;
   GError *err = NULL;
@@ -49,9 +43,9 @@ gboolean init_gui(LTRData *ltrgui)
   GW(sb_main);
 #undef GW
   mb_main_get_widgets(builder, ltrgui);
-  assistant_project_get_widgets(builder, ltrgui);
+  pw_get_widgets(builder, ltrgui);
 
-  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant_project),
+  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
                                GTK_WINDOW(ltrgui->window_main));
 
   gtk_builder_connect_signals(builder, ltrgui);
@@ -70,12 +64,12 @@ gboolean init_gui(LTRData *ltrgui)
   return TRUE;
 }
 
-int main(int argc, char *argv[])
+gint main(gint argc, gchar *argv[])
 {
-  LTRData *ltrgui;
+  GUIWidgets *ltrgui;
 
-  /* allocate the memory needed by our LTRData struct */
-  ltrgui = g_slice_new(LTRData);
+  /* allocate the memory needed by our GUIWidgets struct */
+  ltrgui = g_slice_new(GUIWidgets);
 
   /* initialize GTK+ libraries */
   gtk_init(&argc, &argv);
@@ -88,8 +82,8 @@ int main(int argc, char *argv[])
   /* enter GTK+ main loop */
   gtk_main();
 
-  /* free memory we allocated for LTRData struct */
-  g_slice_free(LTRData, ltrgui);
+  /* free memory we allocated for GUIWidgets struct */
+  g_slice_free(GUIWidgets, ltrgui);
 
   return 0;
 }

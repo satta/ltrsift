@@ -5,6 +5,6 @@
 #include "ltrgui.h"
 
 gboolean sb_main_hints(GtkMenuItem *menuitem, GdkEvent *event,
-                              LTRData *ltrgui);
+                              GUIWidgets *ltrgui);
 
 #endif // STATUSBAR_MAIN_H
