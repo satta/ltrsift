@@ -1,4 +1,5 @@
 #include "project_wizard.h"
+#include "statusbar_main.h"
 
 void pw_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
 {
@@ -33,6 +34,7 @@ void pw_reset_defaults(GUIData *ltrgui)
 void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
 {
   gtk_widget_hide(GTK_WIDGET(assistant));
+  sb_main_set_status(ltrgui, "Welcome to LTRGui");
   pw_reset_defaults(ltrgui);
 }
 
@@ -131,8 +133,7 @@ void pw_file_remove_button_clicked(GtkButton *button, GUIData *ltrgui)
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrgui->pw_treeview));
 
-  if (!gtk_tree_selection_count_selected_rows(sel))
-      return;
+  if (!gtk_tree_selection_count_selected_rows(sel)) return;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview));
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -148,7 +149,6 @@ void pw_file_remove_button_clicked(GtkButton *button, GUIData *ltrgui)
   }
 
   g_list_foreach(references, (GFunc) pw_remove_row, ltrgui);
-
   g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(references);

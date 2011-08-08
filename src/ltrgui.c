@@ -8,7 +8,6 @@
 gboolean init_gui(GUIData *ltrgui, GError **err)
 {
   GtkBuilder *builder;
-  guint id;
 
   builder = gtk_builder_new();
 
@@ -19,6 +18,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(main_window);
   GW(sb_main);
 #undef GW
+  sb_main_init(ltrgui);
   mb_main_get_widgets(builder, ltrgui);
   pw_get_widgets(builder, ltrgui);
 
@@ -31,12 +31,6 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 
   ltrgui->project_filename = NULL;
   //ltrgui->project_files = NULL;
-
-  /* setup and initialize statusbar */
-  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->sb_main), "LTRGui");
-  ltrgui->sb_main_context_id = id;
-  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main), ltrgui->sb_main_context_id,
-                     "Welcome to LTRGui");
 
   return TRUE;
 }

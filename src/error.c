@@ -5,7 +5,7 @@ void error_handle(GError *err)
   if (err != NULL) {
     GtkWidget *dialog;
 
-    /* log to terminal stderr */
+    /* log to stderr */
     fprintf(stderr, "ERROR: %s\n", err->message);
 
     /* create an error message dialog and display modally to the user */
