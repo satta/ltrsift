@@ -4,7 +4,11 @@
 #include <gtk/gtk.h>
 #include "ltrgui.h"
 
-gboolean sb_main_hints(GtkMenuItem *menuitem, GdkEvent *event,
-                              GUIData *ltrgui);
+void sb_main_init(GUIData *ltrgui);
+
+void sb_main_set_status(GUIData *ltrgui, gchar *status_msg);
+
+gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
+                               GUIData *ltrgui);
 
 #endif // STATUSBAR_MAIN_H
