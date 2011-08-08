@@ -17,7 +17,7 @@
     <property name="default_height">600</property>
     <signal name="destroy" handler="gtk_main_quit" swapped="no"/>
     <child>
-      <object class="GtkVBox" id="vbox1">
+      <object class="GtkVBox" id="vbox1_main">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
@@ -49,8 +49,8 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="mb_main_project_new_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_hints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_hints" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -62,8 +62,8 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="mb_main_project_open_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_hints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_hints" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -82,8 +82,8 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="mb_main_project_save_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_hints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_hints" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -96,8 +96,8 @@
                         <property name="image">image1</property>
                         <property name="use_stock">False</property>
                         <signal name="activate" handler="mb_main_project_save_as_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_hints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_hints" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
                       </object>
                     </child>
                     <child>
@@ -117,8 +117,8 @@
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
                         <signal name="activate" handler="gtk_main_quit" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_hints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_hints" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -201,10 +201,13 @@
       <placeholder/>
     </child>
     <child>
-      <object class="GtkLabel" id="label1">
+      <placeholder/>
+    </child>
+    <child>
+      <object class="GtkLabel" id="pw_label_intro">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">label</property>
+        <property name="label" translatable="yes">Text for introduction</property>
       </object>
       <packing>
         <property name="page_type">intro</property>
@@ -213,14 +216,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkVBox" id="vbox2">
+      <object class="GtkVBox" id="pw_vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkLabel" id="label2">
+          <object class="GtkLabel" id="pw_label_files">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">label</property>
+            <property name="label" translatable="yes">Text for select files</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -233,6 +236,7 @@
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="model">pw_liststore</property>
+            <property name="headers_clickable">False</property>
             <child>
               <object class="GtkTreeViewColumn" id="pw_treeview_selfilecol">
                 <property name="title" translatable="yes">Selected files</property>
@@ -252,7 +256,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkHBox" id="hbox2">
+          <object class="GtkHBox" id="pw_hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="spacing">10</property>
@@ -305,8 +309,8 @@
             <property name="draw_indicator">True</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">3</property>
           </packing>
         </child>
@@ -316,20 +320,20 @@
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="label3">
+      <object class="GtkLabel" id="pw_label_classification">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">label</property>
+        <property name="label" translatable="yes">Text for classification settings</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Classification</property>
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="label4">
+      <object class="GtkLabel" id="pw_label_apply">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="label" translatable="yes">label</property>
+        <property name="label" translatable="yes">Text for applying settings</property>
       </object>
       <packing>
         <property name="page_type">confirm</property>
