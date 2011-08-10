@@ -2,13 +2,14 @@
 #define GUI_TEST_H
 
 #include <gtk/gtk.h>
+#include "genometools.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
 #define LTR_GET_WIDGET(builder, name, data) \
   LTR_GET_OBJECT(builder, name, GTK_WIDGET, data)
 
-#define GUI_FILE "gui/ltrgui.glade"
+#define GUI_FILE "ltrgui.glade"
 
 typedef struct _GUIData GUIData;
 struct _GUIData

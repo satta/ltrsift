@@ -1,8 +1,6 @@
 #ifndef MENUBAR_MAIN_H
 #define MENUBAR_MAIN_H
 
-#include <gtk/gtk.h>
-#include "ltrgui.h"
 #include "ltrgui.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \

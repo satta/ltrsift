@@ -1,7 +1,6 @@
 #ifndef STATUSBAR_MAIN_H
 #define STATUSBAR_MAIN_H
 
-#include <gtk/gtk.h>
 #include "ltrgui.h"
 
 void sb_main_init(GUIData *ltrgui);

@@ -1,4 +1,5 @@
 #include "menubar_main.h"
+#include "unused.h"
 
 void mb_main_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
 {
@@ -66,7 +67,8 @@ gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
+void mb_main_project_save_activate(G_UNUSED GtkMenuItem *menuitem,
+                                   GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -78,7 +80,8 @@ void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
 
 }
 
-void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
+void mb_main_project_save_as_activate(G_UNUSED GtkMenuItem *menuitem,
+                                      GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -93,7 +96,8 @@ void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
            - Save project data */
 }
 
-void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
+void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
+                                   GUIData *ltrgui)
 {
   gchar *filename;
 
@@ -110,7 +114,7 @@ void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui)
 
 }
 
-void mb_main_project_new_activate(GtkMenuItem *menuitem,
+void mb_main_project_new_activate(G_UNUSED GtkMenuItem *menuitem,
                                   GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);

@@ -1,7 +1,6 @@
 #ifndef PROJECT_WIZARD_H
 #define PROJECT_WIZARD_H
 
-#include <gtk/gtk.h>
 #include "ltrgui.h"
 
 void pw_get_widgets(GtkBuilder *builder, GUIData *ltrgui);

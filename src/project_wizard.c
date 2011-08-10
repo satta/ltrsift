@@ -1,5 +1,6 @@
 #include "project_wizard.h"
 #include "statusbar_main.h"
+#include "unused.h"
 
 void pw_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
 {
@@ -59,7 +60,7 @@ gint pw_forward(gint current_page, GUIData *ltrgui)
   return next_page;
 }
 
-void pw_file_add_button_clicked(GtkButton *button, GUIData *ltrgui)
+void pw_file_add_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   GSList *filenames;
@@ -124,7 +125,7 @@ void pw_remove_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
 
 }
 
-void pw_file_remove_button_clicked(GtkButton *button, GUIData *ltrgui)
+void pw_file_remove_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)
 {
   GtkTreeModel *model;
   GtkTreeSelection *sel;

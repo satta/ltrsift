@@ -1,4 +1,3 @@
-#include <gtk/gtk.h>
 #include "ltrgui.h"
 #include "statusbar_main.h"
 #include "menubar_main.h"
