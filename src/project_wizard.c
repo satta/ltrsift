@@ -2,13 +2,11 @@
 #include "statusbar_main.h"
 #include "unused.h"
 
-void pw_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
+void pw_init(GUIData *ltrgui)
 {
-#define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
-  GW(pw_window);
-  GW(pw_treeview);
-  GW(pw_do_classification_cb);
-#undef GW
+  gtk_label_set_text(GTK_LABEL(ltrgui->pw_label_projectname),
+                     gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(
+                                             ltrgui->pw_filech_projectfolder)));
 
   gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(
                                                   ltrgui->pw_treeview)),
@@ -58,6 +56,35 @@ gint pw_forward(gint current_page, GUIData *ltrgui)
       next_page = -1;
   }
   return next_page;
+}
+
+void pw_update_label_projectname(GUIData *ltrgui)
+{
+  const gchar *filename;
+  filename = gtk_entry_get_text(GTK_ENTRY(ltrgui->pw_entry_projectname));
+  gchar *folder = gtk_file_chooser_get_filename(
+                             GTK_FILE_CHOOSER(ltrgui->pw_filech_projectfolder));
+
+  gchar *fullpath = g_strconcat(folder, "/", filename, NULL);
+
+  gtk_label_set_text(GTK_LABEL(ltrgui->pw_label_projectname), fullpath);
+
+
+  g_free(fullpath);
+  g_free(folder);
+
+}
+
+void pw_entry_projectname_changed(G_UNUSED GtkEntry *entry,
+                                  GUIData *ltrgui)
+{
+  pw_update_label_projectname(ltrgui);
+}
+
+void pw_filech_projectfolder_selection_changed(G_UNUSED GtkFileChooser *chooser,
+                                               GUIData *ltrgui)
+{
+  pw_update_label_projectname(ltrgui);
 }
 
 void pw_file_add_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)
