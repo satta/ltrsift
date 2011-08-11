@@ -1,18 +1,8 @@
 #include "menubar_main.h"
 #include "unused.h"
 
-void mb_main_get_widgets(GtkBuilder *builder, GUIData *ltrgui)
+void mb_main_init(GUIData *ltrgui)
 {
-
-#define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
-  GW(mb_main);
-  GW(mb_main_project_new);
-  GW(mb_main_project_open);
-  GW(mb_main_project_save);
-  GW(mb_main_project_save_as);
-  GW(mb_main_project_quit);
-#undef GW
-
   g_object_set_data(G_OBJECT(ltrgui->mb_main_project_new), "menuhint",
                     (gpointer) "Create a new project.");
   g_object_set_data(G_OBJECT(ltrgui->mb_main_project_open), "menuhint",

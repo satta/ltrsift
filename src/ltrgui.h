@@ -25,6 +25,9 @@ struct _GUIData
   GtkWidget *pw_window;
   GtkWidget *pw_treeview;
   GtkWidget *pw_do_classification_cb;
+  GtkWidget *pw_entry_projectname;
+  GtkWidget *pw_filech_projectfolder;
+  GtkWidget *pw_label_projectname;
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;

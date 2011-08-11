@@ -15,11 +15,23 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   /* Get objects from UI */
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
   GW(main_window);
+  GW(mb_main);
+  GW(mb_main_project_new);
+  GW(mb_main_project_open);
+  GW(mb_main_project_save);
+  GW(mb_main_project_save_as);
+  GW(mb_main_project_quit);
   GW(sb_main);
+  GW(pw_window);
+  GW(pw_treeview);
+  GW(pw_do_classification_cb);
+  GW(pw_entry_projectname);
+  GW(pw_filech_projectfolder);
+  GW(pw_label_projectname);
 #undef GW
   sb_main_init(ltrgui);
-  mb_main_get_widgets(builder, ltrgui);
-  pw_get_widgets(builder, ltrgui);
+  mb_main_init(ltrgui);
+  pw_init(ltrgui);
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
                                GTK_WINDOW(ltrgui->main_window));
