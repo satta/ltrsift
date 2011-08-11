@@ -1,18 +1,26 @@
 CC = gcc
-CFLAGS = -g -Wall -Wunused-parameter -Werror `pkg-config --cflags --libs gtk+-2.0` -export-dynamic -lgenometools
-LDFLAGS =
-EXECUTABLE = bin/ltrgui
-GT_FLAGS = -I$(gt_prefix)/include/genometools -L$(gt_prefix)/lib
+CFLAGS = -g -Wall -Wunused-parameter -Werror
+GT_FLAGS = -lgenometools -I$(gt_prefix)/include/genometools -L$(gt_prefix)/lib
+GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
 SOURCES := $(wildcard src/*.c)
 OBJECTS := $(SOURCES:%.c=obj/%.o)
 
 # set prefix for location of genometools
 gt_prefix ?= /usr/local
 
-.PHONY: all clean objects cleanup
+.PREFIXES = .c .o
 
-all: bin obj obj/src bin/ltrgui.glade $(OBJECTS)
-	$(CC) $(OBJECTS) -o $(EXECUTABLE) $(CFLAGS) $(GT_FLAGS)
+.PHONY: all clean cleanup dirs
+
+all: dirs bin/ltrgui
+
+dirs: bin obj obj/src bin/ltrgui.glade
+
+obj/%.o: %.c
+	$(CC) -c $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
+
+bin/ltrgui: $(OBJECTS)
+	$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
 
 bin obj obj/src:
 	@echo '[create $(@)]'
@@ -20,10 +28,7 @@ bin obj obj/src:
 
 bin/ltrgui.glade:
 	@echo '[copy $(@F)]'
-	cp src/gui/$(@F) $(@D)
-
-$(OBJECTS): %.o:
-	$(CC) -c $(CFLAGS) $(GT_FLAGS) $(@:obj/%.o=%.c) -o $@
+	@cp -u src/gui/$(@F) $(@D)
 
 clean:
 	rm -rf obj
