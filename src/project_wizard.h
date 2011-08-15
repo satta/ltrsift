@@ -3,6 +3,13 @@
 
 #include "ltrgui.h"
 
+typedef enum {
+  PW_INTRODUCTION = 0,
+  PW_SELECTFILES,
+  PW_CLASSIFICATION,
+  PW_SUMMARY
+} ProjectWizardPages;
+
 void pw_init(GUIData *ltrgui);
 
 void pw_reset_defaults(GUIData *ltrgui);

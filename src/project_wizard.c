@@ -24,10 +24,13 @@ void pw_reset_defaults(GUIData *ltrgui)
   gtk_list_store_clear(GTK_LIST_STORE(model));
   gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(
                                ltrgui->pw_do_classification_cb), FALSE);
+  gtk_entry_set_text(GTK_ENTRY(ltrgui->pw_entry_projectname), "");
   gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
-      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window), 1), FALSE);
+      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+                                                        PW_SELECTFILES), FALSE);
   gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
-      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window), 2), FALSE);
+      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+                                                     PW_CLASSIFICATION), FALSE);
 }
 
 void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
@@ -69,10 +72,26 @@ void pw_update_label_projectname(GUIData *ltrgui)
 
   gtk_label_set_text(GTK_LABEL(ltrgui->pw_label_projectname), fullpath);
 
-
+  if (g_strcmp0(filename, "") == 0) {
+    gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
+        gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+                                                        PW_SELECTFILES), FALSE);
+  } else {
+    GtkTreeIter tmp;
+    gboolean empty = gtk_tree_model_get_iter_first(gtk_tree_view_get_model(
+                                      GTK_TREE_VIEW(ltrgui->pw_treeview)),&tmp);
+    if (!empty) {
+      gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
+          gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+                                                        PW_SELECTFILES), FALSE);
+    } else {
+      gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
+          gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+                                                           PW_SELECTFILES),TRUE);
+    }
+  }
   g_free(fullpath);
   g_free(folder);
-
 }
 
 void pw_entry_projectname_changed(G_UNUSED GtkEntry *entry,
@@ -107,9 +126,6 @@ void pw_file_add_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)
     GtkTreeIter iter;
     GtkTreeModel *model =
             gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview));
-    gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
-            gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window), 1),
-                                                                          TRUE);
     gtk_list_store_clear(GTK_LIST_STORE(model));
     /*ltrgui->project_files = */
     filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
@@ -122,10 +138,14 @@ void pw_file_add_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)
 
       filenames = filenames->next;
     }
+    if (g_strcmp0(gtk_entry_get_text(
+        GTK_ENTRY(ltrgui->pw_entry_projectname)), "") != 0) {
+      gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
+              gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window), 1),
+                                                                          TRUE);
+    }
   }
-
   gtk_widget_destroy(filechooser);
-
 }
 
 void pw_remove_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
