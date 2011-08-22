@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -Wunused-parameter -Werror
+CFLAGS = -g -Wall -Wunused-parameter -Werror -m64
 GT_FLAGS = -lgenometools -I$(gt_prefix)/include/genometools -L$(gt_prefix)/lib
 GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
 SOURCES := $(wildcard src/*.c)
