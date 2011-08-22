@@ -26,7 +26,7 @@ bin obj obj/src:
 	@echo '[create $(@)]'
 	@test -d $(@) || mkdir -p $(@)
 
-bin/ltrgui.glade:
+bin/ltrgui.glade: src/gui/ltrgui.glade
 	@echo '[copy $(@F)]'
 	@cp -u src/gui/$(@F) $(@D)
 
