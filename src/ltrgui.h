@@ -28,6 +28,10 @@ struct _GUIData
   GtkWidget *pw_entry_projectname;
   GtkWidget *pw_filech_projectfolder;
   GtkWidget *pw_label_projectname;
+
+  GtkWidget *sw_main;
+  GtkWidget *tv_main;
+
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;

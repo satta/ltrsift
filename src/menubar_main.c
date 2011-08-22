@@ -1,4 +1,5 @@
 #include "menubar_main.h"
+#include "treeview_main.h"
 #include "unused.h"
 
 void mb_main_init(GUIData *ltrgui)
@@ -67,7 +68,6 @@ void mb_main_project_save_activate(G_UNUSED GtkMenuItem *menuitem,
     if (filename != NULL) ltrgui->project_filename = filename;
     /* TODO: if (filename != NULL) Save project data */
   } /* TODO: else Save as project data*/
-
 }
 
 void mb_main_project_save_as_activate(G_UNUSED GtkMenuItem *menuitem,
@@ -81,7 +81,6 @@ void mb_main_project_save_as_activate(G_UNUSED GtkMenuItem *menuitem,
     if (ltrgui->project_filename != NULL) g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
   }
-
   /* TODO: - Check for overwriting existing file
            - Save project data */
 }
@@ -99,6 +98,8 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
     if (ltrgui->project_filename != NULL) g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
   }
+
+  tv_main_init(ltrgui);
 
   /* TODO: Load project data */
 

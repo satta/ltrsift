@@ -28,6 +28,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(pw_entry_projectname);
   GW(pw_filech_projectfolder);
   GW(pw_label_projectname);
+  GW(sw_main);
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui);
