@@ -52,11 +52,12 @@ gint main(gint argc, gchar *argv[])
   GUIData *ltrgui;
   GError *err = NULL;
 
-  /* allocate the memory needed by our GUIData struct */
+   /* allocate the memory needed by our GUIData struct */
   ltrgui = g_slice_new(GUIData);
 
-  /* initialize GTK+ libraries */
+  /* initialize libraries */
   gtk_init(&argc, &argv);
+  gt_lib_init();
 
   if (!init_gui(ltrgui, &err)) {
     fprintf(stderr, "ERROR: %s\n", err->message);
@@ -73,6 +74,7 @@ gint main(gint argc, gchar *argv[])
 
   /* free memory we allocated for GUIData struct */
   g_slice_free(GUIData, ltrgui);
-
+  /*if (gt_lib_clean())
+    return GT_EXIT_PROGRAMMING_ERROR;  programmer error */
   return 0;
 }

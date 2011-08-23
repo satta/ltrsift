@@ -1,19 +1,20 @@
 #include "menubar_main.h"
+#include "statusbar_main.h"
 #include "treeview_main.h"
 #include "unused.h"
 
 void mb_main_init(GUIData *ltrgui)
 {
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_new), "menuhint",
-                    (gpointer) "Create a new project.");
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_open), "menuhint",
-                    (gpointer) "Open an existing project.");
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save), "menuhint",
-                    (gpointer) "Save current project.");
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save_as), "menuhint",
-                    (gpointer) "Save current project.");
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_quit), "menuhint",
-                    (gpointer) "Quit the application.");
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_new),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_NEW);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_open),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_OPEN);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SAVE);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save_as),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SAVE_AS);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_quit),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_QUIT);
 }
 
 gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
@@ -21,7 +22,7 @@ gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
   GtkWidget *filechooser;
   gchar *filename = NULL;
 
-  filechooser = gtk_file_chooser_dialog_new("Open file...",
+  filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_OPEN,
                                             GTK_WINDOW (ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_OPEN,
                                             GTK_STOCK_CANCEL,
@@ -42,7 +43,7 @@ gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
   GtkWidget *filechooser;
   gchar *filename = NULL;
 
-  filechooser = gtk_file_chooser_dialog_new("Save file as...",
+  filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_SAVE_AS,
                                             GTK_WINDOW (ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_SAVE,
                                             GTK_STOCK_CANCEL,

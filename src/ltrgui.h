@@ -9,7 +9,9 @@
 #define LTR_GET_WIDGET(builder, name, data) \
   LTR_GET_OBJECT(builder, name, GTK_WIDGET, data)
 
-#define GUI_FILE "ltrgui.glade"
+#define GUI_FILE            "ltrgui.glade"
+#define GUI_DIALOG_OPEN     "Open file..."
+#define GUI_DIALOG_SAVE_AS  "Save file as"
 
 typedef struct _GUIData GUIData;
 struct _GUIData

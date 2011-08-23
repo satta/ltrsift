@@ -4,9 +4,10 @@
 #include "ltrgui.h"
 
 #define TV_MAIN_CAPTION_SEQID "SeqID"
-#define TV_MAIN_CAPTION_TYPE "Type"
+#define TV_MAIN_CAPTION_TYPE  "Type"
 #define TV_MAIN_CAPTION_START "Start"
-#define TV_MAIN_CAPTION_END "End"
+#define TV_MAIN_CAPTION_END   "End"
+#define TV_MAIN_CAPTION_CLUSTER "cluster no."
 
 typedef enum {
   TV_MAIN_SEQID = 0,
