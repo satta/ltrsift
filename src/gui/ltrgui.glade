@@ -196,12 +196,15 @@
   <object class="GtkAssistant" id="pw_window">
     <property name="can_focus">False</property>
     <property name="border_width">12</property>
-    <property name="window_position">center-on-parent</property>
+    <property name="window_position">center-always</property>
     <property name="default_width">640</property>
     <property name="default_height">480</property>
     <property name="destroy_with_parent">True</property>
     <signal name="destroy-event" handler="pw_cancel" swapped="no"/>
     <signal name="cancel" handler="pw_cancel" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <object class="GtkLabel" id="pw_label_desc_page1">
         <property name="visible">True</property>
@@ -237,7 +240,7 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">1</property>
           </packing>
         </child>
@@ -248,8 +251,8 @@
             <property name="label" translatable="yes">label</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">2</property>
           </packing>
         </child>
@@ -257,6 +260,7 @@
           <object class="GtkHBox" id="pw_hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="spacing">10</property>
             <child>
               <object class="GtkEntry" id="pw_entry_projectname">
                 <property name="visible">True</property>
@@ -268,6 +272,7 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
+                <property name="padding">10</property>
                 <property name="position">0</property>
               </packing>
             </child>
@@ -275,20 +280,22 @@
               <object class="GtkFileChooserButton" id="pw_filech_projectfolder">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
                 <property name="action">select-folder</property>
                 <property name="title" translatable="yes">Select A Folder</property>
                 <signal name="selection-changed" handler="pw_filech_projectfolder_selection_changed" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
-                <property name="fill">True</property>
+                <property name="fill">False</property>
+                <property name="padding">10</property>
                 <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">3</property>
           </packing>
         </child>
@@ -298,8 +305,8 @@
             <property name="can_focus">False</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">4</property>
           </packing>
         </child>
@@ -310,7 +317,7 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">5</property>
           </packing>
         </child>
@@ -321,28 +328,33 @@
             <property name="label" translatable="yes">label</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">6</property>
           </packing>
         </child>
         <child>
-          <object class="GtkTreeView" id="pw_treeview">
+          <object class="GtkScrolledWindow" id="pw_scrolledwindow">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="model">pw_liststore</property>
-            <property name="headers_clickable">False</property>
-            <child internal-child="selection">
-              <object class="GtkTreeSelection" id="treeview-selection1"/>
-            </child>
+            <property name="hscrollbar_policy">never</property>
+            <property name="shadow_type">in</property>
             <child>
-              <object class="GtkTreeViewColumn" id="pw_treeview_selfilecol">
-                <property name="title" translatable="yes">Selected files</property>
+              <object class="GtkTreeView" id="pw_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="model">pw_liststore</property>
+                <property name="headers_clickable">False</property>
                 <child>
-                  <object class="GtkCellRendererText" id="selfilecol_cell"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
+                  <object class="GtkTreeViewColumn" id="pw_treeview_selfilecol">
+                    <property name="title" translatable="yes">Selected files</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="selfilecol_cell"/>
+                      <attributes>
+                        <attribute name="text">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
                 </child>
               </object>
             </child>
@@ -350,6 +362,7 @@
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
+            <property name="padding">5</property>
             <property name="position">7</property>
           </packing>
         </child>
@@ -361,7 +374,7 @@
             <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="pw_file_add_button">
-                <property name="label">Select</property>
+                <property name="label">Add files</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -371,22 +384,23 @@
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
+                <property name="padding">1</property>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
               <object class="GtkButton" id="pw_file_remove_button">
-                <property name="label">gtk-remove</property>
+                <property name="label">Remove files</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <property name="use_stock">True</property>
                 <signal name="clicked" handler="pw_file_remove_button_clicked" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
+                <property name="padding">1</property>
                 <property name="position">1</property>
               </packing>
             </child>
@@ -404,7 +418,7 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">9</property>
           </packing>
         </child>
