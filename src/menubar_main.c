@@ -17,7 +17,7 @@ void mb_main_init(GUIData *ltrgui)
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_QUIT);
 }
 
-gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
+static gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
@@ -38,7 +38,7 @@ gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
+static gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
@@ -110,4 +110,39 @@ void mb_main_project_new_activate(G_UNUSED GtkMenuItem *menuitem,
                                   GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);
+}
+
+void mb_main_help_about_activate(G_UNUSED GtkMenuItem *menutiem,
+                                 G_UNUSED GUIData *ltrgui)
+{
+  GtkWidget *dialog;
+  GdkPixbuf *logo;
+  GError *err = NULL;
+
+  dialog = gtk_about_dialog_new();
+
+  logo = gdk_pixbuf_new_from_file(GUI_LOGO, &err);
+
+  if (err == NULL)
+    gtk_about_dialog_set_logo(GTK_ABOUT_DIALOG(dialog), logo);
+  else {
+    if (err->domain == GDK_PIXBUF_ERROR)
+      g_warning("GdkPixbufError: %s\n", err->message);
+    else if (err->domain == G_FILE_ERROR)
+      g_warning("GFileError: %s\n", err->message);
+    else
+      g_warning("An error in the domain: %d has occured!\n", err->domain);
+
+    g_error_free(err);
+  }
+
+  gtk_about_dialog_set_name(GTK_ABOUT_DIALOG(dialog), GUI_NAME);
+  gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), GUI_VERSION);
+  gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), GUI_COPYRIGHT);
+  gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), GUI_COMMENTS);
+  gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(dialog), GUI_LICENSE);
+  gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), GUI_WEBSITE);
+
+  gtk_dialog_run(GTK_DIALOG(dialog));
+  gtk_widget_destroy(dialog);
 }

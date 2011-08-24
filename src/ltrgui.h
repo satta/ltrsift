@@ -13,6 +13,15 @@
 #define GUI_DIALOG_OPEN     "Open file..."
 #define GUI_DIALOG_SAVE_AS  "Save file as"
 
+/* Information used by gtk_about_dialog */
+#define GUI_NAME            "LTRGui"
+#define GUI_VERSION         "0.0.1"
+#define GUI_COPYRIGHT       "(c) 2011-2012 Sascha Kastens"
+#define GUI_COMMENTS        "COMMENT PLACEHOLDER"
+#define GUI_LICENSE         "LICENSE PLACEHOLDER"
+#define GUI_WEBSITE         "http://www.genometools.org"
+#define GUI_LOGO            "../logo.png"
+
 typedef struct _GUIData GUIData;
 struct _GUIData
 {
