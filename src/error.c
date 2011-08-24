@@ -1,5 +1,8 @@
 #include "error.h"
 
+/* TODO: -replace "test"
+         -check for functionality of the dialog*/
+
 void error_handle(GError *err)
 {
   if (err != NULL) {
