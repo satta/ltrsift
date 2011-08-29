@@ -23,11 +23,10 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(mb_main_project_quit);
   GW(sb_main);
   GW(pw_window);
-  GW(pw_treeview);
-  GW(pw_do_classification_cb);
-  GW(pw_entry_projectname);
-  GW(pw_filech_projectfolder);
   GW(pw_label_projectname);
+  GW(pw_label_encseq);
+  GW(pw_treeview_gff3);
+  GW(pw_do_classification_cb);
   GW(sw_main);
 #undef GW
   sb_main_init(ltrgui);

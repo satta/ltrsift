@@ -34,18 +34,18 @@ struct _GUIData
   GtkWidget *sb_main;
   GtkWidget *main_window;
   GtkWidget *pw_window;
-  GtkWidget *pw_treeview;
+  GtkWidget *pw_treeview_gff3;
   GtkWidget *pw_do_classification_cb;
-  GtkWidget *pw_entry_projectname;
-  GtkWidget *pw_filech_projectfolder;
   GtkWidget *pw_label_projectname;
-
+  GtkWidget *pw_label_encseq;
   GtkWidget *sw_main;
   GtkWidget *tv_main;
-
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;
+  /* GtkWidget *pw_treeview_encseq;
+  not needed unless the user should be able
+  to select more than one seq file */
 };
 
 gboolean init_gui(GUIData *ltrgui, GError **err);
