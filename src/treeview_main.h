@@ -17,6 +17,7 @@ typedef enum {
   TV_MAIN_N_COLUMS
 } TreeViewMainColumns;
 
-void tv_main_init(GUIData *ltrgui);
+void tv_main_init(GUIData *ltrgui, GtArray *nodes, GtHashmap *features,
+                  unsigned long nof_features);
 
 #endif // TREEVIEW_MAIN_H
