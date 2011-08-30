@@ -17,10 +17,12 @@ all: dirs bin/ltrgui
 dirs: bin obj obj/src bin/ltrgui.glade
 
 obj/%.o: %.c
-	$(CC) -c $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
+	@echo "[compile $@]"
+	@$(CC) -c $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
 
 bin/ltrgui: $(OBJECTS)
-	$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
+	@echo "[linking $@]"
+	@$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
 
 bin obj obj/src:
 	@echo '[create $(@)]'
