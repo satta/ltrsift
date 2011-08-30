@@ -106,20 +106,21 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
   GtError *err = NULL;
   int had_err = 0;
   GtArray *nodes = gt_array_new(sizeof (GtGenomeNode*));
-  GtHashmap *features = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
   unsigned long noc = TV_MAIN_N_COLUMS;
 
   last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
   last_stream = preprocess_stream = gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     nodes,
-                                                                    features,
+                                                                    ltrgui->features,
                                                                     &noc,
                                                                     err);
   had_err = gt_node_stream_pull(last_stream, err);
   gt_node_stream_delete(preprocess_stream);
   gt_node_stream_delete(gff3_in_stream);
 
-  tv_main_init(ltrgui, nodes, features, noc);
+  tv_main_init(ltrgui, nodes, noc);
+
+  gt_array_delete(nodes);
 
   /* TODO: Load project data */
 
