@@ -1,3 +1,12 @@
-GtkAssistant
-  GtkListStore/GtkTreeView:
-    change to add files and avoid duplicate entries
+Specific:
+- project_wizard
+    pw_tree_view:
+      change to add files and avoid duplicate entries
+- ltrgui
+    function for struct cleanup
+- treeview_main
+    column titles w/o mnemonic
+    lLTR/rLTR side by side
+
+General:
+- mapping for all possible feature node types
