@@ -33,6 +33,8 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   mb_main_init(ltrgui);
   pw_init(ltrgui);
 
+  ltrgui->features = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
+
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
                                GTK_WINDOW(ltrgui->main_window));
 
