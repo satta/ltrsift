@@ -96,34 +96,31 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
   filename = mb_main_project_open_get_filename(ltrgui);
 
   if (filename != NULL) {
-    if (ltrgui->project_filename != NULL) g_free(ltrgui->project_filename);
+    if (ltrgui->project_filename != NULL)
+      g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
+
+    GtNodeStream *last_stream = NULL,
+                 *gff3_in_stream = NULL,
+                 *preprocess_stream = NULL;
+    GtError *err = NULL;
+    int had_err = 0;
+    GtArray *nodes = gt_array_new(sizeof (GtGenomeNode*));
+    unsigned long noc = TV_MAIN_N_COLUMS;
+
+    last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
+    last_stream = preprocess_stream =
+                  gt_ltrgui_preprocess_stream_new(last_stream, nodes,
+                                                  ltrgui->features, &noc, err);
+    had_err = gt_node_stream_pull(last_stream, err);
+    gt_node_stream_delete(preprocess_stream);
+    gt_node_stream_delete(gff3_in_stream);
+
+    tv_main_init(ltrgui, nodes, noc);
+
+    gt_array_delete(nodes);
   }
-
-  GtNodeStream *last_stream = NULL,
-               *gff3_in_stream = NULL,
-               *preprocess_stream = NULL;
-  GtError *err = NULL;
-  int had_err = 0;
-  GtArray *nodes = gt_array_new(sizeof (GtGenomeNode*));
-  unsigned long noc = TV_MAIN_N_COLUMS;
-
-  last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
-  last_stream = preprocess_stream = gt_ltrgui_preprocess_stream_new(last_stream,
-                                                                    nodes,
-                                                                    ltrgui->features,
-                                                                    &noc,
-                                                                    err);
-  had_err = gt_node_stream_pull(last_stream, err);
-  gt_node_stream_delete(preprocess_stream);
-  gt_node_stream_delete(gff3_in_stream);
-
-  tv_main_init(ltrgui, nodes, noc);
-
-  gt_array_delete(nodes);
-
   /* TODO: Load project data */
-
 }
 
 void mb_main_project_new_activate(G_UNUSED GtkMenuItem *menuitem,
