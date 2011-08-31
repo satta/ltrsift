@@ -18,12 +18,12 @@ static int add_feature_columns(void *key, void *value, void *ltrgui,
 }
 
 static void tw_main_append_child(GUIData *ltrgui,
-                          GtkTreeModel *model,
-                          GtkTreeIter *child,
-                          GtkTreeIter *iter,
-                          GtFeatureNode *curnode,
-                          const char *type,
-                          const char *fnt)
+                                 GtkTreeModel *model,
+                                 GtkTreeIter *child,
+                                 GtkTreeIter *iter,
+                                 GtFeatureNode *curnode,
+                                 const char *type,
+                                 const char *fnt)
 {
   const char *clid;/*, *seqid;*/
   unsigned long cno;
