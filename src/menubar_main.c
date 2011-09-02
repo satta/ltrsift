@@ -116,8 +116,8 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
     gt_node_stream_delete(preprocess_stream);
     gt_node_stream_delete(gff3_in_stream);
 
-    tv_main_init(ltrgui, nodes, noc);
-
+    if (!ltrgui->tv_main)
+        tv_main_init(ltrgui, nodes, noc);
     gt_array_delete(nodes);
   }
   /* TODO: Load project data */

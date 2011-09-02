@@ -6,9 +6,9 @@ static char *double_underscores(const char *str)
   char **arr;
   char *ret;
 
-  arr = g_strsplit (str, "_", 0);
-  ret = g_strjoinv ("__", arr);
-  g_strfreev (arr);
+  arr = g_strsplit(str, "_", 0);
+  ret = g_strjoinv("__", arr);
+  g_strfreev(arr);
 
   return ret;
 }
@@ -48,13 +48,11 @@ static void tw_main_append_child(GUIData *ltrgui,
   const char *clid;/*, *seqid;*/
   unsigned long cno;
   GtRange range;
-/*seqid = gt_str_get(gt_genome_node_get_seqid((GtGenomeNode*) curnode));*/
   range = gt_genome_node_get_range((GtGenomeNode*) curnode);
   clid = gt_feature_node_get_attribute(curnode, ATTR_CLUSTID);
   cno = (unsigned long) gt_hashmap_get(ltrgui->features, type);
   gtk_tree_store_append(GTK_TREE_STORE(model), child, iter);
   gtk_tree_store_set(GTK_TREE_STORE(model), child,
-                   /*  TV_MAIN_SEQID, seqid,*/
                      TV_MAIN_TYPE, fnt,
                      TV_MAIN_START, range.start,
                      TV_MAIN_END, range.end,
