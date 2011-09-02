@@ -1,17 +1,37 @@
 #include "treeview_main.h"
 #include "unused.h"
 
+static char *double_underscores(const char *str)
+{
+  char **arr;
+  char *ret;
+
+  arr = g_strsplit (str, "_", 0);
+  ret = g_strjoinv ("__", arr);
+  g_strfreev (arr);
+
+  return ret;
+}
+
+
 static int add_feature_columns(void *key, void *value, void *ltrgui,
                                GT_UNUSED GtError *err)
 {
   GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
   GtkTreeViewColumn *column;
-  const char *caption = (const char*) key;
+  const char *caption = double_underscores((const char*) key);
   unsigned long num = (unsigned long) value;
   GUIData *gui = (GUIData*) ltrgui;
 
+  g_object_set(renderer,
+                "cell-background", "Orange",
+                "cell-background-set", TRUE,
+                "xalign", 1.0,
+                NULL);
+
   column = gtk_tree_view_column_new_with_attributes(caption, renderer, "text",
                                                     num, NULL);
+  gtk_tree_view_column_set_clickable(column, true);
   gtk_tree_view_append_column(GTK_TREE_VIEW(gui->tv_main), column);
 
   return 0;
@@ -38,7 +58,6 @@ static void tw_main_append_child(GUIData *ltrgui,
                      TV_MAIN_TYPE, fnt,
                      TV_MAIN_START, range.start,
                      TV_MAIN_END, range.end,
-                     TV_MAIN_EMPTY, "|",
                      cno, clid,
                      -1);
 }
@@ -52,9 +71,8 @@ void tw_main_row_collapsed(GtkTreeView *tree_view, GtkTreeIter *iter,
 
   model = gtk_tree_view_get_model(tree_view);
   gtk_tree_model_iter_children(model, &child, iter);
-  while (gtk_tree_store_remove(GTK_TREE_STORE(model), &child)) {
+  while (gtk_tree_store_remove(GTK_TREE_STORE(model), &child))
     continue;
-  }
   gtk_tree_store_append(GTK_TREE_STORE(model), &child, iter);
 }
 
@@ -129,25 +147,24 @@ void tv_main_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc)
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_main), column);
 
   renderer = gtk_cell_renderer_text_new();
+  g_object_set(renderer, "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes(TV_MAIN_CAPTION_START,
                                                     renderer, "text",
                                                     TV_MAIN_START, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_main), column);
 
   renderer = gtk_cell_renderer_text_new();
+  g_object_set(renderer, "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes(TV_MAIN_CAPTION_END,
                                                     renderer, "text",
                                                     TV_MAIN_END, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_main), column);
 
-  renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes("",
-                                                    renderer, "text",
-                                                    TV_MAIN_EMPTY, NULL);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_main), column);
-
   gt_hashmap_foreach(ltrgui->features, add_feature_columns, (void*) ltrgui,
                      err);
+
+  column = gtk_tree_view_column_new();
+  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_main), column);
 
   types[0] = G_TYPE_POINTER;
   types[1] = G_TYPE_STRING;
@@ -185,7 +202,6 @@ void tv_main_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc)
                            TV_MAIN_SEQID, seqid,
                            TV_MAIN_START, range.start,
                            TV_MAIN_END, range.end,
-                           TV_MAIN_EMPTY, "|",
                            -1);
         /* append an empty row for row-expand functionality */
         gtk_tree_store_append(store, &child, &iter);
@@ -232,7 +248,6 @@ void tv_main_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc)
 
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrgui->tv_main),
                           GTK_TREE_MODEL(store));
-  gtk_tree_view_set_headers_clickable(GTK_TREE_VIEW(ltrgui->tv_main), TRUE);
   g_object_unref(store);
 
   gtk_container_add(GTK_CONTAINER(ltrgui->sw_main), ltrgui->tv_main);

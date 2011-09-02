@@ -22,7 +22,6 @@ typedef enum {
   TV_MAIN_TYPE,
   TV_MAIN_START,
   TV_MAIN_END,
-  TV_MAIN_EMPTY,
   TV_MAIN_N_COLUMS
 } TreeViewMainColumns;
 
