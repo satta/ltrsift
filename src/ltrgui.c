@@ -2,6 +2,7 @@
 #include "statusbar_main.h"
 #include "menubar_main.h"
 #include "project_wizard.h"
+#include "notebook_main_families.h"
 #include "error.h"
 
 gboolean init_gui(GUIData *ltrgui, GError **err)
@@ -21,13 +22,15 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(mb_main_project_save);
   GW(mb_main_project_save_as);
   GW(mb_main_project_quit);
+  GW(hbox1_main);
   GW(sb_main);
   GW(pw_window);
   GW(pw_label_projectname);
   GW(pw_label_encseq);
   GW(pw_treeview_gff3);
   GW(pw_do_classification_cb);
-  GW(sw_main);
+  /* LTRGui is redesigned, no functionality needed atm */
+  //GW(sw_main);
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui);

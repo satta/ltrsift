@@ -1,6 +1,7 @@
 #include "menubar_main.h"
 #include "statusbar_main.h"
-#include "treeview_main.h"
+#include "gtk_ltr_family.h"
+#include "notebook_main_families.h"
 #include "unused.h"
 
 void mb_main_init(GUIData *ltrgui)
@@ -100,13 +101,14 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
       g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
 
+   /* LTRGui is redesigned, no functionality needed atm */
     GtNodeStream *last_stream = NULL,
                  *gff3_in_stream = NULL,
                  *preprocess_stream = NULL;
     GtError *err = NULL;
     int had_err = 0;
     GtArray *nodes = gt_array_new(sizeof (GtGenomeNode*));
-    unsigned long noc = TV_MAIN_N_COLUMS;
+    unsigned long noc = LTRFAM_LV_N_COLUMS;
 
     last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
     last_stream = preprocess_stream =
@@ -116,8 +118,9 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
     gt_node_stream_delete(preprocess_stream);
     gt_node_stream_delete(gff3_in_stream);
 
-    if (!ltrgui->tv_main)
-        tv_main_init(ltrgui, nodes, noc);
+
+    nb_main_families_init(ltrgui, nodes, noc);
+
     gt_array_delete(nodes);
   }
   /* TODO: Load project data */
