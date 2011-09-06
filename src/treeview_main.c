@@ -246,9 +246,10 @@ void tv_main_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc)
 
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrgui->tv_main),
                           GTK_TREE_MODEL(store));
-  g_object_unref(store);
+   g_object_unref(store);
 
-  gtk_container_add(GTK_CONTAINER(ltrgui->sw_main), ltrgui->tv_main);
+  /* LTRGui is redesigned, no functionality needed atm */
+  //gtk_container_add(GTK_CONTAINER(ltrgui->sw_main), ltrgui->tv_main);
   g_signal_connect(G_OBJECT(ltrgui->tv_main), "row-expanded",
                    G_CALLBACK(tw_main_row_expanded), ltrgui);
   g_signal_connect(G_OBJECT(ltrgui->tv_main), "row-collapsed",
