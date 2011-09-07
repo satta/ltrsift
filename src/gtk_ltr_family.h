@@ -24,6 +24,8 @@
 #define FNT_REPEATR  "repeat_region"
 #define FNT_LLTR     "lLTR"
 #define FNT_RLTR     "rLTR"
+#define LTRFAM_DETINFO      "Detailed Information"
+#define LTRFAM_IMAGE "Image"
 
 typedef enum {
   LTRFAM_LV_NODE = 0,
@@ -50,7 +52,7 @@ struct _GtkLTRFamily
     GtkVBox vbox;
     GtkWidget *tree_view;
     GtkWidget *list_view;
-    /* for test purposes only (will be replaced by GdkPixbux */
+    /* label is for tests only (will be replaced by GdkPixbux */
     GtkWidget *label;
 };
 

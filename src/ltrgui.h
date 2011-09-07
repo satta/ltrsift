@@ -32,6 +32,7 @@ struct _GUIData
   GtkWidget *mb_main_project_save;
   GtkWidget *mb_main_project_save_as;
   GtkWidget *mb_main_project_quit;
+  GtkWidget *tv_families;
   GtkWidget *hbox1_main;
   GtkWidget *nb_main_families;
   GtkWidget *sb_main;
@@ -41,9 +42,7 @@ struct _GUIData
   GtkWidget *pw_do_classification_cb;
   GtkWidget *pw_label_projectname;
   GtkWidget *pw_label_encseq;
-  /* LTRGui is redesigned, no functionality needed atm */
-  //GtkWidget *sw_main;
-  GtkWidget *tv_main;
+  GtkWidget *sw_main;
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;

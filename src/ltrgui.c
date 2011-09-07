@@ -3,6 +3,7 @@
 #include "menubar_main.h"
 #include "project_wizard.h"
 #include "notebook_main_families.h"
+#include "treeview_families.h"
 #include "error.h"
 
 gboolean init_gui(GUIData *ltrgui, GError **err)
@@ -22,6 +23,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(mb_main_project_save);
   GW(mb_main_project_save_as);
   GW(mb_main_project_quit);
+  GW(sw_main);
   GW(hbox1_main);
   GW(sb_main);
   GW(pw_window);
@@ -34,6 +36,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui);
+  tv_families_init(ltrgui);
   pw_init(ltrgui);
 
   ltrgui->features = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);

@@ -1,45 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <interface>
   <requires lib="gtk+" version="2.20"/>
   <!-- interface-naming-policy toplevel-contextual -->
   <object class="GtkImage" id="image1">
     <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="stock">gtk-save-as</property>
     <property name="icon-size">1</property>
   </object>
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="stock">gtk-new</property>
   </object>
   <object class="GtkImage" id="image3">
     <property name="visible">True</property>
-    <property name="can_focus">False</property>
     <property name="stock">gtk-open</property>
   </object>
   <object class="GtkWindow" id="main_window">
-    <property name="can_focus">False</property>
     <property name="events">GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
     <property name="title" translatable="yes">LTR GUI</property>
     <property name="window_position">center</property>
     <property name="default_width">1024</property>
     <property name="default_height">768</property>
-    <signal name="destroy" handler="gtk_main_quit" swapped="no"/>
+    <signal name="destroy" handler="gtk_main_quit"/>
     <child>
       <object class="GtkVBox" id="vbox1_main">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
+        <property name="orientation">vertical</property>
         <child>
           <object class="GtkMenuBar" id="mb_main">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
             <child>
               <object class="GtkMenuItem" id="menu_main_project">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
                 <property name="use_action_appearance">False</property>
                 <property name="label" translatable="yes">_Project</property>
@@ -47,41 +41,37 @@
                 <child type="submenu">
                   <object class="GtkMenu" id="menu1">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
                     <child>
                       <object class="GtkImageMenuItem" id="mb_main_project_new">
                         <property name="label">_New...</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_STRUCTURE_MASK</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image2</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="mb_main_project_new_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave_notify_event" handler="sb_main_menuhints"/>
+                        <signal name="activate" handler="mb_main_project_new_activate"/>
+                        <signal name="enter_notify_event" handler="sb_main_menuhints"/>
                       </object>
                     </child>
                     <child>
                       <object class="GtkImageMenuItem" id="mb_main_project_open">
                         <property name="label">_Open...</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image3</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="mb_main_project_open_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave_notify_event" handler="sb_main_menuhints"/>
+                        <signal name="activate" handler="mb_main_project_open_activate"/>
+                        <signal name="enter_notify_event" handler="sb_main_menuhints"/>
                       </object>
                     </child>
                     <child>
                       <object class="GtkSeparatorMenuItem" id="separatormenuitem2">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                       </object>
                     </child>
@@ -89,33 +79,30 @@
                       <object class="GtkImageMenuItem" id="mb_main_project_save">
                         <property name="label">gtk-save</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="mb_main_project_save_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave_notify_event" handler="sb_main_menuhints"/>
+                        <signal name="activate" handler="mb_main_project_save_activate"/>
+                        <signal name="enter_notify_event" handler="sb_main_menuhints"/>
                       </object>
                     </child>
                     <child>
                       <object class="GtkImageMenuItem" id="mb_main_project_save_as">
                         <property name="label">Save _As...</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="image">image1</property>
                         <property name="use_stock">False</property>
-                        <signal name="activate" handler="mb_main_project_save_as_activate" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave_notify_event" handler="sb_main_menuhints"/>
+                        <signal name="activate" handler="mb_main_project_save_as_activate"/>
+                        <signal name="enter_notify_event" handler="sb_main_menuhints"/>
                       </object>
                     </child>
                     <child>
                       <object class="GtkSeparatorMenuItem" id="separatormenuitem1">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                       </object>
                     </child>
@@ -123,14 +110,13 @@
                       <object class="GtkImageMenuItem" id="mb_main_project_quit">
                         <property name="label">gtk-quit</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="events">GDK_EXPOSURE_MASK | GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON1_MOTION_MASK | GDK_BUTTON2_MOTION_MASK | GDK_BUTTON3_MOTION_MASK | GDK_ENTER_NOTIFY_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_FOCUS_CHANGE_MASK | GDK_STRUCTURE_MASK</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="gtk_main_quit" swapped="no"/>
-                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
-                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave_notify_event" handler="sb_main_menuhints"/>
+                        <signal name="activate" handler="gtk_main_quit"/>
+                        <signal name="enter_notify_event" handler="sb_main_menuhints"/>
                       </object>
                     </child>
                   </object>
@@ -140,23 +126,20 @@
             <child>
               <object class="GtkMenuItem" id="menu_main_help">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="use_action_appearance">False</property>
                 <property name="label" translatable="yes">_Help</property>
                 <property name="use_underline">True</property>
                 <child type="submenu">
                   <object class="GtkMenu" id="menu2">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <child>
                       <object class="GtkImageMenuItem" id="mb_main_help_about">
                         <property name="label">gtk-about</property>
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
-                        <signal name="activate" handler="mb_main_help_about_activate" swapped="no"/>
+                        <signal name="activate" handler="mb_main_help_about_activate"/>
                       </object>
                     </child>
                   </object>
@@ -173,57 +156,62 @@
         <child>
           <object class="GtkHBox" id="hbox1_main">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <child>
               <object class="GtkVBox" id="vbox1">
+                <property name="width_request">200</property>
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
                   <object class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <child>
-                      <object class="GtkButton" id="button1">
-                        <property name="label" translatable="yes">button</property>
+                      <object class="GtkButton" id="add_family_button">
+                        <property name="label" translatable="yes">Add</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_action_appearance">False</property>
+                        <signal name="clicked" handler="add_family_button_clicked"/>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="button2">
-                        <property name="label" translatable="yes">button</property>
+                      <object class="GtkButton" id="remove_family_button">
+                        <property name="label" translatable="yes">Remove</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
                         <property name="use_action_appearance">False</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
-                    <property name="fill">True</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkScrolledWindow" id="sw_main">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="hscrollbar_policy">automatic</property>
+                    <property name="vscrollbar_policy">automatic</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">1</property>
+                  </packing>
                 </child>
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
             </child>
@@ -232,15 +220,12 @@
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
         <child>
           <object class="GtkStatusbar" id="sb_main">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="spacing">2</property>
           </object>
           <packing>
@@ -266,14 +251,16 @@
     </columns>
   </object>
   <object class="GtkAssistant" id="pw_window">
-    <property name="can_focus">False</property>
     <property name="border_width">12</property>
     <property name="window_position">center-always</property>
     <property name="default_width">640</property>
     <property name="default_height">480</property>
     <property name="destroy_with_parent">True</property>
-    <signal name="destroy-event" handler="pw_cancel" swapped="no"/>
-    <signal name="cancel" handler="pw_cancel" swapped="no"/>
+    <signal name="destroy_event" handler="pw_cancel"/>
+    <signal name="cancel" handler="pw_cancel"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <placeholder/>
     </child>
@@ -286,23 +273,20 @@
     <child>
       <object class="GtkLabel" id="pw_label_desc_page1">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="label" translatable="yes">PLACEHOLDER</property>
       </object>
       <packing>
         <property name="page_type">intro</property>
         <property name="title" translatable="yes">General information</property>
-        <property name="complete">True</property>
       </packing>
     </child>
     <child>
       <object class="GtkVBox" id="pw_vbox1">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
         <child>
           <object class="GtkLabel" id="pw_label_desc_page2">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="label" translatable="yes">PLACEHOLDER</property>
           </object>
           <packing>
@@ -314,7 +298,6 @@
         <child>
           <object class="GtkHSeparator" id="pw_hseparator1">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -326,12 +309,10 @@
         <child>
           <object class="GtkAlignment" id="pw_alignment1">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="xalign">0</property>
             <child>
               <object class="GtkLabel" id="pw_label_choose_projectname">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="xpad">5</property>
                 <property name="label" translatable="yes">Please choose a directory and a name for the project
@@ -348,7 +329,6 @@
         <child>
           <object class="GtkHBox" id="pw_hbox3">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="spacing">5</property>
             <child>
               <object class="GtkButton" id="pw_choose_projectname_button">
@@ -357,7 +337,7 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <signal name="clicked" handler="pw_choose_projectname_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_choose_projectname_button_clicked"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -368,34 +348,28 @@
             <child>
               <object class="GtkAlignment" id="alignment1">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="yalign">0</property>
                 <child>
                   <object class="GtkLabel" id="pw_label_projectname">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="xalign">0</property>
                   </object>
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
                 <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
             <property name="position">4</property>
           </packing>
         </child>
         <child>
           <object class="GtkHSeparator" id="pw_hseparator2">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -407,14 +381,11 @@
         <child>
           <object class="GtkLabel" id="pw_label_select_gff3">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="xalign">0</property>
             <property name="xpad">5</property>
             <property name="label" translatable="yes">Please select GFF3 file(s)</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
             <property name="position">5</property>
           </packing>
         </child>
@@ -446,15 +417,12 @@
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
             <property name="position">7</property>
           </packing>
         </child>
         <child>
           <object class="GtkHBox" id="pw_hbox2">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="spacing">10</property>
             <property name="homogeneous">True</property>
             <child>
@@ -464,11 +432,9 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <signal name="clicked" handler="pw_add_gff3_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_add_gff3_button_clicked"/>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
                 <property name="padding">1</property>
                 <property name="position">0</property>
               </packing>
@@ -480,11 +446,9 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <signal name="clicked" handler="pw_remove_gff3_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_remove_gff3_button_clicked"/>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
                 <property name="padding">1</property>
                 <property name="position">1</property>
               </packing>
@@ -499,28 +463,23 @@
         <child>
           <object class="GtkAlignment" id="pw_alignment2">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="xalign">0</property>
             <property name="yalign">0</property>
             <child>
               <object class="GtkLabel" id="pw_label_select_encseq">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Please select the associated encoded sequence</property>
               </object>
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
             <property name="position">9</property>
           </packing>
         </child>
         <child>
           <object class="GtkHBox" id="pw_hbox1">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
             <property name="spacing">5</property>
             <child>
               <object class="GtkButton" id="pw_choose_encseq_button">
@@ -529,7 +488,7 @@
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
-                <signal name="clicked" handler="pw_choose_encseq_button_clicked" swapped="no"/>
+                <signal name="clicked" handler="pw_choose_encseq_button_clicked"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -540,34 +499,28 @@
             <child>
               <object class="GtkAlignment" id="alignment2">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="yalign">0</property>
                 <child>
                   <object class="GtkLabel" id="pw_label_encseq">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
                     <property name="xalign">0</property>
                   </object>
                 </child>
               </object>
               <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
                 <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
             <property name="position">9</property>
           </packing>
         </child>
         <child>
           <object class="GtkHSeparator" id="pw_hseparator3">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -599,7 +552,6 @@
     <child>
       <object class="GtkLabel" id="pw_label_desc_page3">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="label" translatable="yes">PLACEHOLDER</property>
       </object>
       <packing>
@@ -609,13 +561,11 @@
     <child>
       <object class="GtkLabel" id="pw_label_desc_page4">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
         <property name="label" translatable="yes">PLACEHOLDER</property>
       </object>
       <packing>
         <property name="page_type">confirm</property>
         <property name="title" translatable="yes">Overview</property>
-        <property name="complete">True</property>
       </packing>
     </child>
   </object>

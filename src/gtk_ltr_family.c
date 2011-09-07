@@ -1,7 +1,7 @@
 #include "gtk_ltr_family.h"
 #include "unused.h"
 
-static char *double_underscores(const char *str)
+static char* double_underscores(const char *str)
 {
   char **arr;
   char *ret;
@@ -55,14 +55,14 @@ static void append_child(GtkTreeStore *store,
                      -1);
 }
 
-static void gtk_ltr_family_list_view_row_activated(GtkTreeView *list_view,
-                                                   GtkTreePath *path,
-                                          G_UNUSED GtkTreeViewColumn *column,
-                                                   GtkLTRFamily *ltrfam)
+static void list_view_row_activated(GtkTreeView *list_view,
+                                    GtkTreePath *path,
+                                    G_UNUSED GtkTreeViewColumn *column,
+                                    GtkLTRFamily *ltrfam)
 {
-  g_warning("Double napp");
   GtkTreeModel *list_model, *tree_model;
   GtkTreeIter iter, tmp, child;
+  GtkTreeStore *store;
   GtGenomeNode **gn;
   GtFeatureNodeIterator *fni;
   GtFeatureNode *curnode;
@@ -82,40 +82,36 @@ static void gtk_ltr_family_list_view_row_activated(GtkTreeView *list_view,
     types[2] = G_TYPE_ULONG;
     types[3] = G_TYPE_STRING;
 
-    GtkTreeStore *store = gtk_tree_store_newv(LTRFAM_TV_N_COLUMS, types);
+    store = gtk_tree_store_newv(LTRFAM_TV_N_COLUMS, types);
 
     gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfam->tree_view),
                             GTK_TREE_MODEL(store));
     g_object_unref(store);
 
     g_free(types);
-  } else
-    gtk_tree_store_clear(GTK_TREE_STORE(tree_model));
-/* TODO: cleanup */
-  tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfam->tree_view));
+  } else {
+    store = GTK_TREE_STORE(tree_model);
+    gtk_tree_store_clear(store);
+  }
 
+  tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfam->tree_view));
   fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
 
   while ((curnode = gt_feature_node_iterator_next(fni))) {
     fnt = gt_feature_node_get_type(curnode);
-    g_warning("type: %s", fnt);
     if (g_strcmp0(fnt, FNT_REPEATR) == 0) {
       GtRange range;
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
-      gtk_tree_store_append(GTK_TREE_STORE(tree_model), &iter, NULL);
-      gtk_tree_store_set(GTK_TREE_STORE(tree_model), &iter,
+      gtk_tree_store_append(store, &iter, NULL);
+      gtk_tree_store_set(store, &iter,
                          LTRFAM_TV_TYPE, fnt,
                          LTRFAM_TV_START, range.start,
                          LTRFAM_TV_END, range.end,
                          -1);
-    } else if (g_strcmp0(fnt, FNT_PROTEINM) == 0) {
-      append_child(GTK_TREE_STORE(tree_model), &child, &iter, curnode, fnt);
-    } else if (g_strcmp0(fnt, FNT_LTR) == 0) {
-      append_child(GTK_TREE_STORE(tree_model), &child, &iter, curnode, fnt);
-    } else {
-      append_child(GTK_TREE_STORE(tree_model), &child, &iter, curnode, fnt);
-    }
+    } else
+      append_child(store, &child, &iter, curnode, fnt);
   }
+  gtk_tree_view_expand_all(GTK_TREE_VIEW(ltrfam->tree_view));
   gt_feature_node_iterator_delete(fni);
 }
 
@@ -183,8 +179,8 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
     GtFeatureNodeIterator *fni;
     const char *fnt;
     gboolean first_ltr = true;
-    gn = *(GtGenomeNode***) gt_array_get(nodes, i);
 
+    gn = *(GtGenomeNode***) gt_array_get(nodes, i);
     fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
 
     while ((curnode = gt_feature_node_iterator_next(fni))) {
@@ -241,19 +237,11 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
     }
     gt_feature_node_iterator_delete(fni);
   }
-
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfam->list_view),
                           GTK_TREE_MODEL(store));
   g_object_unref(store);
-
-
   g_signal_connect(G_OBJECT(ltrfam->list_view), "row-activated",
-                   G_CALLBACK(gtk_ltr_family_list_view_row_activated), ltrfam);
-
-  /*g_signal_connect(G_OBJECT(ltrgui->tv_main), "row-collapsed",
-                   G_CALLBACK(tw_main_row_collapsed), ltrgui);
-  */
-
+                   G_CALLBACK(list_view_row_activated), ltrfam);
   g_free(types);
 }
 
@@ -310,9 +298,10 @@ static void gtk_ltr_family_init(GtkLTRFamily *ltrfam)
   hsep = gtk_hseparator_new();
   vsep = gtk_vseparator_new();
 
-  ltrfam->label = gtk_label_new("IMAGE-SECTION");
-  label1 = gtk_label_new("Detailed information");
-  label2 = gtk_label_new("Image");
+  /* ltrfam->label is just for tests */
+  ltrfam->label = gtk_label_new("TEST IMAGE-SECTION");
+  label1 = gtk_label_new(LTRFAM_DETINFO);
+  label2 = gtk_label_new(LTRFAM_IMAGE);
 
   vbox1 = gtk_vbox_new(FALSE, 0);
   vbox2 = gtk_vbox_new(FALSE, 0);
@@ -343,7 +332,6 @@ static void gtk_ltr_family_init(GtkLTRFamily *ltrfam)
   gtk_box_pack_start(GTK_BOX(hbox), vbox1, TRUE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), vsep, FALSE, TRUE, 5);
   gtk_box_pack_start(GTK_BOX(hbox), vbox2, TRUE, TRUE, 0);
-  /* TODO: add tree_view to sw2 */
 
   gtk_box_pack_start(GTK_BOX(ltrfam), hbox, TRUE, TRUE, 0);
   gtk_widget_show_all(GTK_WIDGET(ltrfam));
@@ -359,7 +347,7 @@ GType gtk_ltr_family_get_type(void)
       sizeof (GtkLTRFamilyClass),
       NULL, /* base_init */
       NULL, /* base_finalize */
-      NULL, //(GClassInitFunc) gtk_ltr_family_class_init,
+      NULL, /* (GClassInitFunc) gtk_ltr_family_class_init, */
       NULL, /* class_finalize */
       NULL, /* class_data */
       sizeof (GtkLTRFamily),
