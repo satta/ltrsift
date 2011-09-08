@@ -39,7 +39,10 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   tv_families_init(ltrgui);
   pw_init(ltrgui);
 
+  gtk_widget_hide_all(ltrgui->hbox1_main);
+
   ltrgui->features = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
+  ltrgui->n_features = 0;
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
                                GTK_WINDOW(ltrgui->main_window));

@@ -3,7 +3,12 @@
 
 #include "ltrgui.h"
 
-#define EMPTY_FAM "UnnamedFamily"
+typedef enum {
+  TV_FAM_NODE = 0,
+  TV_FAM_NID,
+  TV_FAM_NAME,
+  TV_FAM_N_COLUMS
+} TreeViewFamiliesColumns;
 
 void tv_families_init(GUIData *ltrgui);
 

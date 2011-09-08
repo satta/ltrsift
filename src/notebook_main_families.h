@@ -3,7 +3,7 @@
 
 #include "ltrgui.h"
 
-void nb_main_families_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc);
+void nb_main_families_init(GUIData *ltrgui, GtArray *nodes);
 
 void nb_main_families_first_page(GUIData *ltrgui);
 

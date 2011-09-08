@@ -115,7 +115,6 @@ static void pw_remove_gff3_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
   empty = gtk_tree_model_get_iter_first(model, &tmp);
 
   pw_basic_files_page_complete(ltrgui);
-
 }
 
 void pw_remove_gff3_button_clicked(G_UNUSED GtkButton *button, GUIData *ltrgui)

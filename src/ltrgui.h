@@ -47,6 +47,7 @@ struct _GUIData
   GSList *project_files;
   gchar *project_filename;
   GtHashmap *features;
+  unsigned long n_features;
   /* GtkWidget *pw_treeview_encseq;
   not needed unless the user should be able
   to select more than one seq file */

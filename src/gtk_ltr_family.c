@@ -23,10 +23,10 @@ static int add_feature_columns(void *key, void *value, void *ltrfam,
   GtkLTRFamily *fam = (GtkLTRFamily*) ltrfam;
 
   g_object_set(renderer,
-                "cell-background", "Orange",
-                "cell-background-set", TRUE,
-                "xalign", 1.0,
-                NULL);
+               "cell-background", "Orange",
+               "cell-background-set", TRUE,
+               "xalign", 1.0,
+               NULL);
 
   column = gtk_tree_view_column_new_with_attributes(caption, renderer, "text",
                                                     num, NULL);
@@ -365,7 +365,8 @@ GtkWidget* gtk_ltr_family_new(GtHashmap *features,
                               unsigned long noc)
 {
   GtkLTRFamily *ltrfam;
-  gt_assert(nodes && features);
+  gt_assert(features);
+  /* no gt_assert(nodes); due to tests */
   ltrfam = gtk_type_new(GTKLTRFAMILY_TYPE);
 
   gtk_ltr_family_list_view_new(ltrfam, nodes, features, noc);

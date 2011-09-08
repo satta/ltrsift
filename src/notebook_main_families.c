@@ -1,12 +1,12 @@
 #include "notebook_main_families.h"
 #include "unused.h"
 
-void nb_main_families_init(GUIData *ltrgui, GtArray *nodes, unsigned long noc)
+void nb_main_families_init(GUIData *ltrgui, GtArray *nodes)
 {
   GtkWidget *child, *label;
   ltrgui->nb_main_families = gtk_notebook_new();
 
-  child = gtk_ltr_family_new(ltrgui->features, nodes, noc);
+  child = gtk_ltr_family_new(ltrgui->features, nodes, ltrgui->n_features);
   label = gtk_label_new("General");
 
   gtk_widget_show(child);
