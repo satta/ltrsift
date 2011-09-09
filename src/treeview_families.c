@@ -1,4 +1,5 @@
 #include "treeview_families.h"
+#include "notebook_main_families.h"
 #include "unused.h"
 
 
@@ -27,6 +28,50 @@ static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
   gtk_tree_view_set_cursor(treeview, path, column, TRUE);
 }
 
+static void tv_families_refresh_notebook_nums(GtkNotebook *notebook,
+                                              GtkTreeModel *model,
+                                              GtkTreeIter *iter,
+                                              gint n_pages)
+{
+  gchar *famname;
+  gint nbpage;
+  gtk_tree_model_get(model, iter,
+                     TV_FAM_NID, &nbpage,
+                     -1);
+  if (nbpage != -1) {
+    GtkWidget *child, *label;
+    gint i;
+    gtk_tree_model_get(model, iter,
+                       TV_FAM_NAME, &famname,
+                       -1);
+    for (i = 0; i < n_pages; i++) {
+      child = gtk_notebook_get_nth_page(notebook, i);
+      label = gtk_notebook_get_tab_label(notebook, child);
+      if (g_strcmp0(gtk_label_close_get_text(GTKLABELCLOSE(label)), famname) == 0)
+        gtk_tree_store_set(GTK_TREE_STORE(model), iter,
+                           TV_FAM_NID, i,
+                           -1);
+    }
+  }
+  g_free(famname);
+}
+
+void tv_families_notebook_nums(GtkTreeView *tree_view, GtkNotebook *notebook)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gint n_pages;
+  n_pages = gtk_notebook_get_n_pages(notebook);
+  if (n_pages == 1)
+    return;
+  model = gtk_tree_view_get_model(tree_view);
+  gtk_tree_model_get_iter_first(model, &iter);
+  tv_families_refresh_notebook_nums(notebook, model, &iter, n_pages);
+
+  while (gtk_tree_model_iter_next(model, &iter))
+    tv_families_refresh_notebook_nums(notebook, model, &iter, n_pages);
+}
+
 static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
                                                   GUIData *ltrgui)
 {
@@ -34,7 +79,6 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
   GtkTreeModel *model;
   GtkTreeSelection *sel;
   GtkTreeIter iter;
-  G_UNUSED GtkTreePath *path;
   GtkTreeView *treeview = GTK_TREE_VIEW(ltrgui->tv_families);
   gint iterd;
 
@@ -64,9 +108,12 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
             gtk_tree_store_remove(GTK_TREE_STORE(model), &child);
         }
         gtk_tree_model_get(model, &iter, TV_FAM_NID, &nbpage, -1);
-        if (nbpage != -1)
+        if (nbpage != -1) {
           gtk_notebook_remove_page(GTK_NOTEBOOK(ltrgui->nb_main_families),
                                    nbpage);
+          tv_families_notebook_nums(GTK_TREE_VIEW(ltrgui->tv_families),
+                                    GTK_NOTEBOOK(ltrgui->nb_main_families));
+        }
         gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
       }
       gtk_widget_destroy(dialog);
@@ -197,7 +244,7 @@ static void tv_families_cell_edited(G_UNUSED GtkCellRendererText *cell,
                                         nbpage);
       label = gtk_notebook_get_tab_label(GTK_NOTEBOOK(ltrgui->nb_main_families),
                                          child);
-      gtk_label_set_text(GTK_LABEL(label), new_name);
+      gtk_label_close_set_text(GTKLABELCLOSE(label), new_name);
     }
   }
 
@@ -235,8 +282,12 @@ void tv_families_row_activated(GtkTreeView *treeview,
     gtk_tree_model_get(model, &iter,
                        TV_FAM_NAME, &name,
                        -1);
-    label = gtk_label_new(name);
+    label = gtk_label_close_new(name,
+                                G_CALLBACK(nb_main_families_close_tab_clicked),
+                                ltrgui, FALSE);
+    gtk_label_close_hide_close(GTKLABELCLOSE(label));
     nbpage = gtk_notebook_append_page(notebook, child, label);
+    gtk_notebook_set_tab_reorderable(notebook, child, TRUE);
     gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
                        TV_FAM_NID, nbpage,
                        -1);

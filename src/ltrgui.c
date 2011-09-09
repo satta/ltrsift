@@ -75,7 +75,6 @@ gint main(gint argc, gchar *argv[])
     g_slice_free(GUIData, ltrgui);
     return 1;
   }
-
   /* show the window */
   gtk_widget_show(ltrgui->main_window);
 

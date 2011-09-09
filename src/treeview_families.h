@@ -14,4 +14,7 @@ void tv_families_init(GUIData *ltrgui);
 
 void add_family_button_clicked(GtkWidget *button, GUIData *ltrgui);
 
+void tv_families_notebook_nums(GtkTreeView *tree_view,
+                                       GtkNotebook *notebook);
+
 #endif // TREEVIEW_FAMILIES_H

@@ -4,6 +4,7 @@
 #include <gtk/gtk.h>
 #include "genometools.h"
 #include "gtk_ltr_family.h"
+#include "gtk_label_close.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
