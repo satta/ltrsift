@@ -1,6 +1,13 @@
 #include "gtk_label_close.h"
 #include "unused.h"
 
+/*enum {
+  LABELCLOSE_CLICKED,
+  LAST_SIGNAL
+};
+
+static guint labelclose_signals[LAST_SIGNAL] = {0};*/
+
 void gtk_label_close_hide_close(GtkLabelClose *labelclose)
 {
   gtk_widget_hide(labelclose->button);
@@ -19,6 +26,19 @@ const gchar* gtk_label_close_get_text(GtkLabelClose *labelclose)
 void gtk_label_close_set_text(GtkLabelClose *labelclose, gchar *text)
 {
   gtk_label_set_text(GTK_LABEL(labelclose->label), text);
+}
+
+void gtk_label_close_set_button_data(GtkLabelClose *labelclose,
+                                     const char *type,
+                                     gpointer data)
+{
+  g_object_set_data(G_OBJECT(labelclose->button), type, data);
+}
+
+gpointer gtk_label_close_get_button_data(GtkLabelClose *labelclose,
+                                         const char *type)
+{
+  return g_object_get_data(G_OBJECT(labelclose->button), type);
 }
 
 static void gtk_label_close_init(GtkLabelClose *labelclose)
@@ -40,6 +60,21 @@ static void gtk_label_close_init(GtkLabelClose *labelclose)
   gtk_widget_show_all(GTK_WIDGET(labelclose));
 }
 
+/*static void gtk_label_close_class_init (GtkLabelCloseClass *klass)
+{
+
+  labelclose_signals[LABELCLOSE_CLICKED] =
+             g_signal_new("labelclose_clicked",
+                          G_TYPE_FROM_CLASS (klass),
+                          G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
+                          G_STRUCT_OFFSET (GtkLabelCloseClass, gtk_label_close),
+                          NULL,
+                          NULL,
+                          g_cclosure_marshal_VOID__VOID,
+                          G_TYPE_NONE,
+                          0);
+}*/
+
 GType gtk_label_close_get_type(void)
 {
   static GType labelclose_type = 0;
@@ -50,7 +85,7 @@ GType gtk_label_close_get_type(void)
       sizeof (GtkLabelCloseClass),
       NULL, /* base_init */
       NULL, /* base_finalize */
-      NULL, /* (GClassInitFunc) gtk_label_close_class_init, */
+      NULL, /*(GClassInitFunc) gtk_label_close_class_init,*/
       NULL, /* class_finalize */
       NULL, /* class_data */
       sizeof (GtkLabelClose),
@@ -65,15 +100,12 @@ GType gtk_label_close_get_type(void)
 
 GtkWidget* gtk_label_close_new(const gchar *text,
                                GCallback signal_func,
-                               gpointer user_data,
-                               gboolean hide_close)
+                               gpointer user_data)
 {
   GtkLabelClose *labelclose;
   labelclose = gtk_type_new(GTKLABELCLOSE_TYPE);
   gtk_label_set_text(GTK_LABEL(labelclose->label), text);
-  if (hide_close)
-    gtk_widget_hide(labelclose->button);
-  else
+  if (signal_func)
     g_signal_connect(G_OBJECT(labelclose->button), "clicked",
                      G_CALLBACK(signal_func), user_data);
   return GTK_WIDGET(labelclose);

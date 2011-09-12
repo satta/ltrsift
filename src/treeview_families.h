@@ -5,7 +5,8 @@
 
 typedef enum {
   TV_FAM_NODE = 0,
-  TV_FAM_NID,
+  TV_FAM_TAB_CHILD,
+  TV_FAM_TAB_LABEL,
   TV_FAM_NAME,
   TV_FAM_N_COLUMS
 } TreeViewFamiliesColumns;
@@ -14,7 +15,6 @@ void tv_families_init(GUIData *ltrgui);
 
 void add_family_button_clicked(GtkWidget *button, GUIData *ltrgui);
 
-void tv_families_notebook_nums(GtkTreeView *tree_view,
-                                       GtkNotebook *notebook);
+void tv_families_refresh_notebook_nums(GtkNotebook *notebook);
 
 #endif // TREEVIEW_FAMILIES_H

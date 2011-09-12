@@ -30,11 +30,20 @@ struct _GtkLabelCloseClass
 GType gtk_label_close_get_type(void);
 GtkWidget* gtk_label_close_new(const gchar *text,
                                GCallback signal_func,
-                               gpointer user_data,
-                               gboolean hide_close);
+                               gpointer user_data);
 void gtk_label_close_set_text(GtkLabelClose *labelclose, gchar *text);
+
 const gchar* gtk_label_close_get_text(GtkLabelClose *labelclose);
+
 void gtk_label_close_show_close(GtkLabelClose *labelclose);
+
 void gtk_label_close_hide_close(GtkLabelClose *labelclose);
+
+gpointer gtk_label_close_get_button_data(GtkLabelClose *labelclose,
+                                         const char *type);
+
+void gtk_label_close_set_button_data(GtkLabelClose *labelclose,
+                                     const char *type,
+                                     gpointer data);
 
 #endif // GTK_LABEL_CLOSE_H
