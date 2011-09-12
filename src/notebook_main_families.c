@@ -2,6 +2,9 @@
 #include "treeview_families.h"
 #include "unused.h"
 
+static guint n_targets = 1;
+
+
 void nb_main_families_page_reordered(GtkNotebook *notebook,
                                      G_UNUSED GtkWidget *child,
                                      G_UNUSED guint page_num,
@@ -23,6 +26,18 @@ void nb_main_families_init(GUIData *ltrgui, GtArray *nodes)
   child = gtk_ltr_family_new(ltrgui->features, nodes, ltrgui->n_features);
   label = gtk_label_close_new("General", NULL, NULL);
   gtk_label_close_hide_close(GTKLABELCLOSE(label));
+
+
+  /* Set treeview 1 as the source of the Drag-N-Drop operation */
+  gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),GDK_BUTTON1_MASK, &drag_targets,n_targets,
+          GDK_ACTION_COPY|GDK_ACTION_MOVE);
+  /* Attach a "drag-data-get" signal to send out the dragged data */
+  g_signal_connect(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),"drag-data-get",
+          G_CALLBACK(on_drag_data_get),NULL);
+  /* Attach a "drag-data-received" signal to pull in the dragged data */
+  g_signal_connect(ltrgui->tv_families,"drag-data-received",
+          G_CALLBACK(on_drag_data_received),
+                   gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)));
 
   gtk_widget_show(child);
 

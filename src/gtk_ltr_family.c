@@ -55,6 +55,11 @@ static void append_child(GtkTreeStore *store,
                      -1);
 }
 
+GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam)
+{
+  return ltrfam->list_view;
+}
+
 static void list_view_row_activated(GtkTreeView *list_view,
                                     GtkTreePath *path,
                                     G_UNUSED GtkTreeViewColumn *column,

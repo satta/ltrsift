@@ -1,6 +1,64 @@
 #include "treeview_families.h"
 #include "notebook_main_families.h"
 #include "unused.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+/* drag'n'drop crap starts here */
+static guint n_targets = 1;
+
+void on_drag_data_get(GtkWidget *widget, G_UNUSED GdkDragContext *drag_context,
+                      GtkSelectionData *sdata, G_UNUSED guint info, G_UNUSED guint time,
+                      G_UNUSED gpointer user_data)
+{
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  GtkTreeSelection *sel;
+
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+  gtk_tree_selection_get_selected(sel, &model, &iter);
+
+  struct DATA *tmp = malloc(sizeof(struct DATA));
+
+  gtk_tree_model_get(model, &iter,
+                     LTRFAM_LV_SEQID, &tmp->row,
+                     LTRFAM_LV_NODE, &tmp->gn,
+                     -1);
+
+  gtk_selection_data_set(sdata,
+                         gdk_atom_intern("struct DATA pointer", false),
+                         8,
+                         (void*) &tmp,
+                         sizeof(tmp));
+}
+
+void on_drag_data_received(G_UNUSED GtkWidget *widget, G_UNUSED GdkDragContext *drag_context,
+                        G_UNUSED gint x, G_UNUSED gint y, GtkSelectionData *sdata, G_UNUSED guint info,
+                        G_UNUSED guint time, gpointer user_data)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkTreeSelection *sel;
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(user_data));
+  gtk_tree_selection_get_selected(sel,&model,&iter);
+  gtk_list_store_remove(GTK_LIST_STORE(model),&iter);
+
+  GtkTreeModel *model2;
+  GtkTreeIter iter2;
+  model2 = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+  gtk_tree_store_append(GTK_TREE_STORE(model2), &iter2, NULL);
+
+  struct DATA *tmp = NULL;
+  memcpy(&tmp, sdata->data, sizeof(tmp));
+
+  gtk_tree_store_set(GTK_TREE_STORE(model2), &iter2,
+                     TV_FAM_NODE, tmp->gn,
+                     TV_FAM_NAME, tmp->row,
+                     -1);
+
+}
+/* drag'n'drop crap ends here */
 
 static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
                                                 gpointer userdata)
@@ -342,6 +400,10 @@ void tv_families_init(GUIData *ltrgui)
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrgui->tv_families),
                           GTK_TREE_MODEL(store));
   g_object_unref(store);
+
+  /* Set treeview 2 as the destination of the Drag-N-Drop operation */
+  gtk_drag_dest_set(ltrgui->tv_families,GTK_DEST_DEFAULT_ALL,&drag_targets,n_targets,
+          GDK_ACTION_COPY|GDK_ACTION_MOVE);
 
   gtk_container_add(GTK_CONTAINER(ltrgui->sw_main), ltrgui->tv_families);
   gtk_widget_show(ltrgui->tv_families);

@@ -68,4 +68,6 @@ GtkWidget*     gtk_ltr_family_new             (GtHashmap *features,
                                                unsigned long noc);
 void           gtk_ltr_family_clear           (GtkLTRFamily *ltrfam);
 
+GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam);
+
 #endif /* __GTK_LTR_FAMILY_H__ */
