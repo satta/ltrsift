@@ -6,10 +6,10 @@ Specific:
       ask for overwriting exisiting file
 - ltrgui
     function for struct cleanup
-- treeview_main
+- treeview_families
     clean before new project is loaded
-    column titles w/o mnemonic
     lLTR/rLTR side by side
+    check for duplicate family name
 
 General:
 - mapping for all possible feature node types
