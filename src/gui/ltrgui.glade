@@ -183,6 +183,7 @@
                   <object class="GtkHBox" id="hbox2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkButton" id="add_family_button">
                         <property name="label" translatable="yes">Add</property>
@@ -193,24 +194,19 @@
                         <signal name="clicked" handler="add_family_button_clicked" swapped="no"/>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="remove_family_button">
-                        <property name="label" translatable="yes">Remove</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="use_action_appearance">False</property>
-                      </object>
-                      <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
-                      </packing>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
+                    </child>
+                    <child>
+                      <placeholder/>
                     </child>
                   </object>
                   <packing>
@@ -302,6 +298,12 @@
       <placeholder/>
     </child>
     <child>
+      <placeholder/>
+    </child>
+    <child>
+      <placeholder/>
+    </child>
+    <child>
       <object class="GtkLabel" id="pw_label_desc_page1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
@@ -370,7 +372,7 @@
             <property name="spacing">5</property>
             <child>
               <object class="GtkButton" id="pw_choose_projectname_button">
-                <property name="label" translatable="yes">PLACEHOLDER</property>
+                <property name="label" translatable="yes">Browse...</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -477,7 +479,7 @@
             <property name="homogeneous">True</property>
             <child>
               <object class="GtkButton" id="pw_add_gff3_button">
-                <property name="label">Add files</property>
+                <property name="label">Add files...</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -542,7 +544,7 @@
             <property name="spacing">5</property>
             <child>
               <object class="GtkButton" id="pw_choose_encseq_button">
-                <property name="label" translatable="yes">PLACEHOLDER</property>
+                <property name="label" translatable="yes">Browse...</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
