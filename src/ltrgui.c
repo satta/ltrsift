@@ -31,8 +31,6 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(pw_label_encseq);
   GW(pw_treeview_gff3);
   GW(pw_do_classification_cb);
-  /* LTRGui is redesigned, no functionality needed atm */
-  //GW(sw_main);
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui);

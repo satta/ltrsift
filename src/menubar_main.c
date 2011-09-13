@@ -101,13 +101,12 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
       g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
 
-   /* LTRGui is redesigned, no functionality needed atm */
     GtNodeStream *last_stream = NULL,
                  *gff3_in_stream = NULL,
                  *preprocess_stream = NULL;
     GtError *err = NULL;
     int had_err = 0;
-    GtArray *nodes = gt_array_new(sizeof (GtGenomeNode*));
+    GtArray *nodes = gt_array_new(sizeof(GtGenomeNode*));
     ltrgui->n_features = LTRFAM_LV_N_COLUMS;
 
     last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
@@ -118,7 +117,6 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
     had_err = gt_node_stream_pull(last_stream, err);
     gt_node_stream_delete(preprocess_stream);
     gt_node_stream_delete(gff3_in_stream);
-
 
     nb_main_families_init(ltrgui, nodes);
 
