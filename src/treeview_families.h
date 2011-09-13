@@ -5,6 +5,7 @@
 
 typedef enum {
   TV_FAM_NODE = 0,
+  TV_FAM_NODE_ARRAY,
   TV_FAM_TAB_CHILD,
   TV_FAM_TAB_LABEL,
   TV_FAM_NAME,
@@ -14,6 +15,7 @@ typedef enum {
 struct DATA {
         gchar *row;
         GtGenomeNode **gn;
+        GtHashmap *feat;
 };
 
 enum {
@@ -38,5 +40,9 @@ void on_drag_data_get(GtkWidget *widget, GdkDragContext *drag_context,
 void on_drag_data_received(GtkWidget *widget, GdkDragContext *drag_context,
                         gint x, gint y, GtkSelectionData *sdata, guint info,
                         guint time, gpointer user_data);
+
+void
+on_drag_begin
+(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
 
 #endif // TREEVIEW_FAMILIES_H

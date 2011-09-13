@@ -29,6 +29,7 @@
 
 typedef enum {
   LTRFAM_LV_NODE = 0,
+  LTRFAM_LV_FEAT,
   LTRFAM_LV_SEQID,
   LTRFAM_LV_TYPE,
   LTRFAM_LV_START,
@@ -69,5 +70,10 @@ GtkWidget*     gtk_ltr_family_new             (GtHashmap *features,
 void           gtk_ltr_family_clear           (GtkLTRFamily *ltrfam);
 
 GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam);
+
+void gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam, GtGenomeNode **gn,
+                                     GtHashmap *features, GtkListStore *store);
+
+void gtk_ltr_family_list_view_remove(GtkLTRFamily *ltrfam, GtGenomeNode **gn);
 
 #endif /* __GTK_LTR_FAMILY_H__ */

@@ -29,15 +29,21 @@ void nb_main_families_init(GUIData *ltrgui, GtArray *nodes)
 
 
   /* Set treeview 1 as the source of the Drag-N-Drop operation */
-  gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),GDK_BUTTON1_MASK, &drag_targets,n_targets,
-          GDK_ACTION_COPY|GDK_ACTION_MOVE);
+  gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),
+                      GDK_BUTTON1_MASK, &drag_targets, n_targets,
+                      GDK_ACTION_COPY|GDK_ACTION_MOVE);
+
   /* Attach a "drag-data-get" signal to send out the dragged data */
-  g_signal_connect(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),"drag-data-get",
-          G_CALLBACK(on_drag_data_get),NULL);
+  g_signal_connect(G_OBJECT(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child))),
+                   "drag-data-get", G_CALLBACK(on_drag_data_get),NULL);
+
   /* Attach a "drag-data-received" signal to pull in the dragged data */
-  g_signal_connect(ltrgui->tv_families,"drag-data-received",
-          G_CALLBACK(on_drag_data_received),
+  g_signal_connect(G_OBJECT(ltrgui->tv_families), "drag-data-received",
+                   G_CALLBACK(on_drag_data_received),
                    gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)));
+
+  /*g_signal_connect (gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),
+                      "drag-begin", G_CALLBACK (on_drag_begin), NULL);*/
 
   gtk_widget_show(child);
 
@@ -46,6 +52,9 @@ void nb_main_families_init(GUIData *ltrgui, GtArray *nodes)
   gtk_label_close_set_button_data(GTKLABELCLOSE(label),
                                   "nbpage",
                                   GINT_TO_POINTER(nbpage));
+  g_object_set_data(G_OBJECT(ltrgui->nb_main_families),
+                    "main_tab",
+                    GINT_TO_POINTER(nbpage));
 
   gtk_box_pack_end(GTK_BOX(ltrgui->hbox1_main), ltrgui->nb_main_families,
                    TRUE, TRUE, 5);
@@ -69,12 +78,12 @@ void nb_main_families_close_tab_clicked(G_UNUSED GtkButton *button,
   if (tab_label)
     tmp = GPOINTER_TO_INT(
            gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
-  if (nbpage == tmp)
+  if (nbpage == tmp) {
     gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
                        TV_FAM_TAB_CHILD, NULL,
                        TV_FAM_TAB_LABEL, NULL,
                        -1);
-  else {
+  } else {
     while (gtk_tree_model_iter_next(model, &iter)) {
       gtk_tree_model_get(model, &iter,
                          TV_FAM_TAB_LABEL, &tab_label,
