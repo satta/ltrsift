@@ -1,7 +1,7 @@
 #include "menubar_main.h"
 #include "statusbar_main.h"
 #include "gtk_ltr_family.h"
-#include "notebook_main_families.h"
+#include "notebook_families.h"
 #include "unused.h"
 
 void mb_main_init(GUIData *ltrgui)
@@ -118,7 +118,7 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
     gt_node_stream_delete(preprocess_stream);
     gt_node_stream_delete(gff3_in_stream);
 
-    nb_main_families_init(ltrgui, nodes);
+    nb_families_init(ltrgui, nodes);
 
     gtk_widget_show_all(ltrgui->hbox1_main);
 

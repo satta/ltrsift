@@ -35,7 +35,7 @@ struct _GUIData
   GtkWidget *mb_main_project_quit;
   GtkWidget *tv_families;
   GtkWidget *hbox1_main;
-  GtkWidget *nb_main_families;
+  GtkWidget *nb_families;
   GtkWidget *sb_main;
   GtkWidget *main_window;
   GtkWidget *pw_window;

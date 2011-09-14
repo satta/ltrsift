@@ -2,7 +2,7 @@
 #include "statusbar_main.h"
 #include "menubar_main.h"
 #include "project_wizard.h"
-#include "notebook_main_families.h"
+#include "notebook_families.h"
 #include "treeview_families.h"
 #include "error.h"
 

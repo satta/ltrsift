@@ -1,121 +1,9 @@
 #include "treeview_families.h"
-#include "notebook_main_families.h"
+#include "treeview_families_dnd.h"
+#include "notebook_families.h"
 #include "unused.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
-/* drag'n'drop crap starts here */
 static guint n_targets = 1;
-
-gboolean on_drag_motion(GtkWidget *widget, G_UNUSED GdkDragContext *context,
-                        gint x, gint y, G_UNUSED guint time,
-                        G_UNUSED gpointer user_data)
-{
-  GtkTreeSelection *selection;
-  selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-  if (gtk_tree_selection_count_selected_rows(selection)  <= 1) {
-    GtkTreePath *path;
-    if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget),
-                                      x,
-                                      y,
-                                      &path, NULL, NULL, NULL)) {
-      GtkTreeIter iter, parent;
-      GtkTreeModel *model;
-      model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
-      gtk_tree_model_get_iter(model, &iter, path);
-      if (gtk_tree_model_iter_parent(model, &parent, &iter))
-        path = gtk_tree_model_get_path(model, &parent);
-      gtk_tree_selection_unselect_all(selection);
-      gtk_tree_selection_select_path(selection, path);
-      gtk_tree_path_free(path);
-    } else
-      gtk_tree_selection_unselect_all(selection);
-  }
-  return FALSE;
-}
-
-/*void on_drag_begin(GtkWidget *widget, G_UNUSED GdkDragContext *context,
-                    G_UNUSED gpointer user_data)
-{
-        const gchar *name = gtk_widget_get_name (widget);
-        g_print ("%s: drag_begin_handl\n", name);
-}*/
-
-void on_drag_data_get(GtkWidget *widget, G_UNUSED GdkDragContext *drag_context,
-                      GtkSelectionData *sdata, G_UNUSED guint info,
-                      G_UNUSED guint time, G_UNUSED gpointer user_data)
-{
-  GtkTreeIter iter;
-  GtkTreeModel *model;
-  GtkTreeSelection *sel;
-  gboolean valid;
-
-  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-  valid = gtk_tree_selection_get_selected(sel, &model, &iter);
-
-  if (!valid)
-    return;
-
-  struct DATA *tmp = malloc(sizeof(struct DATA));
-
-  gtk_tree_model_get(model, &iter,
-                     LTRFAM_LV_SEQID, &tmp->row,
-                     LTRFAM_LV_NODE, &tmp->gn,
-                     LTRFAM_LV_FEAT, &tmp->feat,
-                     -1);
-
-  gtk_selection_data_set(sdata,
-                         gdk_atom_intern("struct DATA pointer", false),
-                         8,
-                         (void*) &tmp,
-                         sizeof(tmp));
-}
-
-void on_drag_data_received(G_UNUSED GtkWidget *widget,
-                           G_UNUSED GdkDragContext *drag_context,
-                           G_UNUSED gint x, G_UNUSED gint y,
-                           GtkSelectionData *sdata, G_UNUSED guint info,
-                           G_UNUSED guint time, gpointer user_data)
-{
-  GtkTreeModel *model2;
-  GtkTreeIter iter2, child;
-  GtkTreeSelection *sel2;
-  GtkWidget *tab_child;
-  gboolean valid;
-  sel2 = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-  valid = gtk_tree_selection_get_selected(sel2, &model2, &iter2);
-  if (!valid)
-    return;
-  gtk_tree_store_append(GTK_TREE_STORE(model2), &child, &iter2);
-
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  GtkTreeSelection *sel;
-  GtArray *nodes;
-
-  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(user_data));
-  gtk_tree_selection_get_selected(sel,&model,&iter);
-  gtk_list_store_remove(GTK_LIST_STORE(model),&iter);
-
-  struct DATA *tmp = NULL;
-  memcpy(&tmp, sdata->data, sizeof(tmp));
-
-  gtk_tree_store_set(GTK_TREE_STORE(model2), &child,
-                     TV_FAM_NODE, tmp->gn,
-                     TV_FAM_NAME, tmp->row,
-                     -1);
-  gtk_tree_model_get(model2, &iter2,
-                     TV_FAM_NODE_ARRAY, &nodes,
-                     TV_FAM_TAB_CHILD, &tab_child,
-                     -1);
-  gt_array_add(nodes, tmp->gn);
-  if (tab_child)
-    gtk_ltr_family_list_view_append(GTKLTRFAMILY(tab_child),
-                                    tmp->gn, tmp->feat, NULL);
-
-}
-/* drag'n'drop crap ends here */
 
 static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
                                                 gpointer userdata)
@@ -140,31 +28,6 @@ static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
   gtk_tree_selection_get_selected(sel, &model, &iter);
   path = gtk_tree_model_get_path(model, &iter);
   gtk_tree_view_set_cursor(treeview, path, column, TRUE);
-}
-
-void tv_families_refresh_notebook_nums(GtkNotebook *notebook)
-{
-  GtkWidget *tab_child, *tab_label;
-  gint n_pages, i, old_pagenum;
-  n_pages = gtk_notebook_get_n_pages(notebook);
-  for (i = 0; i < n_pages; i++) {
-    tab_child = gtk_notebook_get_nth_page(notebook, i);
-    tab_label = gtk_notebook_get_tab_label(notebook, tab_child);
-    old_pagenum =
-        GPOINTER_TO_INT(
-           gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
-    if (old_pagenum != i) {
-      gtk_label_close_set_button_data(GTKLABELCLOSE(tab_label),
-                                      "nbpage",
-                                      GINT_TO_POINTER(i));
-      if (g_strcmp0(gtk_label_close_get_text(GTKLABELCLOSE(tab_label)),
-                    "General") == 0) {
-        g_object_set_data(G_OBJECT(notebook),
-                          "main_tab",
-                          GINT_TO_POINTER(i));
-      }
-    }
-  }
 }
 
 void remove_node_from_array(GtArray *nodes, GtGenomeNode **gn)
@@ -200,7 +63,7 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
 
   main_tab_no =
       GPOINTER_TO_INT(
-             g_object_get_data(G_OBJECT(ltrgui->nb_main_families), "main_tab"));
+             g_object_get_data(G_OBJECT(ltrgui->nb_families), "main_tab"));
 
   switch (iterd) {
     case 0:
@@ -223,7 +86,7 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
           while (valid) {
             gtk_tree_model_get(model, &child, TV_FAM_NODE, &gn, -1);
             main_tab =
-               gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_main_families),
+               gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                          main_tab_no);
             gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
                                             ltrgui->features, NULL);
@@ -232,12 +95,12 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
         }
         gtk_tree_model_get(model, &iter, TV_FAM_TAB_LABEL, &tab_label, -1);
         if (tab_label) {
-          gtk_notebook_remove_page(GTK_NOTEBOOK(ltrgui->nb_main_families),
+          gtk_notebook_remove_page(GTK_NOTEBOOK(ltrgui->nb_families),
                       GPOINTER_TO_INT(
                        gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
                                                        "nbpage")));
-          tv_families_refresh_notebook_nums(
-                                        GTK_NOTEBOOK(ltrgui->nb_main_families));
+          nb_families_refresh_notebook_nums(
+                                        GTK_NOTEBOOK(ltrgui->nb_families));
         }
         gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
       }
@@ -269,7 +132,7 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
         if (tab_child)
           gtk_ltr_family_list_view_remove(GTKLTRFAMILY(tab_child), gn);
         main_tab =
-           gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_main_families),
+           gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                      main_tab_no);
         gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
                                         ltrgui->features, NULL);
@@ -435,7 +298,7 @@ void tv_families_row_activated(GtkTreeView *treeview,
   gtk_tree_model_get(model, &iter,
                      TV_FAM_TAB_LABEL, &tab_label,
                      -1);
-  notebook = GTK_NOTEBOOK(ltrgui->nb_main_families);  
+  notebook = GTK_NOTEBOOK(ltrgui->nb_families);  
 
   if (tab_label) {
     nbpage =
@@ -443,36 +306,12 @@ void tv_families_row_activated(GtkTreeView *treeview,
            gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
     gtk_notebook_set_current_page(notebook, nbpage);
   } else {
-    GtkWidget *child, *label;
-    GtArray *nodes;
-    gchar *name;
-
-    gtk_tree_model_get(model, &iter,
-                       TV_FAM_NODE_ARRAY, &nodes,
-                       -1);
-    child = gtk_ltr_family_new(ltrgui->features, nodes, ltrgui->n_features);
-    gtk_widget_show(child);
-    gtk_tree_model_get(model, &iter,
-                       TV_FAM_NAME, &name,
-                       -1);
-    label = gtk_label_close_new(name,
-                                G_CALLBACK(nb_main_families_close_tab_clicked),
-                                ltrgui);
-    nbpage = gtk_notebook_append_page(notebook, child, label);
-    gtk_label_close_set_button_data(GTKLABELCLOSE(label),
-                                    "nbpage",
-                                    GINT_TO_POINTER(nbpage));
-    gtk_notebook_set_tab_reorderable(notebook, child, TRUE);
-    gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                       TV_FAM_TAB_CHILD, child,
-                       TV_FAM_TAB_LABEL, label,
-                       -1);
-    gtk_notebook_set_current_page(notebook, nbpage);
-    g_free(name);
+    nb_families_add_tab(model, &iter, ltrgui);
   }
 }
 
-void add_family_button_clicked(G_UNUSED GtkWidget *button, GUIData *ltrgui)
+void tv_families_add_family_button_clicked(G_UNUSED GtkWidget *button,
+                                           GUIData *ltrgui)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -537,11 +376,14 @@ void tv_families_init(GUIData *ltrgui)
                           GTK_TREE_MODEL(store));
   g_object_unref(store);
 
-  /* Set treeview 2 as the destination of the Drag-N-Drop operation */
-  gtk_drag_dest_set(ltrgui->tv_families, GTK_DEST_DEFAULT_ALL, &drag_targets,
-                    n_targets, GDK_ACTION_COPY|GDK_ACTION_MOVE);
+  /* Set <tv_families> as the destination of the Drag-N-Drop operation */
+  gtk_drag_dest_set(ltrgui->tv_families,
+                    GTK_DEST_DEFAULT_ALL,
+                    &family_drag_targets,
+                    n_targets,
+                    GDK_ACTION_COPY|GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(ltrgui->tv_families), "drag-motion",
-                   G_CALLBACK(on_drag_motion), NULL);
+                   G_CALLBACK(tv_families_on_drag_motion), NULL);
 
   gtk_container_add(GTK_CONTAINER(ltrgui->sw_main), ltrgui->tv_families);
   gtk_widget_show(ltrgui->tv_families);
