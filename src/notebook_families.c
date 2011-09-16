@@ -3,8 +3,6 @@
 #include "treeview_families_dnd.h"
 #include "unused.h"
 
-static guint n_targets = 1;
-
 void nb_families_refresh_notebook_nums(GtkNotebook *notebook)
 {
   GtkWidget *tab_child, *tab_label;
@@ -84,18 +82,65 @@ void nb_families_add_tab(GtkTreeModel *model,
                          GtkTreeIter *iter,
                          GUIData *ltrgui)
 {
+  GtGenomeNode **gn;
   GtkWidget *child, *label;
-  GtArray *nodes;
+  GtkTreeIter tmp;
   gint nbpage;
   gchar *name;
+  gboolean valid = false;
 
   gtk_tree_model_get(model, iter,
-                     TV_FAM_NODE_ARRAY, &nodes,
                      TV_FAM_NAME, &name,
                      -1);
+  child = gtk_ltr_family_new(ltrgui->features, NULL, ltrgui->n_features);
+  valid = gtk_tree_model_iter_children(model, &tmp, iter);
+  if (valid) {
+    GtkTreeRowReference *rowref, *tmp_ref;
+    GtkTreePath *path;
+    gtk_tree_model_get(model, &tmp,
+                       TV_FAM_NODE, &gn,
+                       -1);
+    path = gtk_tree_model_get_path(model, &tmp);
+    tmp_ref = gtk_tree_row_reference_new(model, path);
+    rowref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(child),
+                                             gn,
+                                             ltrgui->features,
+                                             tmp_ref,
+                                             NULL);
+    gtk_tree_store_set(GTK_TREE_STORE(model), &tmp,
+                       TV_FAM_ROWREF, rowref,
+                       -1);
+    gtk_tree_path_free(path);
+    while (gtk_tree_model_iter_next(model, &tmp)) {
+      gtk_tree_model_get(model, &tmp,
+                         TV_FAM_NODE, &gn,
+                         -1);
+      path = gtk_tree_model_get_path(model, &tmp);
+      tmp_ref = gtk_tree_row_reference_new(model, path);
+      rowref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(child),
+                                               gn,
+                                               ltrgui->features,
+                                               tmp_ref,
+                                               NULL);
+      gtk_tree_store_set(GTK_TREE_STORE(model), &tmp,
+                         TV_FAM_ROWREF, rowref,
+                         -1);
+      gtk_tree_path_free(path);
+    }
+  }
 
-  child = gtk_ltr_family_new(ltrgui->features, nodes, ltrgui->n_features);
   gtk_widget_show(child);
+
+  /* Set <child->list_view> as the source of the Drag-N-Drop operation */
+  gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),
+                      GDK_BUTTON1_MASK, family_drag_targets,
+                      G_N_ELEMENTS(family_drag_targets),
+                      GDK_ACTION_COPY|GDK_ACTION_MOVE);
+
+  /* Attach a "drag-data-get" signal to send out the dragged data */
+  g_signal_connect(G_OBJECT(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child))),
+                   "drag-data-get",
+                   G_CALLBACK(ltrfam_lv_on_drag_data_get),NULL);
 
   label = gtk_label_close_new(name,
                               G_CALLBACK(nb_families_close_tab_clicked),
@@ -135,7 +180,9 @@ void nb_families_init(GUIData *ltrgui, GtArray *nodes)
 
   /* Set <child->list_view> as the source of the Drag-N-Drop operation */
   gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),
-                      GDK_BUTTON1_MASK, &family_drag_targets, n_targets,
+                      GDK_BUTTON1_MASK,
+                      family_drag_targets,
+                      G_N_ELEMENTS(family_drag_targets),
                       GDK_ACTION_COPY|GDK_ACTION_MOVE);
 
   /* Attach a "drag-data-get" signal to send out the dragged data */
@@ -146,7 +193,7 @@ void nb_families_init(GUIData *ltrgui, GtArray *nodes)
   /* Attach a "drag-data-received" signal to pull in the dragged data */
   g_signal_connect(G_OBJECT(ltrgui->tv_families), "drag-data-received",
                    G_CALLBACK(tv_families_on_drag_data_received),
-                   gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)));
+                   ltrgui->nb_families);
 
   gtk_widget_show(child);
 

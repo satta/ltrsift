@@ -30,6 +30,7 @@
 typedef enum {
   LTRFAM_LV_NODE = 0,
   LTRFAM_LV_FEAT,
+  LTRFAM_LV_ROWREF,
   LTRFAM_LV_SEQID,
   LTRFAM_LV_TYPE,
   LTRFAM_LV_START,
@@ -52,9 +53,8 @@ struct _GtkLTRFamily
 {
     GtkVBox vbox;
     GtkWidget *tree_view;
-    GtkWidget *list_view;
-    /* label is for tests only (will be replaced by GdkPixbux */
-    GtkWidget *label;
+    GtkWidget *list_view; 
+    GtkWidget *image;
 };
 
 struct _GtkLTRFamilyClass
@@ -71,9 +71,13 @@ void           gtk_ltr_family_clear           (GtkLTRFamily *ltrfam);
 
 GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam);
 
-void gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam, GtGenomeNode **gn,
-                                     GtHashmap *features, GtkListStore *store);
+GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
+                                     GtGenomeNode **gn,
+                                     GtHashmap *features,
+                                     GtkTreeRowReference *rowref,
+                                     GtkListStore *store);
 
-void gtk_ltr_family_list_view_remove(GtkLTRFamily *ltrfam, GtGenomeNode **gn);
+void gtk_ltr_family_list_view_remove(GtkLTRFamily *ltrfam,
+                                     GtkTreeRowReference *rowref);
 
 #endif /* __GTK_LTR_FAMILY_H__ */

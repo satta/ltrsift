@@ -3,8 +3,6 @@
 #include "notebook_families.h"
 #include "unused.h"
 
-static guint n_targets = 1;
-
 static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
                                                 gpointer userdata)
 {
@@ -89,7 +87,7 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
                gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                          main_tab_no);
             gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
-                                            ltrgui->features, NULL);
+                                            ltrgui->features, NULL, NULL);
             valid = gtk_tree_store_remove(GTK_TREE_STORE(model), &child);
           }
         }
@@ -129,13 +127,19 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
                            TV_FAM_NODE_ARRAY, &nodes,
                            TV_FAM_TAB_CHILD, &tab_child,
                            -1);
-        if (tab_child)
-          gtk_ltr_family_list_view_remove(GTKLTRFAMILY(tab_child), gn);
+        if (tab_child) {
+          GtkTreeRowReference *rowref;
+          gtk_tree_model_get(model, &iter,
+                             TV_FAM_ROWREF, &rowref,
+                             -1);
+          gtk_ltr_family_list_view_remove(GTKLTRFAMILY(tab_child), rowref);
+        }
         main_tab =
            gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                      main_tab_no);
-        gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
-                                        ltrgui->features, NULL);
+        G_UNUSED GtkTreeRowReference *rref =
+            gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
+                                            ltrgui->features, NULL, NULL);
         remove_node_from_array(nodes, gn);
         gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
       }
@@ -370,6 +374,7 @@ void tv_families_init(GUIData *ltrgui)
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
+                             G_TYPE_POINTER,
                              G_TYPE_STRING);
 
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrgui->tv_families),
@@ -379,8 +384,8 @@ void tv_families_init(GUIData *ltrgui)
   /* Set <tv_families> as the destination of the Drag-N-Drop operation */
   gtk_drag_dest_set(ltrgui->tv_families,
                     GTK_DEST_DEFAULT_ALL,
-                    &family_drag_targets,
-                    n_targets,
+                    family_drag_targets,
+                    G_N_ELEMENTS(family_drag_targets),
                     GDK_ACTION_COPY|GDK_ACTION_MOVE);
   g_signal_connect(G_OBJECT(ltrgui->tv_families), "drag-motion",
                    G_CALLBACK(tv_families_on_drag_motion), NULL);

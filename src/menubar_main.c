@@ -3,6 +3,7 @@
 #include "gtk_ltr_family.h"
 #include "notebook_families.h"
 #include "unused.h"
+#include <string.h>
 
 void mb_main_init(GUIData *ltrgui)
 {
