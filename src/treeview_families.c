@@ -1,11 +1,28 @@
+/*
+  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include "notebook_families.h"
 #include "treeview_families.h"
 #include "treeview_families_dnd.h"
-#include "notebook_families.h"
-#include "unused.h"
 
-static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
+static void tv_families_popup_menu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
                                                 gpointer userdata)
 {
+  GtkTreeView *treeview;
   GtkTreeModel *model;
   GtkTreeSelection *sel;
   GtkTreeViewColumn *column;
@@ -13,8 +30,8 @@ static void tv_families_popup_menu_edit_clicked(G_UNUSED GtkWidget *menuitem,
   GtkTreePath *path;
   GtkCellRenderer *renderer;
   GList *tmp;
-  GtkTreeView *treeview = GTK_TREE_VIEW(userdata);
 
+  treeview = GTK_TREE_VIEW(userdata);
   model = gtk_tree_view_get_model(treeview);
   sel = gtk_tree_view_get_selection(treeview);
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
@@ -42,16 +59,22 @@ void remove_node_from_array(GtArray *nodes, GtGenomeNode **gn)
   }
 }
 
-static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
+static void tv_families_popup_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                                   GUIData *ltrgui)
 {
-  GtkWidget *dialog;
+  GtkWidget *dialog,
+            *main_tab,
+            *tab_label,
+            *tab_child;
+  GtkTreeView *treeview;
   GtkTreeModel *model;
   GtkTreeSelection *sel;
   GtkTreeIter iter;
-  GtkTreeView *treeview = GTK_TREE_VIEW(ltrgui->tv_families);
-  gint iterd, main_tab_no;
+  GtGenomeNode **gn;
+  gint iterd,
+       main_tab_no;
 
+  treeview = GTK_TREE_VIEW(ltrgui->tv_families);
   model = gtk_tree_view_get_model(treeview);
   sel = gtk_tree_view_get_selection(treeview);
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
@@ -76,11 +99,8 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
         return;
       } else {
         GtkTreeIter child;
-        GtkWidget *tab_label;
         if (gtk_tree_model_iter_children(model, &child, &iter)) {
-          GtGenomeNode **gn;
-          GtkWidget *main_tab;
-          gboolean valid = true;
+          gboolean valid = TRUE;
           while (valid) {
             gtk_tree_model_get(model, &child, TV_FAM_NODE, &gn, -1);
             main_tab =
@@ -114,9 +134,7 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
       if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
         gtk_widget_destroy(dialog);
         return;
-      } else {
-        GtGenomeNode **gn;
-        GtkWidget *tab_child, *main_tab;
+      } else {        
         GtkTreeIter parent;
         GtArray *nodes;
         gtk_tree_model_iter_parent(model, &parent, &iter);
@@ -129,15 +147,19 @@ static void tv_families_popup_menu_remove_clicked(G_UNUSED GtkWidget *menuitem,
                            -1);
         if (tab_child) {
           GtkTreeRowReference *rowref;
+          /* rowref points to the path of <gn> in <tab_child->list_view> */
           gtk_tree_model_get(model, &iter,
                              TV_FAM_ROWREF, &rowref,
                              -1);
           gtk_ltr_family_list_view_remove(GTKLTRFAMILY(tab_child), rowref);
+          gtk_ltr_family_clear_detail_on_equal_nodes(GTKLTRFAMILY(tab_child),
+                                                     gn);
         }
         main_tab =
            gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                      main_tab_no);
-        G_UNUSED GtkTreeRowReference *rref =
+        /* removed <gn> will be added to general tab -> no rowref needed */
+        GT_UNUSED GtkTreeRowReference *rref =
             gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
                                             ltrgui->features, NULL, NULL);
         remove_node_from_array(nodes, gn);
@@ -208,7 +230,7 @@ gboolean tv_families_on_popup_menu(GtkWidget *treeview, GUIData *ltrgui)
   return TRUE;
 }
 
-static void tv_families_cell_edit_canceled(G_UNUSED GtkCellRenderer *renderer,
+static void tv_families_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
                                          GUIData *ltrgui)
 {
   GtkTreeModel *model;
@@ -226,7 +248,7 @@ static void tv_families_cell_edit_canceled(G_UNUSED GtkCellRenderer *renderer,
   g_free(name);
  }
 
-static void tv_families_cell_edited(G_UNUSED GtkCellRendererText *cell,
+static void tv_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                                     gchar *path_string, gchar *new_name,
                                     GUIData *ltrgui)
 {
@@ -239,7 +261,9 @@ static void tv_families_cell_edited(G_UNUSED GtkCellRendererText *cell,
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
   gtk_tree_model_get_iter_from_string(model, &iter, path_string);
-  gtk_tree_model_get(model, &iter, TV_FAM_NAME, &old_name, -1);
+  gtk_tree_model_get(model, &iter,
+                     TV_FAM_NAME, &old_name,
+                     -1);
 
   if (!old_name && (g_strcmp0(new_name, "") == 0))
     gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
@@ -285,7 +309,7 @@ static void tv_families_cell_edited(G_UNUSED GtkCellRendererText *cell,
 
 void tv_families_row_activated(GtkTreeView *treeview,
                                GtkTreePath *path,
-                               G_UNUSED GtkTreeViewColumn *column,
+                               GT_UNUSED GtkTreeViewColumn *column,
                                GUIData *ltrgui)
 {
   GtkTreeModel *model;
@@ -314,7 +338,7 @@ void tv_families_row_activated(GtkTreeView *treeview,
   }
 }
 
-void tv_families_add_family_button_clicked(G_UNUSED GtkWidget *button,
+void tv_families_add_family_button_clicked(GT_UNUSED GtkWidget *button,
                                            GUIData *ltrgui)
 {
   GtkTreeIter iter;

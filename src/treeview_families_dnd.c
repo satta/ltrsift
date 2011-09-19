@@ -1,19 +1,35 @@
+/*
+  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 #include <string.h>
 #include "treeview_families.h"
 #include "treeview_families_dnd.h"
-#include "unused.h"
 
 void ltrfam_lv_on_drag_data_get(GtkWidget *widget,
-                                G_UNUSED GdkDragContext *drag_context,
+                                GT_UNUSED GdkDragContext *drag_context,
                                 GtkSelectionData *sdata,
-                                G_UNUSED guint info,
-                                G_UNUSED guint time,
-                                G_UNUSED gpointer user_data)
+                                GT_UNUSED guint info,
+                                GT_UNUSED guint time,
+                                GT_UNUSED gpointer user_data)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
   GtkTreeSelection *sel;
-  FamilyTransferData *tmp;
+  FamilyTransferData *tdata;
   gboolean valid;
 
   /* retrieve data from selected row, do nothing if no row is selected */
@@ -21,26 +37,26 @@ void ltrfam_lv_on_drag_data_get(GtkWidget *widget,
   valid = gtk_tree_selection_get_selected(sel, &model, &iter);
   if (!valid)
     return;
-  tmp = g_slice_new(FamilyTransferData);
+  tdata = g_slice_new(FamilyTransferData);
   gtk_tree_model_get(model, &iter,
-                     LTRFAM_LV_SEQID, &tmp->row,
-                     LTRFAM_LV_NODE, &tmp->gn,
-                     LTRFAM_LV_FEAT, &tmp->feat,
+                     LTRFAM_LV_SEQID, &tdata->row,
+                     LTRFAM_LV_NODE, &tdata->gn,
+                     LTRFAM_LV_FEAT, &tdata->feat,
                      -1);
   /* add retrieved data to GtkSelectionData object */
   gtk_selection_data_set(sdata,
-                         gdk_atom_intern("FamilyTransferData pointer", false),
+                         gdk_atom_intern("FamilyTransferData pointer", FALSE),
                          8,
-                         (void*) &tmp,
-                         sizeof(tmp));
+                         (void*) &tdata,
+                         sizeof(tdata));
 }
 
 gboolean tv_families_on_drag_motion(GtkWidget *widget,
-                                    G_UNUSED GdkDragContext *context,
+                                    GT_UNUSED GdkDragContext *context,
                                     gint x,
                                     gint y,
-                                    G_UNUSED guint time,
-                                    G_UNUSED gpointer user_data)
+                                    GT_UNUSED guint time,
+                                    GT_UNUSED gpointer user_data)
 {
   GtkTreeSelection *selection;
   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
@@ -64,61 +80,62 @@ gboolean tv_families_on_drag_motion(GtkWidget *widget,
     } else
       gtk_tree_selection_unselect_all(selection);
   }
-  return FALSE;
+  return TRUE;
 }
 
 void tv_families_on_drag_data_received(GtkWidget *widget,
-                                       G_UNUSED GdkDragContext *drag_context,
-                                       G_UNUSED gint x,
-                                       G_UNUSED gint y,
+                                       GT_UNUSED GdkDragContext *drag_context,
+                                       GT_UNUSED gint x,
+                                       GT_UNUSED gint y,
                                        GtkSelectionData *sdata,
-                                       G_UNUSED guint info,
-                                       G_UNUSED guint time,
+                                       GT_UNUSED guint info,
+                                       GT_UNUSED guint time,
                                        gpointer notebook)
 {
-  GtkTreeModel *model, *model2;
-  GtkTreeIter iter, iter2, child;
-  GtkTreeSelection *sel, *sel2;
-  GtkTreeRowReference *tmp_ref;
-  GtkWidget *tab_child, *tmp_tab_child;
-  FamilyTransferData *tmp = NULL;
+  GtkTreeModel *model,
+               *model2;
+  GtkTreeIter iter,
+              iter2,
+              child;
+  GtkTreeSelection *sel,
+                   *sel2;
+  GtkTreeRowReference *tv_ref;
+  GtkWidget *tab_child,
+            *tmp_tab_child;
+  FamilyTransferData *tdata = NULL;
   GtGenomeNode **gn;
   GtArray *nodes;
   gint nbpage;
   unsigned long i;
   gboolean valid;
 
-  /* add row to selected family, do nothing if no family is selected */
+  /* add row to selected family, do nothing if no family is selected
+     <widget> == <tv_families> */
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
   valid = gtk_tree_selection_get_selected(sel, &model, &iter);
   if (!valid)
     return;
 
   /* copy recieved data into new struct */
-  memcpy(&tmp, sdata->data, sizeof(tmp));
-
-
+  memcpy(&tdata, sdata->data, sizeof(tdata));
 
   /* insert data into <tv_families> */
-
   gtk_tree_model_get(model, &iter,
                      TV_FAM_NODE_ARRAY, &nodes,
                      TV_FAM_TAB_CHILD, &tab_child,
                      -1);
-
   for (i = 0; i < gt_array_size(nodes); i++) {
     gn = *(GtGenomeNode***) gt_array_get(nodes, i);
-    if (gn == tmp->gn) {
+    if (gn == tdata->gn) {
+      /* drag source and destination are the same -> do nothing */
       return;
     }
   }
-
+  /* add drag'n'dropped <gn> as a child of selected family */
   gtk_tree_store_append(GTK_TREE_STORE(model), &child, &iter);
-
-
   gtk_tree_store_set(GTK_TREE_STORE(model), &child,
-                     TV_FAM_NODE, tmp->gn,
-                     TV_FAM_NAME, tmp->row,
+                     TV_FAM_NODE, tdata->gn,
+                     TV_FAM_NAME, tdata->row,
                      -1);
 
   /* remove row from drag source */
@@ -129,41 +146,48 @@ void tv_families_on_drag_data_received(GtkWidget *widget,
                                          GTKLTRFAMILY(tmp_tab_child))));
   gtk_tree_selection_get_selected(sel2, &model2, &iter2);
   gtk_tree_model_get(model2, &iter2,
-                     LTRFAM_LV_ROWREF, &tmp_ref,
+                     LTRFAM_LV_ROWREF, &tv_ref,
                      -1);
-  if (tmp_ref) {
-    GtkTreePath *tmp_path;
-    GtkTreeIter tmp_iter, tmp_iter2;
+  /* tv_ref points to entry in <tv_families>. If <gn> was drag'n'dropped from
+     one family to another, remove the entry from old family */
+  if (tv_ref) {
+    GtkTreePath *tv_path;
+    GtkTreeIter tv_iter, tv_iter_p;
     GtArray *nodes;
     GtGenomeNode **gn;
-    tmp_path = gtk_tree_row_reference_get_path(tmp_ref);
-    gtk_tree_model_get_iter(model, &tmp_iter, tmp_path);
-    gtk_tree_model_get(model, &tmp_iter,
+    tv_path = gtk_tree_row_reference_get_path(tv_ref);
+    gtk_tree_model_get_iter(model, &tv_iter, tv_path);
+    gtk_tree_model_get(model, &tv_iter,
                        TV_FAM_NODE, &gn,
                        -1);
-    gtk_tree_model_iter_parent(model, &tmp_iter2, &tmp_iter);
-    gtk_tree_model_get(model, &tmp_iter2,
+    gtk_tree_model_iter_parent(model, &tv_iter_p, &tv_iter);
+    gtk_tree_model_get(model, &tv_iter_p,
                        TV_FAM_NODE_ARRAY, &nodes,
                        -1);
     remove_node_from_array(nodes, gn);
-    gtk_tree_store_remove(GTK_TREE_STORE(model), &tmp_iter);
-    gtk_tree_path_free(tmp_path);
+    gtk_tree_store_remove(GTK_TREE_STORE(model), &tv_iter);
+    gtk_tree_path_free(tv_path);
   }
   gtk_list_store_remove(GTK_LIST_STORE(model2), &iter2);
+  /* clear detailed view if shown <gn> was drag'n'dropped to another family */
+  gtk_ltr_family_clear_detail_on_equal_nodes(GTKLTRFAMILY(tmp_tab_child),
+                                             tdata->gn);
 
   /* add node to "family node array" and insert node into list_view from
-     assigned tab (if exists) */ 
-  gt_array_add(nodes, tmp->gn);
+     assigned tab (if it exists) */
+  gt_array_add(nodes, tdata->gn);
   if (tab_child) {
     GtkTreePath *path;
-    GtkTreeRowReference *rowref, *tmp_ref;
+    GtkTreeRowReference *lv_ref,
+                        *tv_ref2;
     path = gtk_tree_model_get_path(model, &child);
-    tmp_ref = gtk_tree_row_reference_new(model, path);
-    rowref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(tab_child),
-                                             tmp->gn, tmp->feat, tmp_ref, NULL);
+    tv_ref2 = gtk_tree_row_reference_new(model, path);
+    lv_ref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(tab_child),
+                                             tdata->gn, tdata->feat,
+                                             tv_ref2, NULL);
     gtk_tree_path_free(path);
     gtk_tree_store_set(GTK_TREE_STORE(model), &child,
-                       TV_FAM_ROWREF, rowref,
+                       TV_FAM_ROWREF, lv_ref,
                        -1);
   }
 }

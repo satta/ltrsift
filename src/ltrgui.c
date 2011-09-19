@@ -1,10 +1,27 @@
-#include "ltrgui.h"
-#include "statusbar_main.h"
-#include "menubar_main.h"
-#include "project_wizard.h"
-#include "notebook_families.h"
-#include "treeview_families.h"
+/*
+  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 #include "error.h"
+#include "ltrgui.h"
+#include "menubar_main.h"
+#include "notebook_families.h"
+#include "project_wizard.h"
+#include "statusbar_main.h"
+#include "treeview_families.h"
 
 gboolean init_gui(GUIData *ltrgui, GError **err)
 {
@@ -12,7 +29,8 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 
   builder = gtk_builder_new();
 
-  if (gtk_builder_add_from_file(builder, GUI_FILE, err) == 0) return FALSE;
+  if (gtk_builder_add_from_file(builder, GUI_FILE, err) == 0)
+    return FALSE;
 
   /* Get objects from UI */
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
@@ -60,7 +78,7 @@ gint main(gint argc, gchar *argv[])
   GUIData *ltrgui;
   GError *err = NULL;
 
-   /* allocate the memory needed by our GUIData struct */
+   /* allocate the memory needed by GUIData */
   ltrgui = g_slice_new(GUIData);
 
   /* initialize libraries */
@@ -79,7 +97,7 @@ gint main(gint argc, gchar *argv[])
   /* enter GTK+ main loop */
   gtk_main();
 
-  /* free memory we allocated for GUIData struct */
+  /* free memory allocated for GUIData struct */
   g_slice_free(GUIData, ltrgui);
   /*if (gt_lib_clean())
     return GT_EXIT_PROGRAMMING_ERROR;  programmer error */

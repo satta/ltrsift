@@ -1,14 +1,53 @@
-#include "gtk_ltr_family.h"
-#include "unused.h"
+/*
+  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
 
-static void change_image(GtkLTRFamily *ltrfam, const gchar *name)
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#include "gtk_ltr_family.h"
+
+static void change_image(GtkLTRFamily *ltrfam,
+                         const gchar *name,
+                         const gchar *gff3file,
+                         unsigned long start,
+                         unsigned long end)
 {
-  gchar imgfile[25];
-  g_snprintf(imgfile, 25, "%s.png", name);
+  /* TODO: use unique name for image file
+           use projectdir/tmp/projectname/ as save destination */
+  gchar imgfile[200];
+  g_snprintf(imgfile, 200, "/home/thakki/masterarbeit/ltrgui/tmp/%s.png", name);
   if (g_file_test(imgfile, G_FILE_TEST_EXISTS))
     gtk_image_set_from_file(GTK_IMAGE(ltrfam->image), imgfile);
-  else
-    g_warning("Generate Annosketch image");
+  else {
+    int success;
+    char *env;
+    gchar sketch_call[200];
+    env = getenv("GT_BIN");
+    if (env)
+      g_snprintf(sketch_call, 200,
+                 "%s/gt sketch -width 400 -start %lu -end %lu %s %s",
+                 env, start, end, imgfile, gff3file);
+    else
+      g_snprintf(sketch_call, 200,
+                 "gt sketch -width 400 -start %lu -end %lu %s %s",
+                 start, end, imgfile, gff3file);
+    success = system(sketch_call);
+    if (success == 0)
+      gtk_image_set_from_file(GTK_IMAGE(ltrfam->image), imgfile);
+    else
+      g_warning("Could not generate image");
+  }
 }
 
 static char* double_underscores(const char *str)
@@ -65,6 +104,41 @@ static void append_child(GtkTreeStore *store,
                      -1);
 }
 
+void gtk_ltr_family_clear_tree_view(GtkLTRFamily *ltrfam)
+{
+  GtkTreeModel *model;
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfam->tree_view));
+  if (model)
+    gtk_tree_store_clear(GTK_TREE_STORE(model));
+}
+
+void gtk_ltr_family_clear_image(GtkLTRFamily *ltrfam)
+{
+  gtk_image_clear(GTK_IMAGE(ltrfam->image));
+}
+
+void gtk_ltr_family_clear_detail_on_equal_nodes(GtkLTRFamily *ltrfam,
+                                                GtGenomeNode **gn)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtGenomeNode **gn_tmp;
+
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfam->tree_view));
+  if (model) {
+    gboolean valid = gtk_tree_model_get_iter_first(model, &iter);
+    if (!valid)
+      return;
+    gtk_tree_model_get(model, &iter,
+                       LTRFAM_TV_NODE, &gn_tmp,
+                       -1);
+    if (gn_tmp == gn) {
+      gtk_tree_store_clear(GTK_TREE_STORE(model));
+      gtk_image_clear(GTK_IMAGE(ltrfam->image));
+    }
+  }
+}
+
 GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam)
 {
   return ltrfam->list_view;
@@ -72,7 +146,7 @@ GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam)
 
 static void list_view_row_activated(GtkTreeView *list_view,
                                     GtkTreePath *path,
-                                    G_UNUSED GtkTreeViewColumn *column,
+                                    GT_UNUSED GtkTreeViewColumn *column,
                                     GtkLTRFamily *ltrfam)
 {
   GtkTreeModel *list_model, *tree_model;
@@ -81,7 +155,8 @@ static void list_view_row_activated(GtkTreeView *list_view,
   GtGenomeNode **gn;
   GtFeatureNodeIterator *fni;
   GtFeatureNode *curnode;
-  const char *fnt;
+  GtRange range;
+  const char *gff3file, *fnt;
   gchar *name;
 
   list_model = gtk_tree_view_get_model(list_view);
@@ -97,10 +172,11 @@ static void list_view_row_activated(GtkTreeView *list_view,
   if (!tree_model) {
     GType *types = g_new0(GType, LTRFAM_TV_N_COLUMS);
 
-    types[0] = G_TYPE_STRING;
-    types[1] = G_TYPE_ULONG;
+    types[0] = G_TYPE_POINTER;
+    types[1] = G_TYPE_STRING;
     types[2] = G_TYPE_ULONG;
-    types[3] = G_TYPE_STRING;
+    types[3] = G_TYPE_ULONG;
+    types[4] = G_TYPE_STRING;
 
     store = gtk_tree_store_newv(LTRFAM_TV_N_COLUMS, types);
 
@@ -120,10 +196,11 @@ static void list_view_row_activated(GtkTreeView *list_view,
   while ((curnode = gt_feature_node_iterator_next(fni))) {
     fnt = gt_feature_node_get_type(curnode);
     if (g_strcmp0(fnt, FNT_REPEATR) == 0) {
-      GtRange range;
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
+      gff3file = gt_genome_node_get_filename((GtGenomeNode*) curnode);
       gtk_tree_store_append(store, &iter, NULL);
       gtk_tree_store_set(store, &iter,
+                         LTRFAM_TV_NODE, gn,
                          LTRFAM_TV_TYPE, fnt,
                          LTRFAM_TV_START, range.start,
                          LTRFAM_TV_END, range.end,
@@ -134,7 +211,7 @@ static void list_view_row_activated(GtkTreeView *list_view,
   gtk_tree_view_expand_all(GTK_TREE_VIEW(ltrfam->tree_view));
   gt_feature_node_iterator_delete(fni);
 
-  change_image(ltrfam, name);
+  change_image(ltrfam, name, gff3file, range.start, range.end);
   g_free(name);
 }
 
@@ -152,10 +229,10 @@ void gtk_ltr_family_list_view_remove(GtkLTRFamily *ltrfam,
 }
 
 GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
-                                     GtGenomeNode **gn,
-                                     GtHashmap *features,
-                                     GtkTreeRowReference *rowref,
-                                     GtkListStore *tmp)
+                                                     GtGenomeNode **gn,
+                                                     GtHashmap *features,
+                                                    GtkTreeRowReference *rowref,
+                                                     GtkListStore *tmp)
 {
   GtFeatureNodeIterator *fni;
   GtFeatureNode *curnode;
@@ -165,7 +242,7 @@ GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
   GtkTreePath *path;
   GtkTreeRowReference *rref = NULL;
   const char *fnt;
-  gboolean first_ltr = true;
+  gboolean first_ltr = TRUE;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfam->list_view));
 
@@ -195,7 +272,6 @@ GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
                          -1);
     } else if (g_strcmp0(fnt, FNT_PROTEINM) == 0) {
       const char *attr = gt_feature_node_get_attribute(curnode, ATTR_PFAMN);
-
       if (gt_hashmap_get(features, attr) != NULL) {
         const char *clid;
         unsigned long cno;
@@ -209,7 +285,7 @@ GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
       const char *tmp;
       if (first_ltr) {
         tmp = FNT_LLTR;
-        first_ltr = false;
+        first_ltr = FALSE;
       } else
         tmp = FNT_RLTR;
       if (gt_hashmap_get(features, tmp) != NULL) {
@@ -310,7 +386,7 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
     for (i = 0; i < gt_array_size(nodes); i++) {
       GtGenomeNode **gn;
       gn = *(GtGenomeNode***) gt_array_get(nodes, i);
-      G_UNUSED GtkTreeRowReference *rref =
+      GT_UNUSED GtkTreeRowReference *rref =
                gtk_ltr_family_list_view_append(ltrfam,
                                                gn,
                                                features,

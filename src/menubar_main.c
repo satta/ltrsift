@@ -1,9 +1,24 @@
-#include "menubar_main.h"
-#include "statusbar_main.h"
+/*
+  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
+
+  Permission to use, copy, modify, and distribute this software for any
+  purpose with or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 #include "gtk_ltr_family.h"
+#include "menubar_main.h"
 #include "notebook_families.h"
-#include "unused.h"
-#include <string.h>
+#include "statusbar_main.h"
 
 void mb_main_init(GUIData *ltrgui)
 {
@@ -61,7 +76,7 @@ static gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-void mb_main_project_save_activate(G_UNUSED GtkMenuItem *menuitem,
+void mb_main_project_save_activate(GT_UNUSED GtkMenuItem *menuitem,
                                    GUIData *ltrgui)
 {
   gchar *filename;
@@ -73,7 +88,7 @@ void mb_main_project_save_activate(G_UNUSED GtkMenuItem *menuitem,
   } /* TODO: else Save as project data*/
 }
 
-void mb_main_project_save_as_activate(G_UNUSED GtkMenuItem *menuitem,
+void mb_main_project_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
                                       GUIData *ltrgui)
 {
   gchar *filename;
@@ -88,7 +103,7 @@ void mb_main_project_save_as_activate(G_UNUSED GtkMenuItem *menuitem,
            - Save project data */
 }
 
-void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
+void mb_main_project_open_activate(GT_UNUSED GtkMenuItem *menuitem,
                                    GUIData *ltrgui)
 {
   gchar *filename;
@@ -128,14 +143,14 @@ void mb_main_project_open_activate(G_UNUSED GtkMenuItem *menuitem,
   /* TODO: Load project data */
 }
 
-void mb_main_project_new_activate(G_UNUSED GtkMenuItem *menuitem,
+void mb_main_project_new_activate(GT_UNUSED GtkMenuItem *menuitem,
                                   GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);
 }
 
-void mb_main_help_about_activate(G_UNUSED GtkMenuItem *menutiem,
-                                 G_UNUSED GUIData *ltrgui)
+void mb_main_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,
+                                 GT_UNUSED GUIData *ltrgui)
 {
   GtkWidget *dialog;
   GdkPixbuf *logo;
