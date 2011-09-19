@@ -19,6 +19,39 @@
 #include "treeview_families.h"
 #include "treeview_families_dnd.h"
 
+static gboolean tv_families_check_if_name_exists(GUIData *ltrgui,
+                                                 const gchar *new_name,
+                                                 const gchar *tmp)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gchar *famname,
+        *iter_str;
+
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
+  gtk_tree_model_get_iter_first(model, &iter);
+  gtk_tree_model_get(model, &iter,
+                     TV_FAM_NAME, &famname,
+                     -1);
+  iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
+  if ((g_strcmp0(famname, new_name) == 0) && (g_strcmp0(iter_str, tmp) != 0))
+    return TRUE;
+  g_free(famname);
+  g_free(iter_str);
+  while (gtk_tree_model_iter_next(model, &iter)) {
+    iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
+    gtk_tree_model_get(model, &iter,
+                       TV_FAM_NAME, &famname,
+                       -1);
+    if ((g_strcmp0(famname, new_name) == 0) &&
+        (g_strcmp0(iter_str, tmp) != 0))
+      return TRUE;
+    g_free(famname);
+    g_free(iter_str);
+  }
+  return FALSE;
+}
+
 static void tv_families_popup_menu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
                                                 gpointer userdata)
 {
@@ -280,23 +313,44 @@ static void tv_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
   } else {
     GtkWidget *label;   
     GtArray *nodes;
-    gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                       TV_FAM_NAME, new_name,
-                       -1);
-    gtk_tree_model_get(model, &iter,
-                       TV_FAM_TAB_LABEL, &label,
-                       -1);
-    if (label)
-      gtk_label_close_set_text(GTKLABELCLOSE(label), new_name);
-
-    gtk_tree_model_get(model, &iter,
-                       TV_FAM_NODE_ARRAY, &nodes,
-                       -1);
-    if (!nodes) {
-      nodes = gt_array_new(sizeof(GtGenomeNode*));
+    gchar *iter_str;
+    gboolean exists;
+    iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
+    exists = tv_families_check_if_name_exists(ltrgui, new_name, iter_str);
+    if (exists) {
+      GtkWidget *dialog;
+      dialog = gtk_message_dialog_new(NULL,
+                                GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                      GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                      "Family name already exists!");
+      gtk_window_set_title(GTK_WINDOW(dialog), "Information");
+      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+      gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+      column = gtk_tree_view_get_column(GTK_TREE_VIEW(ltrgui->tv_families), 0);
+      tmp = gtk_cell_layout_get_cells(GTK_CELL_LAYOUT(column));
+      renderer = (GtkCellRenderer*) g_list_nth_data(tmp, 0);
+      g_signal_emit_by_name(renderer, "editing-canceled");
+    } else {
       gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                         TV_FAM_NODE_ARRAY, nodes,
+                         TV_FAM_NAME, new_name,
                          -1);
+      gtk_tree_model_get(model, &iter,
+                         TV_FAM_TAB_LABEL, &label,
+                         -1);
+      if (label)
+        gtk_label_close_set_text(GTKLABELCLOSE(label), new_name);
+
+      gtk_tree_model_get(model, &iter,
+                         TV_FAM_NODE_ARRAY, &nodes,
+                         -1);
+      if (!nodes) {
+        nodes = gt_array_new(sizeof(GtGenomeNode*));
+        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+                           TV_FAM_NODE_ARRAY, nodes,
+                           -1);
+      }
+      g_free(iter_str);
     }
   }
   column = gtk_tree_view_get_column(GTK_TREE_VIEW(ltrgui->tv_families), 0);
