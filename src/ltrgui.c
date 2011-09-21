@@ -23,6 +23,23 @@
 #include "statusbar_main.h"
 #include "treeview_families.h"
 
+static void free_hash(void *elem)
+{
+  gt_free(elem);
+}
+
+static void free_gui(GUIData *ltrgui)
+{
+  int i;
+
+  for (i = 0; i < gt_array_size(ltrgui->nodes); i++) {
+    gt_genome_node_delete(*(GtGenomeNode**) gt_array_get(ltrgui->nodes, i));
+  }
+  gt_array_delete(ltrgui->nodes);
+  gt_hashmap_delete(ltrgui->features);
+  g_slice_free(GUIData, ltrgui);
+}
+
 gboolean init_gui(GUIData *ltrgui, GError **err)
 {
   GtkBuilder *builder;
@@ -57,7 +74,8 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 
   gtk_widget_hide_all(ltrgui->hbox1_main);
 
-  ltrgui->features = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
+  ltrgui->nodes = gt_array_new(sizeof(GtGenomeNode*));
+  ltrgui->features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
   ltrgui->n_features = 0;
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
@@ -98,7 +116,7 @@ gint main(gint argc, gchar *argv[])
   gtk_main();
 
   /* free memory allocated for GUIData struct */
-  g_slice_free(GUIData, ltrgui);
+  free_gui(ltrgui);
   /*if (gt_lib_clean())
     return GT_EXIT_PROGRAMMING_ERROR;  programmer error */
   return 0;

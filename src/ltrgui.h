@@ -65,6 +65,7 @@ struct _GUIData
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;
+  GtArray *nodes;
   GtHashmap *features;
   unsigned long n_features;
 };

@@ -182,7 +182,7 @@ void nb_families_add_tab(GtkTreeModel *model,
   g_free(name);
 }
 
-void nb_families_init(GUIData *ltrgui, GtArray *nodes)
+void nb_families_init(GUIData *ltrgui)
 {
   GtkWidget *child, *label;
   gint nbpage;
@@ -192,7 +192,8 @@ void nb_families_init(GUIData *ltrgui, GtArray *nodes)
   g_signal_connect(G_OBJECT(ltrgui->nb_families), "page-reordered",
                    G_CALLBACK(nb_families_page_reordered), ltrgui);
 
-  child = gtk_ltr_family_new(ltrgui->features, nodes, ltrgui->n_features);
+  child = gtk_ltr_family_new(ltrgui->features, ltrgui->nodes,
+                             ltrgui->n_features);
   label = gtk_label_close_new("General", NULL, NULL);
   gtk_label_close_hide_close(GTKLABELCLOSE(label));
 
