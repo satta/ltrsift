@@ -209,6 +209,7 @@ static void tv_families_popup_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
 
 static void tv_families_popup_menu(GtkWidget *treeview,
                                    GdkEventButton *event,
+                                   gboolean valid,
                                    GUIData *ltrgui)
 {
   GtkWidget *menu, *menuitem;
@@ -218,6 +219,7 @@ static void tv_families_popup_menu(GtkWidget *treeview,
   g_signal_connect(menuitem, "activate",
                    (GCallback) tv_families_popup_menu_edit_clicked, treeview);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  gtk_widget_set_sensitive(menuitem, !valid);
 
   menuitem = gtk_menu_item_new_with_label("Remove selected");
   g_signal_connect(menuitem, "activate",
@@ -237,21 +239,30 @@ gboolean tv_families_button_pressed(GtkWidget *treeview,
   if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
   {
     GtkTreeSelection *selection;
+    gboolean valid = true;
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
     if (gtk_tree_selection_count_selected_rows(selection)  <= 1)
     {
       GtkTreePath *path;
+      GtkTreeIter iter, tmp;
+
       if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
                                         (gint) event->x,
                                         (gint) event->y,
                                         &path, NULL, NULL, NULL)) {
         gtk_tree_selection_unselect_all(selection);
         gtk_tree_selection_select_path(selection, path);
+        gtk_tree_model_get_iter(
+                               gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)),
+                               &iter, path);
+        valid = gtk_tree_model_iter_parent(
+                               gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)),
+                               &tmp, &iter);
         gtk_tree_path_free(path);
       } else
         return TRUE;
     }
-    tv_families_popup_menu(treeview, event, ltrgui);
+    tv_families_popup_menu(treeview, event, valid, ltrgui);
     return TRUE;
   }
   return FALSE;
@@ -259,7 +270,7 @@ gboolean tv_families_button_pressed(GtkWidget *treeview,
 
 gboolean tv_families_on_popup_menu(GtkWidget *treeview, GUIData *ltrgui)
 {
-  tv_families_popup_menu(treeview, NULL, ltrgui);
+  tv_families_popup_menu(treeview, NULL, true, ltrgui);
   return TRUE;
 }
 

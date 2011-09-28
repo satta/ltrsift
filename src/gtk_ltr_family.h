@@ -35,11 +35,12 @@
         G_TYPE_CHECK_CLASS_TYPE((klass), GTKLTRFAMILY_TYPE)
 
 #define LTRFAM_LV_CAPTION_SEQID "SeqID"
-#define LTRFAM_LV_CAPTION_TYPE  "Type"
+#define LTRFAM_LV_CAPTION_TYPE  "Region ID"
 #define LTRFAM_LV_CAPTION_START "Start"
 #define LTRFAM_LV_CAPTION_END   "End"
 #define LTRFAM_TV_CAPTION_INFO  "Attributes"
 
+#define ATTR_RID       "ID"
 #define ATTR_CLUSTID   "clid"
 #define ATTR_PFAMN     "pfamname"
 #define FNT_PROTEINM   "protein_match"
@@ -75,7 +76,7 @@ typedef struct _GtkLTRFamilyClass  GtkLTRFamilyClass;
 
 struct _GtkLTRFamily
 {
-    GtkVBox vbox;
+    GtkVPaned vpane;
     GtkWidget *tree_view;
     GtkWidget *list_view; 
     GtkWidget *image;
@@ -83,7 +84,7 @@ struct _GtkLTRFamily
 
 struct _GtkLTRFamilyClass
 {
-    GtkVBoxClass parent_class;
+    GtkVPanedClass parent_class;
     void (* gtk_ltr_family) (GtkLTRFamily *ltrfam);
 };
 

@@ -197,7 +197,6 @@ void nb_families_init(GUIData *ltrgui)
   label = gtk_label_close_new("General", NULL, NULL);
   gtk_label_close_hide_close(GTKLABELCLOSE(label));
 
-
   /* Set <child->list_view> as the source of the Drag-N-Drop operation */
   gtk_drag_source_set(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child)),
                       GDK_BUTTON1_MASK,
@@ -216,6 +215,9 @@ void nb_families_init(GUIData *ltrgui)
 
   nbpage = gtk_notebook_append_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                     child, label);
+  gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(ltrgui->nb_families),
+                                   child,
+                                   TRUE);
   gtk_label_close_set_button_data(GTKLABELCLOSE(label),
                                   "nbpage",
                                   GINT_TO_POINTER(nbpage));

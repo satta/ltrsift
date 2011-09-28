@@ -26,14 +26,15 @@ static void change_image(GtkLTRFamily *ltrfam,
   /* TODO: use unique name for image file
            use projectdir/tmp/projectname/ as save destination */
   gchar imgfile[200];
-  g_snprintf(imgfile, 200, "/home/thakki/masterarbeit/ltrgui/tmp/%s.png", name);
+  g_snprintf(imgfile, 200,
+             "/local/skastens/masterarbeit/ltrgui/tmp/%s.png", name);
   if (g_file_test(imgfile, G_FILE_TEST_EXISTS))
     gtk_image_set_from_file(GTK_IMAGE(ltrfam->image), imgfile);
   else {
     int success;
     char *env;
     gchar sketch_call[200];
-    env = getenv("GT_BIN");
+    env = getenv("GT_BIN_PATH");
     if (env)
       g_snprintf(sketch_call, 200,
                  "%s/gt sketch -width 400 -start %lu -end %lu %s %s",
@@ -42,6 +43,7 @@ static void change_image(GtkLTRFamily *ltrfam,
       g_snprintf(sketch_call, 200,
                  "gt sketch -width 400 -start %lu -end %lu %s %s",
                  start, end, imgfile, gff3file);
+    g_warning("calling %s", sketch_call);
     success = system(sketch_call);
     if (success == 0)
       gtk_image_set_from_file(GTK_IMAGE(ltrfam->image), imgfile);
@@ -72,13 +74,14 @@ static int add_feature_columns(void *key, void *value, void *ltrfam,
   GtkLTRFamily *fam = (GtkLTRFamily*) ltrfam;
 
   g_object_set(renderer,
-               "cell-background", "Orange",
+               "cell-background", "Grey",
                "cell-background-set", TRUE,
                "xalign", 1.0,
                NULL);
 
   column = gtk_tree_view_column_new_with_attributes(caption, renderer, "text",
                                                     num, NULL);
+  gtk_tree_view_column_set_resizable(column, true);
   gtk_tree_view_column_set_sort_column_id(column, num);
   gtk_tree_view_append_column(GTK_TREE_VIEW(fam->list_view), column);
 
@@ -257,16 +260,21 @@ GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
   while ((curnode = gt_feature_node_iterator_next(fni))) {
     fnt = gt_feature_node_get_type(curnode);
     if ((g_strcmp0(fnt, FNT_REPEATR) == 0)) {
-      char *seqid;
       GtRange range;
+      char *seqid;
+      const char *tmp;
+      unsigned long rid;
       seqid = gt_str_get(gt_genome_node_get_seqid((GtGenomeNode*) curnode));
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
+      tmp = gt_feature_node_get_attribute(curnode, ATTR_RID);
+      sscanf(tmp, "repeat_region%lu", &rid);
       gtk_list_store_append(store, &iter);
       gtk_list_store_set(store, &iter,
                          LTRFAM_LV_NODE, gn,
                          LTRFAM_LV_FEAT, features,
                          LTRFAM_LV_ROWREF, rowref,
                          LTRFAM_LV_SEQID, seqid,
+                         LTRFAM_LV_TYPE, rid,
                          LTRFAM_LV_START, range.start,
                          LTRFAM_LV_END, range.end,
                          -1);
@@ -341,6 +349,7 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfam->list_view), column);
 
   renderer = gtk_cell_renderer_text_new();
+  g_object_set(renderer, "xalign", 1.0, NULL);
   column = gtk_tree_view_column_new_with_attributes(LTRFAM_LV_CAPTION_TYPE,
                                                     renderer, "text",
                                                     LTRFAM_LV_TYPE, NULL);
@@ -372,7 +381,7 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
   types[1] = G_TYPE_POINTER;
   types[2] = G_TYPE_POINTER;
   types[3] = G_TYPE_STRING;
-  types[4] = G_TYPE_STRING;
+  types[4] = G_TYPE_ULONG;
   types[5] = G_TYPE_ULONG;
   types[6] = G_TYPE_ULONG;
 
@@ -447,14 +456,17 @@ static void gtk_ltr_family_tree_view_new(GtkLTRFamily *ltrfam)
 
 static void gtk_ltr_family_init(GtkLTRFamily *ltrfam)
 {
-  GtkWidget *sw1, *sw2, *hbox, *hsep, *vsep, *label1, *label2, *vbox1, *vbox2;
+  GtkWidget *sw1,
+            *sw2,
+            *hpane,
+            *label1,
+            *label2,
+            *vbox1,
+            *vbox2;
 
-  gtk_box_set_homogeneous(GTK_BOX(ltrfam), FALSE);
-  gtk_box_set_spacing(GTK_BOX(ltrfam), 0);
-
-  hbox = gtk_hbox_new(FALSE, 0);
-  hsep = gtk_hseparator_new();
-  vsep = gtk_vseparator_new();
+  hpane = gtk_hpaned_new();
+  gtk_paned_set_position(GTK_PANED(hpane), 400);
+  gtk_paned_set_position(GTK_PANED(ltrfam), 400);
 
   label1 = gtk_label_new(LTRFAM_DETINFO);
   label2 = gtk_label_new(LTRFAM_IMAGE);
@@ -474,9 +486,8 @@ static void gtk_ltr_family_init(GtkLTRFamily *ltrfam)
   ltrfam->list_view = gtk_tree_view_new();
   gtk_tree_view_set_rules_hint(GTK_TREE_VIEW(ltrfam->list_view), TRUE);
   gtk_container_add(GTK_CONTAINER(sw1), ltrfam->list_view);
-  gtk_box_pack_start(GTK_BOX(ltrfam), sw1, TRUE, TRUE, 0);
-
-  gtk_box_pack_start(GTK_BOX(ltrfam), hsep, FALSE, TRUE, 5);
+  gtk_paned_add1(GTK_PANED(ltrfam), sw1);
+  gtk_paned_add2(GTK_PANED(ltrfam), hpane);
 
   gtk_box_pack_start(GTK_BOX(vbox1), label1, FALSE, TRUE, 0);
   ltrfam->tree_view = gtk_tree_view_new();
@@ -487,11 +498,8 @@ static void gtk_ltr_family_init(GtkLTRFamily *ltrfam)
   gtk_box_pack_start(GTK_BOX(vbox2), label2, FALSE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(vbox2), ltrfam->image, TRUE, TRUE, 0);
 
-  gtk_box_pack_start(GTK_BOX(hbox), vbox1, TRUE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(hbox), vsep, FALSE, TRUE, 5);
-  gtk_box_pack_start(GTK_BOX(hbox), vbox2, TRUE, TRUE, 0);
-
-  gtk_box_pack_start(GTK_BOX(ltrfam), hbox, TRUE, TRUE, 0);
+  gtk_paned_add1(GTK_PANED(hpane), vbox1);
+  gtk_paned_add2(GTK_PANED(hpane), vbox2);
   gtk_widget_show_all(GTK_WIDGET(ltrfam));
 }
 
@@ -512,7 +520,7 @@ GType gtk_ltr_family_get_type(void)
       0,    /* n_preallocs */
       (GInstanceInitFunc) gtk_ltr_family_init,
     };
-    ltrfam_type = g_type_register_static(GTK_TYPE_VBOX, "GtkLTRFamily",
+    ltrfam_type = g_type_register_static(GTK_TYPE_VPANED, "GtkLTRFamily",
                                          &ltrfam_info, 0);
   }
   return ltrfam_type;
