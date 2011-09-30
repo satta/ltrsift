@@ -101,55 +101,35 @@ void nb_families_close_tab_clicked(GT_UNUSED GtkButton *button,
 
 void nb_families_add_tab(GtkTreeModel *model,
                          GtkTreeIter *iter,
+                         GtArray *nodes,
                          GUIData *ltrgui)
 {
   GtGenomeNode **gn;
+  GtkTreeRowReference *rowref;
+  GtkTreePath *path;
   GtkWidget *child,
             *label;
-  GtkTreeIter tmp;
   gint nbpage;
+  unsigned long i;
   gchar *name;
-  gboolean valid = FALSE;
 
   gtk_tree_model_get(model, iter,
-                     TV_FAM_NAME, &name,
+                     TV_FAM_OLDNAME, &name,
                      -1);
   child = gtk_ltr_family_new(ltrgui->features, NULL, ltrgui->n_features);
-  valid = gtk_tree_model_iter_children(model, &tmp, iter);
-  if (valid) {
-    GtkTreeRowReference *rowref, *tmp_ref;
-    GtkTreePath *path;
-    gtk_tree_model_get(model, &tmp,
-                       TV_FAM_NODE, &gn,
-                       -1);
-    path = gtk_tree_model_get_path(model, &tmp);
-    tmp_ref = gtk_tree_row_reference_new(model, path);
-    rowref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(child),
+
+  path = gtk_tree_model_get_path(model, iter);
+  rowref = gtk_tree_row_reference_new(model, path);
+  for (i = 0; i < gt_array_size(nodes); i++) {
+    gn = *(GtGenomeNode***) gt_array_get(nodes, i);
+    gtk_ltr_family_list_view_append(GTKLTRFAMILY(child),
                                              gn,
                                              ltrgui->features,
-                                             tmp_ref,
+                                             rowref,
                                              NULL);
-    gtk_tree_store_set(GTK_TREE_STORE(model), &tmp,
-                       TV_FAM_ROWREF, rowref,
-                       -1);
-    gtk_tree_path_free(path);
-    while (gtk_tree_model_iter_next(model, &tmp)) {
-      gtk_tree_model_get(model, &tmp,
-                         TV_FAM_NODE, &gn,
-                         -1);
-      path = gtk_tree_model_get_path(model, &tmp);
-      tmp_ref = gtk_tree_row_reference_new(model, path);
-      rowref = gtk_ltr_family_list_view_append(GTKLTRFAMILY(child),
-                                               gn,
-                                               ltrgui->features,
-                                               tmp_ref,
-                                               NULL);
-      gtk_tree_store_set(GTK_TREE_STORE(model), &tmp,
-                         TV_FAM_ROWREF, rowref,
-                         -1);
-      gtk_tree_path_free(path);
-    }
   }
+  gtk_tree_path_free(path);
+
   gtk_widget_show(child);
 
   /* Set <child->list_view> as the source of the Drag-N-Drop operation */
@@ -161,6 +141,10 @@ void nb_families_add_tab(GtkTreeModel *model,
   g_signal_connect(G_OBJECT(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child))),
                    "drag-data-get",
                    G_CALLBACK(ltrfam_lv_on_drag_data_get),NULL);
+
+  g_signal_connect(G_OBJECT(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child))),
+                   "button-press-event",
+                   G_CALLBACK(ltrfam_lv_button_pressed),ltrgui);
 
   label = gtk_label_close_new(name,
                               G_CALLBACK(nb_families_close_tab_clicked),
@@ -212,6 +196,10 @@ void nb_families_init(GUIData *ltrgui)
                    G_CALLBACK(tv_families_on_drag_data_received),
                    ltrgui->nb_families);
   gtk_widget_show(child);
+
+  g_signal_connect(G_OBJECT(gtk_ltr_family_get_list_view(GTKLTRFAMILY(child))),
+                   "button-press-event",
+                   G_CALLBACK(ltrfam_lv_button_pressed),ltrgui);
 
   nbpage = gtk_notebook_append_page(GTK_NOTEBOOK(ltrgui->nb_families),
                                     child, label);

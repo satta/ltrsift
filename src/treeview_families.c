@@ -19,6 +19,149 @@
 #include "treeview_families.h"
 #include "treeview_families_dnd.h"
 
+static void ltrfam_lv_popup_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
+                                                  GUIData *ltrgui)
+{
+  /* TODO: check for main_tab -> modify warning */
+  GtkWidget *dialog,
+            *main_tab,
+            *tab_child;
+  GtkTreeView *treeview;
+  GtkTreeModel *model;
+  GtkTreeSelection *sel;
+  GtkTreeIter iter;
+  gint main_tab_no,
+      tab_no;
+
+  tab_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(ltrgui->nb_families));
+  tab_child = gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
+                                        tab_no);
+  treeview =
+           GTK_TREE_VIEW(gtk_ltr_family_get_list_view(GTKLTRFAMILY(tab_child)));
+  model = gtk_tree_view_get_model(treeview);
+  sel = gtk_tree_view_get_selection(treeview);
+  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+    return;
+  gtk_tree_selection_get_selected(sel, &model, &iter);
+
+  main_tab_no =
+      GPOINTER_TO_INT(
+             g_object_get_data(G_OBJECT(ltrgui->nb_families), "main_tab"));
+
+  dialog = gtk_message_dialog_new(NULL,
+                          GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                  GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                  "Are you sure?");
+  gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+  gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+    gtk_widget_destroy(dialog);
+    return;
+  } else {
+    GtGenomeNode **gn;
+    GtkTreeRowReference *rowref;
+    gtk_tree_model_get(model, &iter,
+                       LTRFAM_LV_NODE, &gn,
+                       LTRFAM_LV_ROWREF, &rowref,
+                       -1);
+    main_tab =
+       gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
+                                 main_tab_no);
+    gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
+                                    ltrgui->features, NULL, NULL);
+    if (rowref) {
+      GtkTreeModel *model2;
+      GtkTreePath *tv_path;
+      GtkTreeIter tv_iter;
+      GtArray *tmp_nodes;
+      const char *tmp_oldname;
+      char tmp_curname[BUFSIZ];
+
+      model2 = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
+      tv_path = gtk_tree_row_reference_get_path(rowref);
+      gtk_tree_model_get_iter(model2, &tv_iter, tv_path);
+      gtk_tree_model_get(model2, &tv_iter,
+                         TV_FAM_NODE_ARRAY, &tmp_nodes,
+                         TV_FAM_OLDNAME, &tmp_oldname,
+                         -1);
+
+      remove_node_from_array(tmp_nodes, gn);
+      g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
+                 tmp_oldname, gt_array_size(tmp_nodes));
+      gtk_tree_store_set(GTK_TREE_STORE(model2), &tv_iter,
+                         TV_FAM_CURNAME, tmp_curname,
+                         -1);
+      gtk_tree_path_free(tv_path);
+    }
+    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+  }
+  gtk_widget_destroy(dialog);
+}
+
+static void ltrfam_lv_popup_menu(GT_UNUSED GtkWidget *treeview,
+                                   GdkEventButton *event,
+                                   GUIData *ltrgui)
+{
+  GtkWidget *menu, *menuitem;
+
+  menu = gtk_menu_new();
+
+  menuitem = gtk_menu_item_new_with_label("Remove selected");
+  g_signal_connect(menuitem, "activate",
+                   (GCallback) ltrfam_lv_popup_menu_remove_clicked, ltrgui);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+  gtk_widget_show_all(menu);
+  gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
+                 (event != NULL) ? event->button : 0,
+                 gdk_event_get_time((GdkEvent*)event));
+}
+
+gboolean ltrfam_lv_button_pressed(GtkWidget *treeview,
+                                    GdkEventButton *event,
+                                    GUIData *ltrgui)
+{
+  if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
+  {
+    GtkTreeSelection *selection;
+    selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+    if (gtk_tree_selection_count_selected_rows(selection)  <= 1)
+    {
+      GtkTreePath *path;
+      if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
+                                        (gint) event->x,
+                                        (gint) event->y,
+                                        &path, NULL, NULL, NULL)) {
+        gtk_tree_selection_unselect_all(selection);
+        gtk_tree_selection_select_path(selection, path);
+        gtk_tree_path_free(path);
+      } else
+        return TRUE;
+    }
+    ltrfam_lv_popup_menu(treeview, event, ltrgui);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+gboolean ltrfam_lv_on_popup_menu(GtkWidget *treeview, GUIData *ltrgui)
+{
+  ltrfam_lv_popup_menu(treeview, NULL, ltrgui);
+  return TRUE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 static gboolean tv_families_check_if_name_exists(GUIData *ltrgui,
                                                  const gchar *new_name,
                                                  const gchar *tmp)
@@ -31,7 +174,7 @@ static gboolean tv_families_check_if_name_exists(GUIData *ltrgui,
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
   gtk_tree_model_get_iter_first(model, &iter);
   gtk_tree_model_get(model, &iter,
-                     TV_FAM_NAME, &famname,
+                     TV_FAM_OLDNAME, &famname,
                      -1);
   iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
   if ((g_strcmp0(famname, new_name) == 0) && (g_strcmp0(iter_str, tmp) != 0))
@@ -41,7 +184,7 @@ static gboolean tv_families_check_if_name_exists(GUIData *ltrgui,
   while (gtk_tree_model_iter_next(model, &iter)) {
     iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
     gtk_tree_model_get(model, &iter,
-                       TV_FAM_NAME, &famname,
+                       TV_FAM_OLDNAME, &famname,
                        -1);
     if ((g_strcmp0(famname, new_name) == 0) &&
         (g_strcmp0(iter_str, tmp) != 0))
@@ -97,15 +240,13 @@ static void tv_families_popup_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
 {
   GtkWidget *dialog,
             *main_tab,
-            *tab_label,
-            *tab_child;
+            *tab_label;
   GtkTreeView *treeview;
   GtkTreeModel *model;
   GtkTreeSelection *sel;
   GtkTreeIter iter;
-  GtGenomeNode **gn;
-  gint iterd,
-       main_tab_no;
+  gint main_tab_no;
+  unsigned long i;
 
   treeview = GTK_TREE_VIEW(ltrgui->tv_families);
   model = gtk_tree_view_get_model(treeview);
@@ -113,103 +254,51 @@ static void tv_families_popup_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
     return;
   gtk_tree_selection_get_selected(sel, &model, &iter);
-  iterd = gtk_tree_store_iter_depth(GTK_TREE_STORE(model), &iter);
 
   main_tab_no =
       GPOINTER_TO_INT(
              g_object_get_data(G_OBJECT(ltrgui->nb_families), "main_tab"));
 
-  switch (iterd) {
-    case 0:
-      dialog = gtk_message_dialog_new(NULL,
-                              GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                      "Are you sure?");
-      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
-      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-      if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
-        gtk_widget_destroy(dialog);
-        return;
-      } else {
-        GtkTreeIter child;
-        if (gtk_tree_model_iter_children(model, &child, &iter)) {
-          gboolean valid = TRUE;
-          while (valid) {
-            gtk_tree_model_get(model, &child, TV_FAM_NODE, &gn, -1);
-            main_tab =
-               gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
-                                         main_tab_no);
-            gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
-                                            ltrgui->features, NULL, NULL);
-            valid = gtk_tree_store_remove(GTK_TREE_STORE(model), &child);
-          }
-        }
-        gtk_tree_model_get(model, &iter, TV_FAM_TAB_LABEL, &tab_label, -1);
-        if (tab_label) {
-          gtk_notebook_remove_page(GTK_NOTEBOOK(ltrgui->nb_families),
-                      GPOINTER_TO_INT(
-                       gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
-                                                       "nbpage")));
-          nb_families_refresh_notebook_nums(
-                                        GTK_NOTEBOOK(ltrgui->nb_families));
-        }
-        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
-      }
-      gtk_widget_destroy(dialog);
-      break;
-    case 1:
-      dialog = gtk_message_dialog_new(NULL,
-                              GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                      "Are you sure?");
-      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
-      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-      if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
-        gtk_widget_destroy(dialog);
-        return;
-      } else {        
-        GtkTreeIter parent;
-        GtArray *nodes;
-        gtk_tree_model_iter_parent(model, &parent, &iter);
-        gtk_tree_model_get(model, &iter,
-                           TV_FAM_NODE, &gn,
-                           -1);
-        gtk_tree_model_get(model, &parent,
-                           TV_FAM_NODE_ARRAY, &nodes,
-                           TV_FAM_TAB_CHILD, &tab_child,
-                           -1);
-        if (tab_child) {
-          GtkTreeRowReference *rowref;
-          /* rowref points to the path of <gn> in <tab_child->list_view> */
-          gtk_tree_model_get(model, &iter,
-                             TV_FAM_ROWREF, &rowref,
-                             -1);
-          gtk_ltr_family_list_view_remove(GTKLTRFAMILY(tab_child), rowref);
-          gtk_ltr_family_clear_detail_on_equal_nodes(GTKLTRFAMILY(tab_child),
-                                                     gn);
-        }
-        main_tab =
-           gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
-                                     main_tab_no);
-        /* removed <gn> will be added to general tab -> no rowref needed */
-        GT_UNUSED GtkTreeRowReference *rref =
-            gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), gn,
-                                            ltrgui->features, NULL, NULL);
-        remove_node_from_array(nodes, gn);
-        gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
-      }
-      gtk_widget_destroy(dialog);
-      break;
-    default:
-      /*TODO: handle programming error*/
-      g_warning("depth: %d", iterd);
-      break;
+  dialog = gtk_message_dialog_new(NULL,
+                          GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                  GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                  "Are you sure?");
+  gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+  gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+    gtk_widget_destroy(dialog);
+    return;
+  } else {
+    GtArray *nodes;
+    gtk_tree_model_get(model, &iter,
+                       TV_FAM_NODE_ARRAY, &nodes,
+                       -1);
+    main_tab =
+       gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrgui->nb_families),
+                                 main_tab_no);
+    for (i = 0; i < gt_array_size(nodes); i++) {
+      GtGenomeNode **tmp_gn;
+      tmp_gn = *(GtGenomeNode***) gt_array_get(nodes, i);
+      gtk_ltr_family_list_view_append(GTKLTRFAMILY(main_tab), tmp_gn,
+                                      ltrgui->features, NULL, NULL);
+    }
+
+    gtk_tree_model_get(model, &iter, TV_FAM_TAB_LABEL, &tab_label, -1);
+    if (tab_label) {
+      gtk_notebook_remove_page(GTK_NOTEBOOK(ltrgui->nb_families),
+                  GPOINTER_TO_INT(
+                   gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
+                                                   "nbpage")));
+      nb_families_refresh_notebook_nums(
+                                    GTK_NOTEBOOK(ltrgui->nb_families));
+    }
+    gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
   }
+  gtk_widget_destroy(dialog);
 }
 
 static void tv_families_popup_menu(GtkWidget *treeview,
                                    GdkEventButton *event,
-                                   gboolean valid,
                                    GUIData *ltrgui)
 {
   GtkWidget *menu, *menuitem;
@@ -219,7 +308,6 @@ static void tv_families_popup_menu(GtkWidget *treeview,
   g_signal_connect(menuitem, "activate",
                    (GCallback) tv_families_popup_menu_edit_clicked, treeview);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-  gtk_widget_set_sensitive(menuitem, !valid);
 
   menuitem = gtk_menu_item_new_with_label("Remove selected");
   g_signal_connect(menuitem, "activate",
@@ -239,30 +327,21 @@ gboolean tv_families_button_pressed(GtkWidget *treeview,
   if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
   {
     GtkTreeSelection *selection;
-    gboolean valid = true;
     selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
     if (gtk_tree_selection_count_selected_rows(selection)  <= 1)
     {
       GtkTreePath *path;
-      GtkTreeIter iter, tmp;
-
       if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
                                         (gint) event->x,
                                         (gint) event->y,
                                         &path, NULL, NULL, NULL)) {
         gtk_tree_selection_unselect_all(selection);
         gtk_tree_selection_select_path(selection, path);
-        gtk_tree_model_get_iter(
-                               gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)),
-                               &iter, path);
-        valid = gtk_tree_model_iter_parent(
-                               gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)),
-                               &tmp, &iter);
         gtk_tree_path_free(path);
       } else
         return TRUE;
     }
-    tv_families_popup_menu(treeview, event, valid, ltrgui);
+    tv_families_popup_menu(treeview, event, ltrgui);
     return TRUE;
   }
   return FALSE;
@@ -270,12 +349,36 @@ gboolean tv_families_button_pressed(GtkWidget *treeview,
 
 gboolean tv_families_on_popup_menu(GtkWidget *treeview, GUIData *ltrgui)
 {
-  tv_families_popup_menu(treeview, NULL, true, ltrgui);
+  tv_families_popup_menu(treeview, NULL, ltrgui);
   return TRUE;
 }
 
+static void tv_families_cell_edit_started(GT_UNUSED GtkCellRenderer *renderer,
+                                          GtkCellEditable *editable,
+                                          gchar *path_str,
+                                          GUIData *ltrgui)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkTreePath *path = NULL;
+  const char *text = NULL;
+
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
+
+  path = gtk_tree_path_new_from_string (path_str);
+  gtk_tree_model_get_iter (model, &iter, path);
+  gtk_tree_path_free (path);
+  gtk_tree_model_get(model, &iter,
+                     TV_FAM_OLDNAME, &text,
+                     -1);
+  if (GTK_IS_ENTRY(editable) && (text != NULL)) {
+    GtkEntry *entry = GTK_ENTRY (editable);
+    gtk_entry_set_text(entry, text);
+  }
+}
+
 static void tv_families_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
-                                         GUIData *ltrgui)
+                                           GUIData *ltrgui)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -285,7 +388,7 @@ static void tv_families_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrgui->tv_families));
   gtk_tree_selection_get_selected(sel, &model, &iter);
-  gtk_tree_model_get(model, &iter, TV_FAM_NAME, &name, -1);
+  gtk_tree_model_get(model, &iter, TV_FAM_CURNAME, &name, -1);
 
   if(!name)
     gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
@@ -306,7 +409,7 @@ static void tv_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->tv_families));
   gtk_tree_model_get_iter_from_string(model, &iter, path_string);
   gtk_tree_model_get(model, &iter,
-                     TV_FAM_NAME, &old_name,
+                     TV_FAM_OLDNAME, &old_name,
                      -1);
 
   if (!old_name && (g_strcmp0(new_name, "") == 0))
@@ -343,8 +446,16 @@ static void tv_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
       renderer = (GtkCellRenderer*) g_list_nth_data(tmp, 0);
       g_signal_emit_by_name(renderer, "editing-canceled");
     } else {
+      char tmp_name[BUFSIZ];
+      gtk_tree_model_get(model, &iter,
+                         TV_FAM_NODE_ARRAY, &nodes,
+                         -1);
+      g_snprintf(tmp_name, BUFSIZ, "%s (%lu)", new_name, gt_array_size(nodes));
       gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                         TV_FAM_NAME, new_name,
+                         TV_FAM_CURNAME, tmp_name,
+                         -1);
+      gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+                         TV_FAM_OLDNAME, new_name,
                          -1);
       gtk_tree_model_get(model, &iter,
                          TV_FAM_TAB_LABEL, &label,
@@ -352,9 +463,6 @@ static void tv_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
       if (label)
         gtk_label_close_set_text(GTKLABELCLOSE(label), new_name);
 
-      gtk_tree_model_get(model, &iter,
-                         TV_FAM_NODE_ARRAY, &nodes,
-                         -1);
       if (!nodes) {
         nodes = gt_array_new(sizeof(GtGenomeNode*));
         gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
@@ -377,19 +485,18 @@ void tv_families_row_activated(GtkTreeView *treeview,
                                GT_UNUSED GtkTreeViewColumn *column,
                                GUIData *ltrgui)
 {
+  GtArray *nodes;
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtkNotebook *notebook;
   GtkWidget *tab_label;
-  gint nbpage, iterd;
+  gint nbpage;
 
   model = gtk_tree_view_get_model(treeview);
   gtk_tree_model_get_iter(model, &iter, path);
-  iterd = gtk_tree_store_iter_depth(GTK_TREE_STORE(model), &iter);
-  if (iterd != 0)
-    return;
   gtk_tree_model_get(model, &iter,
                      TV_FAM_TAB_LABEL, &tab_label,
+                     TV_FAM_NODE_ARRAY, &nodes,
                      -1);
   notebook = GTK_NOTEBOOK(ltrgui->nb_families);  
 
@@ -399,7 +506,7 @@ void tv_families_row_activated(GtkTreeView *treeview,
            gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
     gtk_notebook_set_current_page(notebook, nbpage);
   } else {
-    nb_families_add_tab(model, &iter, ltrgui);
+    nb_families_add_tab(model, &iter, nodes, ltrgui);
   }
 }
 
@@ -447,6 +554,8 @@ void tv_families_init(GUIData *ltrgui)
                    G_CALLBACK(tv_families_cell_edited), ltrgui);
   g_signal_connect(G_OBJECT(renderer), "editing-canceled",
                    G_CALLBACK(tv_families_cell_edit_canceled), ltrgui);
+  g_signal_connect(G_OBJECT(renderer), "editing-started",
+                   G_CALLBACK(tv_families_cell_edit_started), ltrgui);
   g_signal_connect(G_OBJECT(ltrgui->tv_families), "button-press-event",
                    G_CALLBACK(tv_families_button_pressed), ltrgui);
   g_signal_connect(G_OBJECT(ltrgui->tv_families), "popup-menu",
@@ -455,15 +564,14 @@ void tv_families_init(GUIData *ltrgui)
                    G_CALLBACK(tv_families_row_activated), ltrgui);
   column  = gtk_tree_view_column_new_with_attributes("LTR Families",
                                                      renderer, "text",
-                                                     TV_FAM_NAME, NULL);
+                                                     TV_FAM_CURNAME, NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrgui->tv_families), column);
 
   store = gtk_tree_store_new(TV_FAM_N_COLUMS,
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
-                             G_TYPE_POINTER,
-                             G_TYPE_POINTER,
+                             G_TYPE_STRING,
                              G_TYPE_STRING);
 
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrgui->tv_families),

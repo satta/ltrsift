@@ -79,7 +79,9 @@ struct _GtkLTRFamily
     GtkVPaned vpane;
     GtkWidget *tree_view;
     GtkWidget *list_view; 
-    GtkWidget *image;
+    GtkWidget *image_area;
+    GtDiagram *diagram;
+    GtStyle *style;
 };
 
 struct _GtkLTRFamilyClass
@@ -96,7 +98,7 @@ void           gtk_ltr_family_clear           (GtkLTRFamily *ltrfam);
 
 GtkWidget* gtk_ltr_family_get_list_view(GtkLTRFamily *ltrfam);
 
-GtkTreeRowReference* gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
+void gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
                                      GtGenomeNode **gn,
                                      GtHashmap *features,
                                      GtkTreeRowReference *rowref,
@@ -111,5 +113,10 @@ void gtk_ltr_family_clear_image(GtkLTRFamily *ltrfam);
 
 void gtk_ltr_family_clear_detail_on_equal_nodes(GtkLTRFamily *ltrfam,
                                                 GtGenomeNode **gn);
+
+gboolean pane_moved(GtkPaned *pane, GtkScrollType scrolltype,
+                    gpointer user_data);
+
+gboolean pane_move_accept(GtkPaned *pane, gpointer user_data);
 
 #endif /* __GTK_LTR_FAMILY_H__ */

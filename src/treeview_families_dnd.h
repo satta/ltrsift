@@ -24,7 +24,6 @@ typedef struct _FamilyTransferData FamilyTransferData;
 
 struct _FamilyTransferData
 {
-  gchar *row;
   GtGenomeNode **gn;
   GtHashmap *feat;
 };
