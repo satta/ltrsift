@@ -279,19 +279,18 @@ void gtk_ltr_family_list_view_append(GtkLTRFamily *ltrfam,
     if ((g_strcmp0(fnt, FNT_REPEATR) == 0)) {
       GtRange range;
       char *seqid;
-      const char *tmp;
-      unsigned long rid;
       seqid = gt_str_get(gt_genome_node_get_seqid((GtGenomeNode*) curnode));
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
-      tmp = gt_feature_node_get_attribute(curnode, ATTR_RID);
-      sscanf(tmp, "repeat_region%lu", &rid);
+      GtStrand strand = gt_feature_node_get_strand(curnode);
+      char c[2];
+      g_snprintf(c, 2, "%c", GT_STRAND_CHARS[strand]);
       gtk_list_store_append(store, &iter);
       gtk_list_store_set(store, &iter,
                          LTRFAM_LV_NODE, gn,
                          LTRFAM_LV_FEAT, features,
                          LTRFAM_LV_ROWREF, rowref,
                          LTRFAM_LV_SEQID, seqid,
-                         LTRFAM_LV_TYPE, rid,
+                         LTRFAM_LV_TYPE, c,
                          LTRFAM_LV_START, range.start,
                          LTRFAM_LV_END, range.end,
                          -1);
@@ -391,7 +390,7 @@ static void gtk_ltr_family_list_view_new(GtkLTRFamily *ltrfam,
   types[1] = G_TYPE_POINTER;
   types[2] = G_TYPE_POINTER;
   types[3] = G_TYPE_STRING;
-  types[4] = G_TYPE_ULONG;
+  types[4] = G_TYPE_STRING;
   types[5] = G_TYPE_ULONG;
   types[6] = G_TYPE_ULONG;
 
