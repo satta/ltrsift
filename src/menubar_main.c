@@ -15,10 +15,9 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "gtk_ltr_family.h"
 #include "menubar_main.h"
-#include "notebook_families.h"
 #include "statusbar_main.h"
+#include "gtk_ltr_families.h"
 
 void mb_main_init(GUIData *ltrgui)
 {
@@ -117,26 +116,31 @@ void mb_main_project_open_activate(GT_UNUSED GtkMenuItem *menuitem,
       g_free(ltrgui->project_filename);
     ltrgui->project_filename = filename;
 
+    GtArray *nodes;
+    GtHashmap *features;
     GtNodeStream *last_stream = NULL,
                  *gff3_in_stream = NULL,
                  *preprocess_stream = NULL;
     GtError *err = NULL;
     int had_err = 0;
+    unsigned long n_features;
 
-    ltrgui->n_features = LTRFAM_LV_N_COLUMS;
+    nodes = gt_array_new(sizeof(GtGenomeNode*));
+    features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+    n_features = LTRFAMS_LV_N_COLUMS;
 
     last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
     last_stream = preprocess_stream =
-                  gt_ltrgui_preprocess_stream_new(last_stream, ltrgui->nodes,
-                                                  ltrgui->features,
-                                                  &ltrgui->n_features, err);
+                  gt_ltrgui_preprocess_stream_new(last_stream, nodes,
+                                                  features,
+                                                  &n_features, err);
     had_err = gt_node_stream_pull(last_stream, err);
     gt_node_stream_delete(preprocess_stream);
     gt_node_stream_delete(gff3_in_stream);
-
-    nb_families_init(ltrgui);
-
-    gtk_widget_show_all(ltrgui->hbox1_main);
+    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                    nodes,
+                                    features,
+                                    n_features);
   }
   /* TODO: Load project data */
 }

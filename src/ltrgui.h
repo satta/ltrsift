@@ -21,7 +21,7 @@
 #include <gtk/gtk.h>
 #include "genometools.h"
 #include "gtk_label_close.h"
-#include "gtk_ltr_family.h"
+#include "gtk_ltr_families.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
@@ -51,9 +51,8 @@ struct _GUIData
   GtkWidget *mb_main_project_save;
   GtkWidget *mb_main_project_save_as;
   GtkWidget *mb_main_project_quit;
-  GtkWidget *tv_families;
-  GtkWidget *hbox1_main;
-  GtkWidget *nb_families;
+  GtkWidget *vbox1_main;
+  GtkWidget *ltr_families;
   GtkWidget *sb_main;
   GtkWidget *main_window;
   GtkWidget *pw_window;
@@ -65,11 +64,10 @@ struct _GUIData
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;
-  GtArray *nodes;
-  GtHashmap *features;
-  unsigned long n_features;
 };
 
 gboolean init_gui(GUIData *ltrgui, GError **err);
+
+void free_hash(void *elem);
 
 #endif /* GUI_TEST_H */
