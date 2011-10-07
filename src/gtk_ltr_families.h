@@ -41,6 +41,7 @@
 #define LTRFAMS_LV_CAPTION_START "Start"
 #define LTRFAMS_LV_CAPTION_END   "End"
 #define LTRFAMS_TV_CAPTION_INFO  "Attributes"
+#define LTRFAMS_TV_CAPTION_TYPE  "Feature name"
 
 #define ATTR_RID       "ID"
 #define ATTR_CLUSTID   "clid"
@@ -111,6 +112,7 @@ struct _GtkLTRFamilies
   GtStyle *style;
   GtArray *nodes;
   GtHashmap *features;
+  GtError *err;
   unsigned long n_features;
 };
 

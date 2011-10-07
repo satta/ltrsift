@@ -28,13 +28,6 @@ void free_hash(void *elem)
 
 static void free_gui(GUIData *ltrgui)
 {
-  /*int i;
-
-  for (i = 0; i < gt_array_size(ltrgui->nodes); i++) {
-    gt_genome_node_delete(*(GtGenomeNode**) gt_array_get(ltrgui->nodes, i));
-  }
-  gt_array_delete(ltrgui->nodes);
-  gt_hashmap_delete(ltrgui->features);*/
   g_slice_free(GUIData, ltrgui);
 }
 

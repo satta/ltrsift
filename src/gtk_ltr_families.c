@@ -78,23 +78,18 @@ static void draw_image(GtkLTRFamilies *ltrfams, GtGenomeNode **gn)
   GtkWidget *a = GTK_WIDGET(ltrfams->image_area);
   GtFeatureIndex *features;
   GtRange range;
-  GtError *err;
   const char *seqid;
 
-  err = gt_error_new();
-  ltrfams->style = gt_style_new(err);
-  gt_style_load_file(ltrfams->style,
-   "/local/skastens/masterarbeit/ltrgui/tmp/ltr_colors_pdoms_uncollapsed.style",
-                     err);
   features = gt_feature_index_memory_new();
   gt_feature_index_add_feature_node(features, (GtFeatureNode*) gn);
   seqid = gt_feature_index_get_first_seqid(features);
   gt_feature_index_get_range_for_seqid(features, &range, seqid);
   gt_diagram_delete(ltrfams->diagram);
   ltrfams->diagram = gt_diagram_new(features, seqid, &range,
-                                    ltrfams->style, err);
+                                    ltrfams->style, ltrfams->err);
   gtk_widget_queue_draw_area(a, 0, 0, a->allocation.width,
                              a->allocation.height);
+  gt_feature_index_delete(features);
 }
 
 static gboolean image_area_expose_event(GtkWidget *widget,
@@ -496,6 +491,11 @@ static void gtk_ltr_families_tv_fams_pmenu_remove_clicked(
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
     return;
   gtk_tree_selection_get_selected(sel, &model, &iter);
+
+  if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(ltrfams->nb_family)) == 0) {
+    gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    return;
+  }
 
   main_tab_no =
       GPOINTER_TO_INT(
@@ -1108,7 +1108,7 @@ static void gtk_ltr_families_tv_det_create(GtkTreeView *tree_view)
   GtkTreeViewColumn *column;
 
   renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes(LTRFAMS_LV_CAPTION_TYPE,
+  column = gtk_tree_view_column_new_with_attributes(LTRFAMS_TV_CAPTION_TYPE,
                                                     renderer, "text",
                                                     LTRFAMS_DETAIL_TV_TYPE,
                                                     NULL);
@@ -1435,6 +1435,29 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   gtk_ltr_families_nb_fam_create(ltrfams);
 }
 
+static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
+                                         GT_UNUSED GdkEvent *event,
+                                         GT_UNUSED gpointer user_data)
+{
+  GtkLTRFamilies *ltrfams;
+  GtGenomeNode **gn;
+  unsigned long i;
+
+  ltrfams = GTK_LTR_FAMILIES(widget);
+
+  gt_error_delete(ltrfams->err);
+  gt_style_delete(ltrfams->style);
+  gt_diagram_delete(ltrfams->diagram);
+  gt_hashmap_delete(ltrfams->features);
+  for (i = 0; i < gt_array_size(ltrfams->nodes); i++) {
+    gn = *(GtGenomeNode***) gt_array_get(ltrfams->nodes, i);
+    gt_genome_node_delete(*gn);
+  }
+  gt_array_delete(ltrfams->nodes);
+
+  return TRUE;
+}
+
 static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
 {
   GtkWidget *vbox1,
@@ -1447,10 +1470,19 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
             *label,
             *sw1,
             *sw2,
-            *sw3;
+            *sw3,
+            *eventb,
+            *align1,
+            *align2,
+            *hsep1,
+            *hsep2;
+
   GtkAdjustment *vadj = NULL;
   GtkToolItem *add,
               *copy;
+  GdkColor color;
+
+  gdk_color_parse("white", &color);
 
   vbox1 = gtk_vbox_new(FALSE, 0);
   toolbar1 = gtk_toolbar_new();
@@ -1467,8 +1499,10 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
                            G_CALLBACK(gtk_ltr_families_lv_fams_add_clicked),
                            ltrfams->lv_families);
   gtk_container_add(GTK_CONTAINER(sw1), ltrfams->lv_families);
-  gtk_box_pack_start(GTK_BOX(vbox1), toolbar1, FALSE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox1), sw1, TRUE, TRUE, 0);
+  hsep1 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox1), toolbar1, FALSE, TRUE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox1), hsep1, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox1), sw1, TRUE, TRUE, 1);
 
   gtk_paned_add1(GTK_PANED(ltrfams), vbox1);
 
@@ -1480,21 +1514,30 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   gtk_toolbar_set_style(GTK_TOOLBAR(toolbar2), GTK_TOOLBAR_ICONS);
   gtk_toolbar_insert(GTK_TOOLBAR(toolbar2), copy, 0);
   ltrfams->nb_family = gtk_notebook_new();
-  gtk_box_pack_start(GTK_BOX(vbox2), toolbar2, FALSE, TRUE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox2), ltrfams->nb_family, TRUE, TRUE, 0);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox2), toolbar2, FALSE, TRUE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox2), hsep2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox2), ltrfams->nb_family, TRUE, TRUE, 1);
 
   gtk_paned_add1(GTK_PANED(vpane), vbox2);
 
   hpane = gtk_hpaned_new();
   vbox3 = gtk_vbox_new(FALSE, 0);
+  align1 = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+  align2 = gtk_alignment_new(0.0, 0.5, 1.0, 1.0);
+  eventb = gtk_event_box_new();
   label = gtk_label_new(LTRFAM_DETINFO);
+  gtk_widget_modify_bg(eventb, GTK_STATE_NORMAL, &color);
+  gtk_container_add(GTK_CONTAINER(align1), label);
+  gtk_container_add(GTK_CONTAINER(eventb), align1);
+  gtk_container_add(GTK_CONTAINER(align2), eventb);
   sw2 = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw2),
                                  GTK_POLICY_AUTOMATIC,
                                  GTK_POLICY_AUTOMATIC);
   ltrfams->tv_details = gtk_tree_view_new();
   gtk_container_add(GTK_CONTAINER(sw2), ltrfams->tv_details);
-  gtk_box_pack_start(GTK_BOX(vbox3), label, FALSE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(vbox3), align2, FALSE, TRUE, 0);
   gtk_box_pack_start(GTK_BOX(vbox3), sw2, TRUE, TRUE, 0);
 
   gtk_paned_add1(GTK_PANED(hpane), vbox3);
@@ -1504,6 +1547,7 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
                                  GTK_POLICY_NEVER,
                                  GTK_POLICY_AUTOMATIC);
   ltrfams->image_area = gtk_layout_new(NULL, vadj);
+  gtk_widget_modify_bg(ltrfams->image_area, GTK_STATE_NORMAL, &color);
   g_signal_connect(ltrfams->image_area, "expose-event",
       G_CALLBACK (image_area_expose_event), ltrfams);
   gtk_layout_set_size(GTK_LAYOUT(ltrfams->image_area), 100, 100);
@@ -1551,5 +1595,12 @@ GtkWidget* gtk_ltr_families_new()
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
   gtk_ltr_families_lv_fams_create(ltrfams);
   gtk_ltr_families_tv_det_create(GTK_TREE_VIEW(ltrfams->tv_details));
+  ltrfams->err = gt_error_new();
+  ltrfams->style = gt_style_new(ltrfams->err);
+  gt_style_load_file(ltrfams->style,
+   "/local/skastens/masterarbeit/ltrgui/tmp/ltr_colors_pdoms_uncollapsed.style",
+                     ltrfams->err);
+  g_signal_connect(G_OBJECT(ltrfams), "destroy-event",
+                   G_CALLBACK(gtk_ltr_families_destroy), NULL);
   return GTK_WIDGET(ltrfams);
 }
