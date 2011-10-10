@@ -137,6 +137,31 @@
               </object>
             </child>
             <child>
+              <object class="GtkMenuItem" id="menu_main_view">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="label" translatable="yes">_View</property>
+                <property name="use_underline">True</property>
+                <child type="submenu">
+                  <object class="GtkMenu" id="menu3">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkMenuItem" id="mb_main_view_columns">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="label" translatable="yes">_Columns</property>
+                        <property name="use_underline">True</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
               <object class="GtkMenuItem" id="menu_main_help">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
@@ -209,6 +234,9 @@
     <property name="destroy_with_parent">True</property>
     <signal name="destroy-event" handler="pw_cancel" swapped="no"/>
     <signal name="cancel" handler="pw_cancel" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <placeholder/>
     </child>
