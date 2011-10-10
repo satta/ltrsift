@@ -18,6 +18,19 @@
 #include <string.h>
 #include "gtk_ltr_families.h"
 
+static void gtk_ltr_families_nb_fam_lv_append(GtkTreeView*, GtGenomeNode**,
+                                              GtHashmap*, GtkTreeRowReference*,
+                                              GtkListStore*);
+static void gtk_ltr_families_nb_fam_refresh_nums(GtkNotebook*);
+
+/* get functions start */
+GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams)
+{
+  return GTK_NOTEBOOK(ltrfams->nb_family);
+}
+
+/* get functions end */
+
 /* "support" functions start */
 static void remove_node_from_array(GtArray *nodes, GtGenomeNode **gn)
 {
@@ -33,7 +46,7 @@ static void remove_node_from_array(GtArray *nodes, GtGenomeNode **gn)
   }
 }
 
-static char* double_underscores(const char *str)
+char* double_underscores(const char *str)
 {
   char **arr;
   char *ret;
@@ -628,6 +641,36 @@ static int add_feature_columns(void *key, void *value, void *lv,
   return 0;
 }
 
+static void
+gtk_ltr_families_nb_fam_lv_set_visible_columns(GtkNotebook *notebook,
+                                               GtkTreeView *list_view1)
+{
+  GtkWidget *sw;
+  GtkTreeView *list_view2;
+  GtkTreeViewColumn *column1,
+                    *column2;
+  GList *children,
+        *columns;
+  gint main_tab_no;
+  guint i, noc;
+
+  main_tab_no =
+             GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notebook), "main_tab"));
+  sw = gtk_notebook_get_nth_page(notebook, main_tab_no);
+  children = gtk_container_get_children(GTK_CONTAINER(sw));
+  list_view2 = GTK_TREE_VIEW(g_list_first(children)->data);
+  columns = gtk_tree_view_get_columns(list_view2);
+  noc = g_list_length(columns);
+  for (i = 0; i < noc; i++) {
+    column1 = gtk_tree_view_get_column(list_view1, i);
+    column2 = gtk_tree_view_get_column(list_view2, i);
+    gtk_tree_view_column_set_visible(column1,
+                                     gtk_tree_view_column_get_visible(column2));
+  }
+  g_list_free(children);
+  g_list_free(columns);
+}
+
 static void gtk_ltr_families_nb_fam_lv_changed(GtkTreeView *list_view,
                                                GtkLTRFamilies *ltrfams)
 {
@@ -1027,6 +1070,9 @@ static void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
                      LTRFAMS_FAM_LV_TAB_CHILD, list_view,
                      LTRFAMS_FAM_LV_TAB_LABEL, label,
                      -1);
+  gtk_ltr_families_nb_fam_lv_set_visible_columns(
+                                               GTK_NOTEBOOK(ltrfams->nb_family),
+                                                 GTK_TREE_VIEW(list_view));
   gtk_notebook_set_current_page(GTK_NOTEBOOK(ltrfams->nb_family), nbpage);
   g_free(name);
 }
@@ -1598,7 +1644,7 @@ GtkWidget* gtk_ltr_families_new()
   ltrfams->err = gt_error_new();
   ltrfams->style = gt_style_new(ltrfams->err);
   gt_style_load_file(ltrfams->style,
-   "/local/skastens/masterarbeit/ltrgui/tmp/ltr_colors_pdoms_uncollapsed.style",
+   "../tmp/ltr_colors_pdoms_uncollapsed.style",
                      ltrfams->err);
   g_signal_connect(G_OBJECT(ltrfams), "destroy-event",
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);

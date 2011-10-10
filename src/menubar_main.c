@@ -102,6 +102,80 @@ void mb_main_project_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
            - Save project data */
 }
 
+static void mb_main_view_columns_toggled(GtkCheckMenuItem *menuitem,
+                                         gpointer user_data)
+{
+  GtkWidget *sw;
+  GtkTreeView *list_view;
+  GtkTreeViewColumn *column;
+  GtkNotebook *notebook;
+  GList *children,
+        *columns;
+  const gchar *caption;
+  gint i, j, nop;
+  guint noc;
+
+  caption =
+           double_underscores(gtk_menu_item_get_label(GTK_MENU_ITEM(menuitem)));
+  notebook = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(user_data));
+  nop = gtk_notebook_get_n_pages(notebook);
+  for (i = 0; i < nop; i++) {
+    sw = gtk_notebook_get_nth_page(notebook, i);
+    children = gtk_container_get_children(GTK_CONTAINER(sw));
+    list_view = GTK_TREE_VIEW(g_list_first(children)->data);
+    columns = gtk_tree_view_get_columns(list_view);
+    noc = g_list_length(columns);
+    for (j = 0; j < noc; j++) {
+      column = gtk_tree_view_get_column(list_view, j);
+      if (g_strcmp0(caption, gtk_tree_view_column_get_title(column)) == 0)
+        gtk_tree_view_column_set_visible(column,
+                                      gtk_check_menu_item_get_active(menuitem));
+    }
+    g_list_free(children);
+    g_list_free(columns);
+  }
+}
+
+static int get_keys(void *key, GT_UNUSED void *values, void *cptns,
+                         GT_UNUSED GtError *err)
+{
+  GtStrArray *captions = (GtStrArray*) cptns;
+  const char *caption = (const char*) key;
+
+  gt_str_array_add_cstr(captions, caption);
+
+  return 0;
+}
+
+void mb_main_view_columns_set_submenu(GUIData *ltrgui,
+                                      GtHashmap *features,
+                                      GtError *err)
+{
+  GtkWidget *menu,
+            *menuitem;
+  GtStrArray *captions;
+  unsigned long i;
+
+  captions = gt_str_array_new();
+  menu = gtk_menu_new();
+
+  gt_hashmap_foreach(features, get_keys, (void*) captions, err);
+
+  for (i = 0; i < gt_str_array_size(captions); i++) {
+    menuitem =
+              gtk_check_menu_item_new_with_label(gt_str_array_get(captions, i));
+    g_signal_connect(G_OBJECT(menuitem), "toggled",
+                     G_CALLBACK(mb_main_view_columns_toggled),
+                     ltrgui->ltr_families);
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  }
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->mb_main_view_columns), menu);
+  gtk_widget_show_all(menu);
+  gtk_widget_set_sensitive(ltrgui->mb_main_view_columns, TRUE);
+  gt_str_array_delete(captions);
+}
+
 void mb_main_project_open_activate(GT_UNUSED GtkMenuItem *menuitem,
                                    GUIData *ltrgui)
 {
@@ -141,6 +215,7 @@ void mb_main_project_open_activate(GT_UNUSED GtkMenuItem *menuitem,
                                     nodes,
                                     features,
                                     n_features);
+    mb_main_view_columns_set_submenu(ltrgui, features, err);
   }
   /* TODO: Load project data */
 }

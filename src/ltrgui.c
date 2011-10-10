@@ -49,6 +49,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(mb_main_project_save);
   GW(mb_main_project_save_as);
   GW(mb_main_project_quit);
+  GW(mb_main_view_columns);
   GW(sw_main);
   GW(vbox1_main);
   GW(sb_main);

@@ -122,18 +122,17 @@ struct _GtkLTRFamiliesClass
   void (* gtk_ltr_families) (GtkLTRFamilies *ltrfams);
 };
 
-static void gtk_ltr_families_nb_fam_lv_append(GtkTreeView*, GtGenomeNode**,
-                                              GtHashmap*, GtkTreeRowReference*,
-                                              GtkListStore*);
-static void gtk_ltr_families_nb_fam_refresh_nums(GtkNotebook*);
-
 GType      gtk_ltr_families_get_type(void);
 
 GtkWidget* gtk_ltr_families_new();
+
+char* double_underscores(const char *str);
 
 void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                            GtArray *nodes,
                                            GtHashmap *features,
                                            unsigned long noc);
+
+GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 
 #endif /* GTK_LTR_FAMILIES_H */
