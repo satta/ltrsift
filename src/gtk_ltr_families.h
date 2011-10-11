@@ -53,6 +53,8 @@
 #define FNT_RLTR       "rLTR"
 #define LTRFAM_DETINFO "Detailed Information"
 
+#define TB_FAMS_ADD "Add new family"
+
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
@@ -134,5 +136,7 @@ void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                            unsigned long noc);
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
+
+void gtk_ltr_families_clear(GtkLTRFamilies *ltrfams);
 
 #endif /* GTK_LTR_FAMILIES_H */

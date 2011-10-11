@@ -27,7 +27,6 @@ typedef enum {
   PW_SUMMARY
 } ProjectWizardPages;
 
-#define GFF3_PATTERN "*.gff3"
 #define PW_SELECT_FILE "Select files..."
 
 void pw_init(GUIData *ltrgui);

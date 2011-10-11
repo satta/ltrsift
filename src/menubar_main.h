@@ -22,13 +22,15 @@
 
 void mb_main_init(GUIData *ltrgui);
 
-void mb_main_project_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+void mb_main_file_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 
-void mb_main_project_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+void mb_main_file_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 
-void mb_main_project_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+void mb_main_file_import_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 
-void mb_main_project_new_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+void mb_main_file_new_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+
+void mb_main_file_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 
 void mb_main_help_about_activate(GtkMenuItem *menutiem, GUIData *ltrgui);
 

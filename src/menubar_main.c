@@ -21,21 +21,26 @@
 
 void mb_main_init(GUIData *ltrgui)
 {
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_new),
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_new),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_NEW);
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_open),
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_open),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_OPEN);
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save),
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_save),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SAVE);
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_save_as),
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_save_as),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SAVE_AS);
-  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_quit),
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_import),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_IMPORT);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_close),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_CLOSE);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_quit),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_QUIT);
 }
 
-static gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
+static gchar* mb_main_file_import_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
+  GtkFileFilter *gff3_file_filter;
   gchar *filename = NULL;
 
   filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_OPEN,
@@ -44,6 +49,10 @@ static gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN,
                                             GTK_RESPONSE_ACCEPT, NULL);
+  gff3_file_filter = gtk_file_filter_new();
+  gtk_file_filter_set_name(gff3_file_filter, GFF3_PATTERN);
+  gtk_file_filter_add_pattern(gff3_file_filter, GFF3_PATTERN);
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), gff3_file_filter);
 
   if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
@@ -54,7 +63,7 @@ static gchar* mb_main_project_open_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-static gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
+static gchar* mb_main_file_save_as_get_filename(GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   gchar *filename = NULL;
@@ -75,24 +84,24 @@ static gchar* mb_main_project_save_as_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-void mb_main_project_save_activate(GT_UNUSED GtkMenuItem *menuitem,
+void mb_main_file_save_activate(GT_UNUSED GtkMenuItem *menuitem,
                                    GUIData *ltrgui)
 {
   gchar *filename;
 
   if (ltrgui->project_filename == NULL) {
-    filename = mb_main_project_save_as_get_filename(ltrgui);
+    filename = mb_main_file_save_as_get_filename(ltrgui);
     if (filename != NULL) ltrgui->project_filename = filename;
     /* TODO: if (filename != NULL) Save project data */
   } /* TODO: else Save as project data*/
 }
 
-void mb_main_project_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
+void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
                                       GUIData *ltrgui)
 {
   gchar *filename;
 
-  filename = mb_main_project_save_as_get_filename(ltrgui);
+  filename = mb_main_file_save_as_get_filename(ltrgui);
 
   if (filename != NULL) {
     if (ltrgui->project_filename != NULL) g_free(ltrgui->project_filename);
@@ -176,54 +185,65 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui,
   gt_str_array_delete(captions);
 }
 
-void mb_main_project_open_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                   GUIData *ltrgui)
+void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                  GUIData *ltrgui)
 {
   gchar *filename;
 
   /* TODO: check for modified project (check for save) */
 
-  filename = mb_main_project_open_get_filename(ltrgui);
+  filename = mb_main_file_import_get_filename(ltrgui);
 
   if (filename != NULL) {
-    if (ltrgui->project_filename != NULL)
+    /*if (ltrgui->project_filename != NULL)
       g_free(ltrgui->project_filename);
-    ltrgui->project_filename = filename;
+    ltrgui->project_filename = filename;*/
 
     GtArray *nodes;
     GtHashmap *features;
     GtNodeStream *last_stream = NULL,
                  *gff3_in_stream = NULL,
                  *preprocess_stream = NULL;
-    GtError *err = NULL;
+    GtError *err = gt_error_new();
     int had_err = 0;
     unsigned long n_features;
 
     nodes = gt_array_new(sizeof(GtGenomeNode*));
     features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
     n_features = LTRFAMS_LV_N_COLUMS;
-
     last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
     last_stream = preprocess_stream =
                   gt_ltrgui_preprocess_stream_new(last_stream, nodes,
                                                   features,
                                                   &n_features, err);
     had_err = gt_node_stream_pull(last_stream, err);
-    gt_node_stream_delete(preprocess_stream);
-    gt_node_stream_delete(gff3_in_stream);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),
                                     nodes,
                                     features,
                                     n_features);
     mb_main_view_columns_set_submenu(ltrgui, features, err);
+    gt_node_stream_delete(gff3_in_stream);
+    gt_node_stream_delete(preprocess_stream);
+    gt_error_delete(err);
   }
-  /* TODO: Load project data */
 }
 
-void mb_main_project_new_activate(GT_UNUSED GtkMenuItem *menuitem,
+void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                GT_UNUSED GUIData *ltrgui)
+{
+  return;
+}
+
+void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem,
                                   GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);
+}
+
+void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                 GUIData *ltrgui)
+{
+  gtk_ltr_families_clear(GTK_LTR_FAMILIES(ltrgui->ltr_families));
 }
 
 void mb_main_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,

@@ -44,11 +44,13 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 #define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
   GW(main_window);
   GW(mb_main);
-  GW(mb_main_project_new);
-  GW(mb_main_project_open);
-  GW(mb_main_project_save);
-  GW(mb_main_project_save_as);
-  GW(mb_main_project_quit);
+  GW(mb_main_file_new);
+  GW(mb_main_file_open);
+  GW(mb_main_file_save);
+  GW(mb_main_file_save_as);
+  GW(mb_main_file_import);
+  GW(mb_main_file_close);
+  GW(mb_main_file_quit);
   GW(mb_main_view_columns);
   GW(sw_main);
   GW(vbox1_main);

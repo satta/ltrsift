@@ -41,16 +41,20 @@
 #define GUI_WEBSITE         "http://www.genometools.org"
 #define GUI_LOGO            "../logo.png"
 
+#define GFF3_PATTERN "*.gff3"
+
 typedef struct _GUIData GUIData;
 
 struct _GUIData
 {
   GtkWidget *mb_main;
-  GtkWidget *mb_main_project_new;
-  GtkWidget *mb_main_project_open;
-  GtkWidget *mb_main_project_save;
-  GtkWidget *mb_main_project_save_as;
-  GtkWidget *mb_main_project_quit;
+  GtkWidget *mb_main_file_new;
+  GtkWidget *mb_main_file_open;
+  GtkWidget *mb_main_file_save;
+  GtkWidget *mb_main_file_save_as;
+  GtkWidget *mb_main_file_import;
+  GtkWidget *mb_main_file_close;
+  GtkWidget *mb_main_file_quit;
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
   GtkWidget *ltr_families;
