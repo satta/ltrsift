@@ -142,7 +142,8 @@ void pw_remove_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
 
-  if (!gtk_tree_selection_count_selected_rows(sel)) return;
+  if (!gtk_tree_selection_count_selected_rows(sel))
+    return;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
   rows = gtk_tree_selection_get_selected_rows(sel, &model);

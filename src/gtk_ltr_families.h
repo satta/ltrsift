@@ -53,7 +53,8 @@
 #define FNT_RLTR       "rLTR"
 #define LTRFAM_DETINFO "Detailed Information"
 
-#define TB_FAMS_ADD "Add new family"
+#define TB_FAMS_ADD    "Add new family"
+#define TB_FAMS_REMOVE "Remove families with less than three members"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
@@ -61,10 +62,9 @@ typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
 
 enum {
   LTRFAMS_LV_NODE = 0,
-  LTRFAMS_LV_FEAT,
   LTRFAMS_LV_ROWREF,
   LTRFAMS_LV_SEQID,
-  LTRFAMS_LV_TYPE,
+  LTRFAMS_LV_STRAND,
   LTRFAMS_LV_START,
   LTRFAMS_LV_END,
   LTRFAMS_LV_N_COLUMS
@@ -90,8 +90,9 @@ enum {
 
 struct _FamilyTransferData
 {
-  GtGenomeNode **gn;
-  GtHashmap *feat;
+  GtArray *nodes;
+  GtkTreeRowReference *rowref;
+  GList *rows;
 };
 
 typedef enum {
