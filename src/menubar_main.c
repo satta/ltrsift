@@ -234,8 +234,7 @@ void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   return;
 }
 
-void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                  GUIData *ltrgui)
+void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->pw_window);
 }
@@ -243,6 +242,7 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem,
 void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
                                  GUIData *ltrgui)
 {
+  gtk_widget_set_sensitive(ltrgui->mb_main_view_columns, false);
   gtk_ltr_families_clear(GTK_LTR_FAMILIES(ltrgui->ltr_families));
 }
 
