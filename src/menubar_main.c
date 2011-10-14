@@ -173,11 +173,16 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui,
   for (i = 0; i < gt_str_array_size(captions); i++) {
     menuitem =
               gtk_check_menu_item_new_with_label(gt_str_array_get(captions, i));
+    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
     g_signal_connect(G_OBJECT(menuitem), "toggled",
                      G_CALLBACK(mb_main_view_columns_toggled),
                      ltrgui->ltr_families);
-    gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+    if (g_strcmp0(gt_str_array_get(captions, i), FNT_LLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 0);
+    else if (g_strcmp0(gt_str_array_get(captions, i), FNT_RLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 1);
+    else
+      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
   }
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->mb_main_view_columns), menu);
   gtk_widget_show_all(menu);

@@ -36,6 +36,8 @@
 #define IS_GTK_LTR_FAMILIES_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FAMILIES_TYPE)
 
+#define DEFAULT_STYLE "../style/default.style"
+
 #define LTRFAMS_LV_CAPTION_SEQID "SeqID"
 #define LTRFAMS_LV_CAPTION_TYPE  "S"
 #define LTRFAMS_LV_CAPTION_START "Start"
@@ -55,6 +57,12 @@
 
 #define TB_FAMS_ADD    "Add new family"
 #define TB_FAMS_REMOVE "Remove families with less than three members"
+
+#define FAMS_RM_DIALOG    "You're about to remove %d families. All members will "\
+                          "be unclassified and added to the 'General' tab "\
+                          "afterwards. Are you sure?"
+#define FAMS_EMPTY_DIALOG "Family name must not be empty!"
+#define FAMS_EXIST_DIALOG "Family name already exists!"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
