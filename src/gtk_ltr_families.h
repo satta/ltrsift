@@ -57,12 +57,24 @@
 
 #define TB_FAMS_ADD    "Add new family"
 #define TB_FAMS_REMOVE "Remove families with less than three members"
+#define TB_NB_NEW_FAM  "Check for new family with selected candidates"
 
-#define FAMS_RM_DIALOG    "You're about to remove %d families. All members will "\
-                          "be unclassified and added to the 'General' tab "\
-                          "afterwards. Are you sure?"
+#define FAMS_RM_DIALOG    "You're about to remove %d family/families.\nAll "\
+                          "members will be unclassified after this action and "\
+                          "added to the 'General' tab.\nAre you sure?"
 #define FAMS_EMPTY_DIALOG "Family name must not be empty!"
 #define FAMS_EXIST_DIALOG "Family name already exists!"
+#define NEW_FAM_DIALOG    "Please select at least three candidates for "\
+                          "classification"
+
+#define CAND_RM_DIALOG "All selected candidates will be deleted from the "\
+                       "project. This action cannot be undone!\nAre you sure?"
+#define CAND_UC_DIALOG "All selected members will be unclassified after this "\
+                       "operation and added to the 'General' tab.\n"\
+                       "Are you sure?"
+
+#define REMOVE  "Remove selected"
+#define UNCLASS "Unclassify selected"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
@@ -116,13 +128,17 @@ struct _GtkLTRFamilies
   GtkHPaned hpane;
 
   GtkWidget *lv_families;
+  GtkCellRenderer *lv_fams_renderer;
+  GtkWidget *tb_lv_families;
   GtkWidget *nb_family;
+  GtkWidget *tb_nb_family;
   GtkWidget *tv_details;
   GtkWidget *image_area;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
   GtHashmap *features;
+  GtHashmap *colors;
   GtError *err;
   unsigned long n_features;
 };
