@@ -256,7 +256,10 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
                                  GUIData *ltrgui)
 {
   gtk_widget_set_sensitive(ltrgui->mb_main_view_columns, false);
-  gtk_ltr_families_clear(GTK_LTR_FAMILIES(ltrgui->ltr_families));
+  gtk_widget_destroy(ltrgui->ltr_families);
+  ltrgui->ltr_families = gtk_ltr_families_new();
+  gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
+                     TRUE, TRUE, 0);
 }
 
 void mb_main_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,

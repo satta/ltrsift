@@ -112,7 +112,8 @@ struct _FamilyTransferData
 {
   GtArray *nodes;
   GtkTreeRowReference *rowref;
-  GList *rows;
+  GList *references;
+  GtkTreeView *list_view;
 };
 
 typedef enum {
@@ -161,7 +162,5 @@ void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                            unsigned long noc);
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
-
-void gtk_ltr_families_clear(GtkLTRFamilies *ltrfams);
 
 #endif /* GTK_LTR_FAMILIES_H */
