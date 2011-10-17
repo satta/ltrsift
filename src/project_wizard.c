@@ -25,18 +25,18 @@ void pw_init(GUIData *ltrgui)
                                                   ltrgui->pw_treeview_gff3)),
                                                         GTK_SELECTION_MULTIPLE);
 
-  gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrgui->pw_window),
+  gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrgui->project_wizard),
                                (GtkAssistantPageFunc) pw_forward, ltrgui, NULL);
 }
 
 void pw_reset_defaults(GUIData *ltrgui)
 {
   pw_basic_files_page_reset_defaults(ltrgui);
-  gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
-      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+  gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
+      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
                                                         PW_SELECTFILES), FALSE);
-  gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->pw_window),
-      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->pw_window),
+  gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
+      gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
                                                      PW_CLASSIFICATION), FALSE);
 }
 
@@ -57,7 +57,7 @@ gint pw_forward(gint current_page, GUIData *ltrgui)
       break;
     case PW_SELECTFILES:
       next_page = (gtk_toggle_button_get_active(
-                   GTK_TOGGLE_BUTTON(ltrgui->pw_do_classification_cb))
+                   GTK_TOGGLE_BUTTON(ltrgui->pw_do_clustering_cb))
                                               ? PW_CLASSIFICATION : PW_SUMMARY);
       break;
     case PW_CLASSIFICATION:

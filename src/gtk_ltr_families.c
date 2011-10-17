@@ -93,6 +93,9 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
   GtkTreeModel *model;
   GtkWidget *main_tab, *tab_label;
   GtkTreeIter iter;
+  GtGenomeNode *gn;
+  GtFeatureNode *curnode;
+  GtFeatureNodeIterator *fni;
   gint main_tab_no;
   unsigned long i;
 
@@ -103,20 +106,23 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
                      LTRFAMS_FAM_LV_NODE_ARRAY, &nodes,
                      -1);
   if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(ltrfams->nb_family)) != 0) {
+
     main_tab_no =
                  GPOINTER_TO_INT(g_object_get_data(G_OBJECT(ltrfams->nb_family),
                                                    "main_tab"));
-    main_tab =
-       gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrfams->nb_family),
-                                 main_tab_no);
+    main_tab = gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrfams->nb_family),
+                                         main_tab_no);
     children = gtk_container_get_children(GTK_CONTAINER(main_tab));
     list_view = GTK_TREE_VIEW(g_list_first(children)->data);
     for (i = 0; i < gt_array_size(nodes); i++) {
-      GtGenomeNode *tmp_gn;
-      tmp_gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-      gtk_ltr_families_nb_fam_lv_append_gn(list_view, tmp_gn,
+      gn = *(GtGenomeNode**) gt_array_get(nodes, i);
+      fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+      curnode = gt_feature_node_iterator_next(fni);
+      gt_feature_node_remove_attribute(curnode, "ltrfam");
+      gtk_ltr_families_nb_fam_lv_append_gn(list_view, gn,
                                         ltrfams->features,
                                         NULL, NULL, NULL, NULL);
+      gt_feature_node_iterator_delete(fni);
     }
     gt_array_delete(nodes);
     gtk_tree_model_get(model, &iter,
@@ -414,8 +420,9 @@ static void on_drag_data_received(GtkWidget *widget,
     GtkTreePath *tv_path;
     GtkTreeIter tv_iter;
     GtArray *tmp_nodes;
-    char *tmp_oldname;
-    char tmp_curname[BUFSIZ];
+    char *tmp_oldname,
+         tmp_curname[BUFSIZ];
+
     tv_path = gtk_tree_row_reference_get_path(tdata->rowref);
     gtk_tree_model_get_iter(model, &tv_iter, tv_path);
     gtk_tree_model_get(model, &tv_iter,
@@ -474,7 +481,8 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
   GtkWidget *dialog,
             *main_tab,
             *tab_child;
-  GtkTreeView *list_view, *tmp_view;
+  GtkTreeView *list_view,
+              *tmp_view;
   GtkTreeModel *model;
   GtkTreeSelection *sel;
   GtkTreeIter iter;
@@ -497,7 +505,6 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
   sel = gtk_tree_view_get_selection(list_view);
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
     return;
-
 
   dialog = gtk_message_dialog_new(NULL,
                                   GTK_DIALOG_MODAL |
@@ -527,9 +534,16 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                          -1);
       gt_array_add(nodes, gn);
       gtk_ltr_families_clear_lv_det_on_equal_nodes(ltrfams, gn);
-      if (tab_no != main_tab_no)
+      if (tab_no != main_tab_no) {
+        GtFeatureNode *curnode;
+        GtFeatureNodeIterator *fni;
+        fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+        curnode = gt_feature_node_iterator_next(fni);
+        gt_feature_node_remove_attribute(curnode, "ltrfam");
         gtk_ltr_families_nb_fam_lv_append_gn(tmp_view, gn, ltrfams->features,
                                           NULL, NULL, NULL, NULL);
+        gt_feature_node_iterator_delete(fni);
+      }
       references = g_list_prepend(references,
                                   gtk_tree_row_reference_copy(rowref));
       gtk_tree_row_reference_free(rowref);
@@ -694,8 +708,8 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
     tmp = rows;
     while (tmp != NULL) {
       rowref = gtk_tree_row_reference_new(model, (GtkTreePath*) tmp->data);
-      references =
-                g_list_prepend(references, gtk_tree_row_reference_copy(rowref));
+      references = g_list_prepend(references,
+                                  gtk_tree_row_reference_copy(rowref));
       gtk_tree_row_reference_free(rowref);
       tmp = tmp->next;
     }

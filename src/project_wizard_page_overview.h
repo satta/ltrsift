@@ -15,23 +15,14 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef PROJECT_WIZARD_PAGE_BASIC_SETTINGS_H
-#define PROJECT_WIZARD_PAGE_BASIC_SETTINGS_H
+#ifndef PROJECT_WIZARD_PAGE_OVERVIEW_H
+#define PROJECT_WIZARD_PAGE_OVERVIEW_H
 
 #include "ltrgui.h"
 #include "project_wizard.h"
 
-void pw_basic_files_page_reset_defaults(GUIData *ltrgui);
+void pw_edit_general_settings_clicked(GtkButton *button, GUIData *ltrgui);
 
-void pw_choose_projectname_button_clicked(GtkButton *button, GUIData *ltrgui);
+void pw_edit_cluster_settings_clicked(GtkButton *button, GUIData *ltrgui);
 
-void pw_add_gff3_button_clicked(GtkButton *button, GUIData *ltrgui);
-
-void pw_remove_gff3_button_clicked(GtkButton *button, GUIData *ltrgui);
-
-void pw_choose_encseq_button_clicked(GtkButton *button, GUIData *ltrgui);
-
-void pw_do_clustering_cb_toggled(GtkToggleButton *togglebutton,
-                                 GUIData *ltrgui);
-
-#endif /* PROJECT_WIZARD_PAGE_BASIC_SETTINGS_H */
+#endif /* PROJECT_WIZARD_PAGE_OVERVIEW_H */

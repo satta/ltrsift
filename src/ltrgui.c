@@ -55,11 +55,16 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(sw_main);
   GW(vbox1_main);
   GW(sb_main);
-  GW(pw_window);
+  GW(project_wizard);
   GW(pw_label_projectname);
+  GW(pw_label_projectname2);
   GW(pw_label_encseq);
+  GW(pw_label_encseq2);
+  GW(pw_label_gff3_files);
+  GW(pw_label_clustering);
   GW(pw_treeview_gff3);
-  GW(pw_do_classification_cb);
+  GW(pw_do_clustering_cb);
+  GW(pw_exp_clustering);
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui); 
@@ -69,7 +74,7 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
                      TRUE, TRUE, 0);
 
-  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->pw_window),
+  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->project_wizard),
                                GTK_WINDOW(ltrgui->main_window));
 
   gtk_builder_connect_signals(builder, ltrgui);

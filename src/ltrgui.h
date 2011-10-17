@@ -60,11 +60,16 @@ struct _GUIData
   GtkWidget *ltr_families;
   GtkWidget *sb_main;
   GtkWidget *main_window;
-  GtkWidget *pw_window;
+  GtkWidget *project_wizard;
   GtkWidget *pw_treeview_gff3;
-  GtkWidget *pw_do_classification_cb;
+  GtkWidget *pw_do_clustering_cb;
   GtkWidget *pw_label_projectname;
   GtkWidget *pw_label_encseq;
+  GtkWidget *pw_label_projectname2;
+  GtkWidget *pw_label_encseq2;
+  GtkWidget *pw_exp_clustering;
+  GtkWidget *pw_label_gff3_files;
+  GtkWidget *pw_label_clustering;
   GtkWidget *sw_main;
   guint sb_main_context_id;
   GSList *project_files;

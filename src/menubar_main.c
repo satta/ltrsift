@@ -249,7 +249,7 @@ void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
 
 void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
-  gtk_widget_show(ltrgui->pw_window);
+  gtk_widget_show(ltrgui->project_wizard);
 }
 
 void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
