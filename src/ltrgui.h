@@ -19,6 +19,7 @@
 #define GUI_TEST_H
 
 #include <gtk/gtk.h>
+#include <glib.h>
 #include "genometools.h"
 #include "gtk_label_close.h"
 #include "gtk_ltr_families.h"
@@ -60,6 +61,7 @@ struct _GUIData
   GtkWidget *ltr_families;
   GtkWidget *sb_main;
   GtkWidget *main_window;
+  /* project wizard stuff start */
   GtkWidget *project_wizard;
   GtkWidget *pw_treeview_gff3;
   GtkWidget *pw_do_clustering_cb;
@@ -70,13 +72,24 @@ struct _GUIData
   GtkWidget *pw_exp_clustering;
   GtkWidget *pw_label_gff3_files;
   GtkWidget *pw_label_clustering;
-  GtkWidget *sw_main;
+  GtkWidget *pw_label_psmall;
+  GtkWidget *pw_label_plarge;
+  GtkWidget *pw_label_xdrop;
+  GtkWidget *pw_label_words;
+  GtkWidget *pw_label_seqid;
+  GtkWidget *pw_spinbutton_psmall;
+  GtkWidget *pw_spinbutton_plarge;
+  GtkWidget *pw_spinbutton_xdrop;
+  GtkWidget *pw_spinbutton_words;
+  GtkWidget *pw_spinbutton_seqid;
+  GtkWidget *pw_label_classification;
+  GtkWidget *pw_do_classification_cb;
+  /* project wizard stuff end */
   guint sb_main_context_id;
   GSList *project_files;
   gchar *project_filename;
+  GError *err;
 };
-
-gboolean init_gui(GUIData *ltrgui, GError **err);
 
 void free_hash(void *elem);
 

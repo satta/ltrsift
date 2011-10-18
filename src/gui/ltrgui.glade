@@ -284,7 +284,7 @@
     <property name="default_width">640</property>
     <property name="default_height">480</property>
     <property name="destroy_with_parent">True</property>
-    <signal name="destroy-event" handler="pw_cancel" swapped="no"/>
+    <signal name="apply" handler="pw_apply" swapped="no"/>
     <signal name="cancel" handler="pw_cancel" swapped="no"/>
     <child>
       <object class="GtkLabel" id="pw_label_desc_page1">
@@ -425,7 +425,8 @@
           <object class="GtkScrolledWindow" id="pw_scrolledwindow_gff3">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="hscrollbar_policy">never</property>
+            <property name="hscrollbar_policy">automatic</property>
+            <property name="vscrollbar_policy">automatic</property>
             <property name="shadow_type">in</property>
             <child>
               <object class="GtkTreeView" id="pw_treeview_gff3">
@@ -611,8 +612,8 @@
             <property name="label" translatable="yes">Settings for clustering</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -624,11 +625,19 @@
               <object class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
                 <child>
-                  <object class="GtkLabel" id="pw_label_psmall">
+                  <object class="GtkAlignment" id="alignment3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Value for psmall</property>
+                    <child>
+                      <object class="GtkLabel" id="label15">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Value for psmall</property>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -637,10 +646,17 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="pw_label_plarge">
+                  <object class="GtkAlignment" id="alignment4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Value for plarge</property>
+                    <child>
+                      <object class="GtkLabel" id="label16">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Value for plarge</property>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -649,10 +665,17 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="pw_label_xdrop">
+                  <object class="GtkAlignment" id="alignment5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Xdrop value</property>
+                    <child>
+                      <object class="GtkLabel" id="label17">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Xdrop value</property>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -661,10 +684,17 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="pw_label_wordsize">
+                  <object class="GtkAlignment" id="alignment6">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Word size</property>
+                    <child>
+                      <object class="GtkLabel" id="label18">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">Word size</property>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -673,10 +703,18 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="pw_label_identity">
+                  <object class="GtkAlignment" id="alignment7">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">% sequence identity</property>
+                    <property name="xalign">0</property>
+                    <child>
+                      <object class="GtkLabel" id="label19">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="label" translatable="yes">% sequence identity</property>
+                      </object>
+                    </child>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -700,6 +738,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="invisible_char">●</property>
+                    <property name="width_chars">4</property>
                     <property name="invisible_char_set">True</property>
                     <property name="primary_icon_activatable">False</property>
                     <property name="secondary_icon_activatable">False</property>
@@ -708,6 +747,7 @@
                     <property name="adjustment">adj_psmall</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
+                    <signal name="value-changed" handler="pw_spinbutton_psmall_value_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -728,6 +768,7 @@
                     <property name="adjustment">adj_plarge</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
+                    <signal name="value-changed" handler="pw_spinbutton_plarge_value_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -748,6 +789,7 @@
                     <property name="adjustment">adj_xdrop</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
+                    <signal name="value-changed" handler="pw_spinbutton_xdrop_value_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -756,7 +798,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton" id="pw_spinbutton_wordsize">
+                  <object class="GtkSpinButton" id="pw_spinbutton_words">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="invisible_char">●</property>
@@ -768,6 +810,7 @@
                     <property name="adjustment">adj_wordsize</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
+                    <signal name="value-changed" handler="pw_spinbutton_words_value_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -776,7 +819,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton" id="pw_spinbutton_identity">
+                  <object class="GtkSpinButton" id="pw_spinbutton_seqid">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="max_length">10</property>
@@ -790,6 +833,7 @@
                     <property name="climb_rate">0.10000000000000001</property>
                     <property name="digits">1</property>
                     <property name="numeric">True</property>
+                    <signal name="value-changed" handler="pw_spinbutton_seqid_value_changed" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -819,10 +863,11 @@
             <property name="receives_default">False</property>
             <property name="use_action_appearance">False</property>
             <property name="draw_indicator">True</property>
+            <signal name="toggled" handler="pw_do_classification_cb_toggled" swapped="no"/>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">11</property>
           </packing>
         </child>
@@ -843,8 +888,8 @@
             <property name="label" translatable="yes">PLACEHOLDER</property>
           </object>
           <packing>
-            <property name="expand">True</property>
-            <property name="fill">True</property>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -857,14 +902,17 @@
               <object class="GtkHBox" id="hbox2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
                 <child>
                   <object class="GtkVBox" id="vbox2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkLabel" id="label4">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">1</property>
                         <property name="label" translatable="yes">Project path and name:</property>
                       </object>
                       <packing>
@@ -877,6 +925,7 @@
                       <object class="GtkLabel" id="label5">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">1</property>
                         <property name="label" translatable="yes">GFF3 files:</property>
                       </object>
                       <packing>
@@ -889,6 +938,7 @@
                       <object class="GtkLabel" id="label6">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">1</property>
                         <property name="label" translatable="yes">Encoded sequence:</property>
                       </object>
                       <packing>
@@ -901,6 +951,7 @@
                       <object class="GtkLabel" id="label7">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">1</property>
                         <property name="label" translatable="yes">Do clustering?</property>
                       </object>
                       <packing>
@@ -922,8 +973,8 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
@@ -931,14 +982,16 @@
                   <object class="GtkVBox" id="vbox4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="homogeneous">True</property>
                     <child>
                       <object class="GtkLabel" id="pw_label_projectname2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">0</property>
                       </packing>
                     </child>
@@ -946,10 +999,11 @@
                       <object class="GtkLabel" id="pw_label_gff3_files">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
@@ -957,11 +1011,11 @@
                       <object class="GtkLabel" id="pw_label_encseq2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">label</property>
+                        <property name="xalign">0</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">2</property>
                       </packing>
                     </child>
@@ -969,32 +1023,41 @@
                       <object class="GtkLabel" id="pw_label_clustering">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
                         <property name="label" translatable="yes">no</property>
                       </object>
                       <packing>
-                        <property name="expand">True</property>
-                        <property name="fill">True</property>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
                         <property name="position">3</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="pw_edit_general_settings">
-                        <property name="label" translatable="yes">Edit settings</property>
+                      <object class="GtkAlignment" id="alignment8">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="use_action_appearance">False</property>
-                        <signal name="clicked" handler="pw_edit_general_settings_clicked" swapped="no"/>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.10000000149011612</property>
+                        <child>
+                          <object class="GtkButton" id="pw_edit_general_settings">
+                            <property name="label" translatable="yes">Edit settings</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                            <signal name="clicked" handler="pw_edit_general_settings_clicked" swapped="no"/>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
-                        <property name="fill">True</property>
+                        <property name="fill">False</property>
                         <property name="position">4</property>
                       </packing>
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
+                    <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
@@ -1010,7 +1073,7 @@
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
@@ -1024,16 +1087,18 @@
               <object class="GtkHBox" id="hbox6">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
                 <child>
                   <object class="GtkVBox" id="pw_vbox4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="homogeneous">True</property>
                     <child>
-                      <object class="GtkLabel" id="pw_label_psmall1">
+                      <object class="GtkLabel" id="label20">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Value for psmall</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">Value for psmall:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1042,10 +1107,11 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="pw_label_plarge1">
+                      <object class="GtkLabel" id="label21">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Value for plarge</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">Value for plarge:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1054,10 +1120,11 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="pw_label_xdrop1">
+                      <object class="GtkLabel" id="label22">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Xdrop value</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">Xdrop value:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1066,10 +1133,11 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="pw_label_wordsize1">
+                      <object class="GtkLabel" id="label23">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Word size</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">Word size:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1078,10 +1146,11 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="pw_label_identity1">
+                      <object class="GtkLabel" id="label24">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">% sequence identity</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">% sequence identity:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1090,10 +1159,11 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="pw_label_classification">
+                      <object class="GtkLabel" id="label25">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Do classification?</property>
+                        <property name="xalign">1</property>
+                        <property name="label" translatable="yes">Do classification?:</property>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1114,8 +1184,8 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
                     <property name="position">0</property>
                   </packing>
                 </child>
@@ -1125,9 +1195,18 @@
                     <property name="can_focus">False</property>
                     <property name="homogeneous">True</property>
                     <child>
-                      <object class="GtkLabel" id="label9">
+                      <object class="GtkAlignment" id="alignment14">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.05000000074505806</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_psmall">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1136,9 +1215,18 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label10">
+                      <object class="GtkAlignment" id="alignment13">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.05000000074505806</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_plarge">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1147,9 +1235,18 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label11">
+                      <object class="GtkAlignment" id="alignment12">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.05000000074505806</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_xdrop">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1158,9 +1255,18 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label12">
+                      <object class="GtkAlignment" id="alignment11">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.05000000074505806</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_words">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1169,9 +1275,18 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label13">
+                      <object class="GtkAlignment" id="alignment10">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.05000000074505806</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_seqid">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">1</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1180,9 +1295,18 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label14">
+                      <object class="GtkAlignment" id="alignment15">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <child>
+                          <object class="GtkLabel" id="pw_label_classification">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="xalign">0</property>
+                            <property name="label" translatable="yes">no</property>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">True</property>
@@ -1191,13 +1315,21 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton" id="pw_edit_cluster_settings">
-                        <property name="label" translatable="yes">Edit settings</property>
+                      <object class="GtkAlignment" id="alignment9">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="use_action_appearance">False</property>
-                        <signal name="clicked" handler="pw_edit_cluster_settings_clicked" swapped="no"/>
+                        <property name="can_focus">False</property>
+                        <property name="xalign">0</property>
+                        <property name="xscale">0.10000000149011612</property>
+                        <child>
+                          <object class="GtkButton" id="pw_edit_cluster_settings">
+                            <property name="label" translatable="yes">Edit settings</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="use_action_appearance">False</property>
+                            <signal name="clicked" handler="pw_edit_cluster_settings_clicked" swapped="no"/>
+                          </object>
+                        </child>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1207,7 +1339,7 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
+                    <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">1</property>
                   </packing>
@@ -1223,7 +1355,7 @@
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">2</property>
           </packing>

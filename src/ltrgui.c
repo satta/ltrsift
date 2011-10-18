@@ -31,13 +31,13 @@ static void free_gui(GUIData *ltrgui)
   g_slice_free(GUIData, ltrgui);
 }
 
-gboolean init_gui(GUIData *ltrgui, GError **err)
+static gboolean init_gui(GUIData *ltrgui)
 {
   GtkBuilder *builder;
 
   builder = gtk_builder_new();
 
-  if (gtk_builder_add_from_file(builder, GUI_FILE, err) == 0)
+  if (gtk_builder_add_from_file(builder, GUI_FILE, &ltrgui->err) == 0)
     return FALSE;
 
   /* Get objects from UI */
@@ -52,9 +52,9 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(mb_main_file_close);
   GW(mb_main_file_quit);
   GW(mb_main_view_columns);
-  GW(sw_main);
   GW(vbox1_main);
   GW(sb_main);
+  /* project wizard stuff start */
   GW(project_wizard);
   GW(pw_label_projectname);
   GW(pw_label_projectname2);
@@ -62,9 +62,22 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
   GW(pw_label_encseq2);
   GW(pw_label_gff3_files);
   GW(pw_label_clustering);
+  GW(pw_label_classification);
+  GW(pw_label_psmall);
+  GW(pw_label_plarge);
+  GW(pw_label_xdrop);
+  GW(pw_label_words);
+  GW(pw_label_seqid);
+  GW(pw_spinbutton_psmall);
+  GW(pw_spinbutton_plarge);
+  GW(pw_spinbutton_xdrop);
+  GW(pw_spinbutton_words);
+  GW(pw_spinbutton_seqid);
   GW(pw_treeview_gff3);
   GW(pw_do_clustering_cb);
+  GW(pw_do_classification_cb);
   GW(pw_exp_clustering);
+  /* project wizard stuff end */
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui); 
@@ -90,18 +103,17 @@ gboolean init_gui(GUIData *ltrgui, GError **err)
 gint main(gint argc, gchar *argv[])
 {
   GUIData *ltrgui;
-  GError *err = NULL;
+
 
    /* allocate the memory needed by GUIData */
   ltrgui = g_slice_new(GUIData);
-
+  ltrgui->err = NULL;
   /* initialize libraries */
   gtk_init(&argc, &argv);
   gt_lib_init();
 
-  if (!init_gui(ltrgui, &err)) {
-    fprintf(stderr, "ERROR: %s\n", err->message);
-    g_error_free(err);
+  if (!init_gui(ltrgui)) {
+    fprintf(stderr, "ERROR: %s\n", ltrgui->err->message);
     g_slice_free(GUIData, ltrgui);
     return 1;
   }

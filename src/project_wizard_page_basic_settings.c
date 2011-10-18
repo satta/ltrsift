@@ -17,7 +17,7 @@
 
 #include "project_wizard_page_basic_settings.h"
 
-void pw_basic_files_page_reset_defaults(GUIData *ltrgui)
+void pw_page_basic_settings_reset_defaults(GUIData *ltrgui)
 {
   GtkTreeModel *model;
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
@@ -98,7 +98,7 @@ void pw_add_encseq_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
 }
 */
 
-static void pw_basic_files_page_complete(GUIData *ltrgui)
+static void pw_page_basic_settings_complete(GUIData *ltrgui)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -129,6 +129,26 @@ void pw_do_clustering_cb_toggled(GtkToggleButton *togglebutton, GUIData *ltrgui)
   gtk_expander_set_expanded(GTK_EXPANDER(ltrgui->pw_exp_clustering), active);
   gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_clustering),
                       active ? "yes" : "no");
+  if (active) {
+    GtkSpinButton *sbutton;
+    gchar buf[6];
+
+    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
+    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
+    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_psmall), buf);
+    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
+    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
+    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_plarge), buf);
+    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
+    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
+    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_xdrop), buf);
+    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
+    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
+    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_words), buf);
+    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
+    g_snprintf(buf, 6, "%.1f", gtk_spin_button_get_value(sbutton));
+    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_seqid), buf);
+  }
 }
 
 void pw_choose_projectname_button_clicked(GT_UNUSED GtkButton *button,
@@ -151,7 +171,7 @@ void pw_choose_projectname_button_clicked(GT_UNUSED GtkButton *button,
     g_free(filename);
   }
   gtk_widget_destroy(filechooser);
-  pw_basic_files_page_complete(ltrgui);
+  pw_page_basic_settings_complete(ltrgui);
 }
 
 void pw_add_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
@@ -194,15 +214,14 @@ void pw_add_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
                       GTK_LABEL(ltrgui->pw_label_gff3_files));
   }
   gtk_widget_destroy(filechooser);
-  pw_basic_files_page_complete(ltrgui);
+  pw_page_basic_settings_complete(ltrgui);
 }
 
 static void pw_remove_gff3_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
 {
-  GtkTreeIter iter, tmp;
+  GtkTreeIter iter;
   GtkTreePath *path;
   GtkTreeModel *model;
-  gboolean empty;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
 
@@ -210,10 +229,6 @@ static void pw_remove_gff3_row(GtkTreeRowReference *rowref, GUIData *ltrgui)
   gtk_tree_model_get_iter(model, &iter, path);
 
   gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-
-  empty = gtk_tree_model_get_iter_first(model, &tmp);
-
-  pw_basic_files_page_complete(ltrgui);
 }
 
 void pw_remove_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
@@ -242,6 +257,7 @@ void pw_remove_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
   }
 
   g_list_foreach(references, (GFunc) pw_remove_gff3_row, ltrgui);
+  pw_page_basic_settings_complete(ltrgui);
   update_gff3_label(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3),
                     GTK_LABEL(ltrgui->pw_label_gff3_files));
   g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
@@ -270,5 +286,5 @@ void pw_choose_encseq_button_clicked(GT_UNUSED GtkButton *button,
     g_free(filename);
   }
   gtk_widget_destroy(filechooser);
-  pw_basic_files_page_complete(ltrgui);
+  pw_page_basic_settings_complete(ltrgui);
 }

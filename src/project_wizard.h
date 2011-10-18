@@ -20,6 +20,9 @@
 
 #include "ltrgui.h"
 
+#define PW_SELECT_FILE "Select files..."
+#define PW_FILE_EXISTS "%s exists. Do you want to overwrite it?"
+
 typedef enum {
   PW_INTRODUCTION = 0,
   PW_SELECTFILES,
@@ -27,12 +30,8 @@ typedef enum {
   PW_SUMMARY
 } ProjectWizardPages;
 
-#define PW_SELECT_FILE "Select files..."
-
 void pw_init(GUIData *ltrgui);
 
 void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui);
-
-gint pw_forward(gint current_page, GUIData *ltrgui);
 
 #endif /* PROJECT_WIZARD_H */
