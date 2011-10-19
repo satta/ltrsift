@@ -15,6 +15,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "error.h"
 #include "menubar_main.h"
 #include "statusbar_main.h"
 #include "gtk_ltr_families.h"
@@ -119,10 +120,27 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
                                        GUIData *ltrgui)
 {
   GtkWidget *dialog;
+  GtArray *nodes;
   gchar *filename;
+  gboolean bakfile = FALSE;
+
+
+  nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltr_families));
+
+  if (gt_array_size(nodes) == 0) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(ltrgui->main_window),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    NO_DATA_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+    return;
+  }
 
   dialog = gtk_file_chooser_dialog_new("Export as GFF3...",
-                                       GTK_WINDOW (ltrgui->main_window),
+                                       GTK_WINDOW(ltrgui->main_window),
                                        GTK_FILE_CHOOSER_ACTION_SAVE,
                                        GTK_STOCK_CANCEL,
                                        GTK_RESPONSE_CANCEL, "Export",
@@ -148,24 +166,23 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
       if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
         gtk_widget_destroy(dialog);
         return;
+      } else {
+        /* TODO: use something like g_cpy */
+        gchar abc[BUFSIZ];
+        g_snprintf(abc, BUFSIZ, "mv %s %s.bak", filename, filename);
+        system(abc);
+        bakfile = TRUE;
       }
       gtk_widget_destroy(dialog);
     }
     GtNodeStream *last_stream = NULL,
                  *array_in_stream = NULL,
                  *gff3_out_stream = NULL;
-    GtArray *nodes;
     GtFile *outfp;
     GtError *err;
     int had_err;
     unsigned long i;
 
-    nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltr_families));
-
-    if (gt_array_size(nodes) == 0) {
-      g_warning("No data to export");
-      return;
-    }
     err = gt_error_new();
     outfp = gt_file_new(filename, "w", err);
 
@@ -178,11 +195,25 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
     last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
 
     had_err = gt_node_stream_pull(last_stream, err);
+    gt_file_delete(outfp);
 
+    if (had_err) {
+      if (bakfile) {
+        /* TODO: use something like g_cpy */
+        gchar abc[BUFSIZ];
+        g_snprintf(abc, BUFSIZ, "mv %s.bak %s", filename, filename);
+        system(abc);
+      }
+      g_set_error(&ltrgui->err,
+                  G_FILE_ERROR,
+                  0,
+                  "Error while exporting data: %s",
+                  gt_error_get(err));
+      error_handle(ltrgui->err);
+    }
     gt_node_stream_delete(array_in_stream);
     gt_node_stream_delete(gff3_out_stream);
     gt_error_delete(err);
-    gt_file_delete(outfp);
   }
 }
 

@@ -73,6 +73,8 @@
                        "operation and added to the 'General' tab.\n"\
                        "Are you sure?"
 
+#define FILE_EXISTS_DIALOG "%s exists. Do you want to overwrite it?"
+
 #define REMOVE  "Remove selected"
 #define UNCLASS "Unclassify selected"
 
@@ -135,6 +137,7 @@ struct _GtkLTRFamilies
   GtkWidget *tb_nb_family;
   GtkWidget *tv_details;
   GtkWidget *image_area;
+  GError *gerr;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;

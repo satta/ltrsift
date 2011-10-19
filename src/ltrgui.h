@@ -20,6 +20,7 @@
 
 #include <gtk/gtk.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include "genometools.h"
 #include "gtk_label_close.h"
 #include "gtk_ltr_families.h"
@@ -44,7 +45,7 @@
 
 #define GFF3_PATTERN "*.gff3"
 
-#define FILE_EXISTS_DIALOG "%s exists. Do you want to overwrite it?"
+#define NO_DATA_DIALOG     "No data for export!"
 
 typedef struct _GUIData GUIData;
 

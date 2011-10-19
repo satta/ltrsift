@@ -15,7 +15,6 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <glib/gstdio.h>
 #include "error.h"
 #include "menubar_main.h"
 #include "project_wizard.h"

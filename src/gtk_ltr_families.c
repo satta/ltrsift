@@ -16,6 +16,7 @@
 */
 
 #include <string.h>
+#include "error.h"
 #include "gtk_ltr_families.h"
 
 static void gtk_ltr_families_nb_fam_lv_append_gn(GtkTreeView*, GtGenomeNode*,
@@ -728,6 +729,121 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
   gtk_widget_destroy(dialog);
 }
 
+/* TODO: implement general export as gff3 function */
+static void
+gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
+                                              GtkLTRFamilies *ltrfams)
+{
+  GtkWidget *dialog;
+  GtkTreeView *tree_view;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkTreeSelection *sel;
+  gchar *filename;
+  GList *rows,
+        *tmp;
+  GtArray *nodes,
+          *tmpnodes;
+  gboolean bakfile = FALSE;
+
+  tree_view = GTK_TREE_VIEW(ltrfams->lv_families);
+  model = gtk_tree_view_get_model(tree_view);
+  sel = gtk_tree_view_get_selection(tree_view);
+  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+    /* TODO: setup dialog */
+    return;
+  nodes = gt_array_new(sizeof(GtGenomeNode*));
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       LTRFAMS_FAM_LV_NODE_ARRAY, &tmpnodes,
+                       -1);
+    gt_array_add_array(nodes, tmpnodes);
+    tmp = tmp->next;
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  gt_array_sort_stable(nodes, (GtCompare) gt_genome_node_from_array_cmp);
+
+  dialog = gtk_file_chooser_dialog_new("Export as GFF3...",
+                                       NULL,
+                                       GTK_FILE_CHOOSER_ACTION_SAVE,
+                                       GTK_STOCK_CANCEL,
+                                       GTK_RESPONSE_CANCEL, "Export",
+                                       GTK_RESPONSE_ACCEPT, NULL);
+
+  /* TODO: find general solution for projectdir */
+  /* if (ltrgui->projectdir != NULL)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                        ltrgui->projectdir); */
+
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+    gtk_widget_destroy(dialog);
+
+    if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
+      gchar buffer[BUFSIZ];
+      g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, filename);
+      dialog = gtk_message_dialog_new(NULL,
+                                      GTK_DIALOG_MODAL |
+                                      GTK_DIALOG_DESTROY_WITH_PARENT,
+                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                      buffer);
+      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+      if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+        gtk_widget_destroy(dialog);
+        return;
+      } else {
+        /* TODO: use something like g_cpy */
+        gchar abc[BUFSIZ];
+        g_snprintf(abc, BUFSIZ, "mv %s %s.bak", filename, filename);
+        system(abc);
+        bakfile = TRUE;
+      }
+      gtk_widget_destroy(dialog);
+    }
+    GtNodeStream *last_stream = NULL,
+                 *array_in_stream = NULL,
+                 *gff3_out_stream = NULL;
+    GtFile *outfp;
+    int had_err;
+    unsigned long i;
+
+    outfp = gt_file_new(filename, "w", ltrfams->err);
+
+    for (i = 0; i < gt_array_size(nodes); i++) {
+      GtGenomeNode *gn;
+      gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
+    }
+
+    last_stream = array_in_stream = gt_ltrgui_array_in_stream_new(nodes,
+                                                                  ltrfams->err);
+    last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
+
+    had_err = gt_node_stream_pull(last_stream, ltrfams->err);
+    gt_file_delete(outfp);
+
+    if (had_err) {
+      if (bakfile) {
+        /* TODO: use something like g_cpy */
+        gchar abc[BUFSIZ];
+        g_snprintf(abc, BUFSIZ, "mv %s.bak %s", filename, filename);
+        system(abc);
+      }
+      g_set_error(&ltrfams->gerr,
+                  G_FILE_ERROR,
+                  0,
+                  "Error while exporting data: %s",
+                  gt_error_get(ltrfams->err));
+      error_handle(ltrfams->gerr);
+    }
+    gt_node_stream_delete(array_in_stream);
+    gt_node_stream_delete(gff3_out_stream);
+  }
+}
+
 static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
                                            GdkEventButton *event,
                                            GtkLTRFamilies *ltrfams)
@@ -744,6 +860,12 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
   menuitem = gtk_menu_item_new_with_label("Remove selected");
   g_signal_connect(menuitem, "activate",
                    (GCallback) gtk_ltr_families_lv_fams_pmenu_remove_clicked,
+                   ltrfams);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+  menuitem = gtk_menu_item_new_with_label("Export selected as GFF3...");
+  g_signal_connect(menuitem, "activate",
+                   (GCallback) gtk_ltr_families_lv_fams_pmenu_export_clicked,
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
