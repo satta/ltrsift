@@ -44,6 +44,8 @@
 
 #define GFF3_PATTERN "*.gff3"
 
+#define FILE_EXISTS_DIALOG "%s exists. Do you want to overwrite it?"
+
 typedef struct _GUIData GUIData;
 
 struct _GUIData
@@ -56,6 +58,7 @@ struct _GUIData
   GtkWidget *mb_main_file_import;
   GtkWidget *mb_main_file_close;
   GtkWidget *mb_main_file_quit;
+  GtkWidget *mb_main_file_export_gff3;
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
   GtkWidget *ltr_families;
@@ -87,7 +90,8 @@ struct _GUIData
   /* project wizard stuff end */
   guint sb_main_context_id;
   GSList *project_files;
-  gchar *project_filename;
+  gchar *projectfile;
+  gchar *projectdir;
   GError *err;
 };
 

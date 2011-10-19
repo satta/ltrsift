@@ -17,6 +17,7 @@
 
 #include <glib/gstdio.h>
 #include "error.h"
+#include "menubar_main.h"
 #include "project_wizard.h"
 #include "project_wizard_page_basic_settings.h"
 #include "statusbar_main.h"
@@ -78,13 +79,13 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   GtkTreeIter iter;
   GList *rows,
         *tmp;
-  GtStr *tmpdir;
-  GtNodeStream *gff3_in_stream = NULL,
-               *last_stream = NULL,
+  GtStr *tmpdirprefix;
+  GtNodeStream *last_stream = NULL,
+               *gff3_in_stream = NULL,
                *ltr_cluster_stream = NULL,
                *ltr_classify_stream = NULL,
                *ltrgui_preprocess_stream = NULL,
-               *ltrgui_array_out_stream;
+               *ltrgui_array_out_stream = NULL;
   GtEncseqLoader *el;
   GtEncseq *encseq;
   GtError *err;
@@ -93,13 +94,14 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   const gchar *fullname,
               *indexname;
   gchar *projectdir,
-        *projectfile;
-  gchar projecttmpdir[BUFSIZ];
+        *projectfile,
+        projecttmpdir[BUFSIZ],
+        buf[BUFSIZ];
   gint psmall,
        plarge,
        wordsize,
        had_err = 0,
-       i,
+       i = 0,
        num_of_files;
   const char **gff3_files;
   gdouble seqid,
@@ -113,7 +115,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   projectdir = g_path_get_dirname(fullname);
   if (g_file_test(fullname, G_FILE_TEST_EXISTS)) {
     gchar buffer[BUFSIZ];
-    g_snprintf(buffer, BUFSIZ, PW_FILE_EXISTS, projectfile);
+    g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, projectfile);
     dialog = gtk_message_dialog_new(NULL,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -144,7 +146,10 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
     /* TODO: think about handling this error */
     return;
   }
-  tmpdir = gt_str_new_cstr(projecttmpdir);
+
+  g_snprintf(buf, BUFSIZ, "%s/%s", projecttmpdir, projectfile);
+  tmpdirprefix = gt_str_new_cstr(buf);
+
   sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
   psmall = gtk_spin_button_get_value_as_int(sbutton);
   sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
@@ -187,7 +192,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
     if (!had_err)
       last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
                                                                    encseq,
-                                                                   tmpdir,
+                                                                   tmpdirprefix,
                                                                    plarge,
                                                                    psmall,
                                                                    wordsize,
@@ -219,6 +224,19 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
     had_err = -1;
   if (!had_err)
     had_err = gt_node_stream_pull(last_stream, err);
+  if (!had_err) {
+    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                    nodes,
+                                    features,
+                                    n_features);
+    mb_main_view_columns_set_submenu(ltrgui, features, err);
+    ltrgui->projectfile = projectfile;
+    ltrgui->projectdir = projectdir;
+  } else {
+    g_free(projectfile);
+    g_free(projectdir);
+  }
+
   /* TODO: handle errors */
   gt_node_stream_delete(ltr_classify_stream);
   gt_node_stream_delete(ltr_cluster_stream);
@@ -232,6 +250,4 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   for (i = 0; i < num_of_files; i++)
     g_free((gpointer) gff3_files[i]);
   g_free(gff3_files);
-  g_free(projectfile);
-  g_free(projectdir);
 }

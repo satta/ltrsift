@@ -174,18 +174,48 @@ void pw_choose_projectname_button_clicked(GT_UNUSED GtkButton *button,
   pw_page_basic_settings_complete(ltrgui);
 }
 
+static gboolean file_in_list_view(GtkTreeModel *model, const gchar *file)
+{
+  GtkTreeIter iter;
+  gchar *name;
+  gboolean valid;
+
+  valid = gtk_tree_model_get_iter_first(model, &iter);
+  if (valid) {
+    gtk_tree_model_get(model, &iter,
+                       0, &name,
+                       -1);
+    if (g_strcmp0(name, file) == 0) {
+      g_free(name);
+      return TRUE;
+    }
+    while (gtk_tree_model_iter_next(model, &iter)) {
+      gtk_tree_model_get(model, &iter,
+                         0, &name,
+                         -1);
+      if (g_strcmp0(name, file) == 0) {
+        g_free(name);
+        return TRUE;
+      }
+      g_free(name);
+    }
+  }
+  return FALSE;
+}
+
 void pw_add_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
 {
   GtkWidget *filechooser;
   GtkFileFilter *gff3_file_filter;
   GSList *filenames;
 
-  filechooser = gtk_file_chooser_dialog_new(PW_SELECT_FILE,
-                                          GTK_WINDOW(ltrgui->project_wizard),
-                                          GTK_FILE_CHOOSER_ACTION_OPEN,
-                                          GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                          GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-                                          NULL);
+  filechooser = gtk_file_chooser_dialog_new(PW_SELECT_GFF3_FILES,
+                                            GTK_WINDOW(ltrgui->project_wizard),
+                                            GTK_FILE_CHOOSER_ACTION_OPEN,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL,
+                                            GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                            NULL);
 
   gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(filechooser), TRUE);
   gff3_file_filter = gtk_file_filter_new();
@@ -198,16 +228,18 @@ void pw_add_gff3_button_clicked(GT_UNUSED GtkButton *button, GUIData *ltrgui)
     GtkTreeIter iter;
     GtkTreeModel *model =
             gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
-    gtk_list_store_clear(GTK_LIST_STORE(model));
     /*ltrgui->project_files = */
     filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
 
     while (filenames != NULL) {
       gchar *file = (gchar*) filenames->data;
 
-      gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-      gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, file, -1);
-
+      if (!file_in_list_view(model, file)) {
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                           0, file,
+                           -1);
+      }
       filenames = filenames->next;
     }
     update_gff3_label(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3),

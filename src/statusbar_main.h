@@ -23,16 +23,17 @@
 #define SB_MAIN_CONTEXT           "LTRGui"
 #define SB_MAIN_MSG_WELCOME       "Welcome to LTRGui"
 #define SB_MAIN_MENU_HINT         "menuhint"
-#define SB_MAIN_MENU_HINT_NEW     "Create a new project"
-#define SB_MAIN_MENU_HINT_OPEN    "Open an existing project"
-#define SB_MAIN_MENU_HINT_SAVE    "Save the current project"
+#define SB_MAIN_MENU_HINT_NEW     "Create a new project."
+#define SB_MAIN_MENU_HINT_OPEN    "Open an existing project."
+#define SB_MAIN_MENU_HINT_SAVE    "Save the current project."
 #define SB_MAIN_MENU_HINT_SAVE_AS "Save the current project " \
-                                  "with a different name"
+                                  "with a different name."
 #define SB_MAIN_MENU_HINT_IMPORT  "Import GFF3 annotation file. NOTE: "\
                                   "This file should contain at least cluster "\
-                                  "numbers for features"
-#define SB_MAIN_MENU_HINT_CLOSE   "Close the current project"
-#define SB_MAIN_MENU_HINT_QUIT    "Quit the program"
+                                  "numbers for features."
+#define SB_MAIN_MENU_HINT_EGFF3   "Export the complete data as GFF3 annotation."
+#define SB_MAIN_MENU_HINT_CLOSE   "Close the current project."
+#define SB_MAIN_MENU_HINT_QUIT    "Quit the program."
 
 void sb_main_init(GUIData *ltrgui);
 

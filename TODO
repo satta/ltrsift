@@ -1,15 +1,4 @@
-Specific:
-- project_wizard
-    pw_tree_view:
-      change to add files and avoid duplicate entries
-    choose projectname
-      ask for overwriting exisiting file
-- ltrgui
-    function for struct cleanup
-- treeview_families
-    clean before new project is loaded
-    lLTR/rLTR side by side
-    check for duplicate family name
-
 General:
 - mapping for all possible feature node types
+- implement save/load functions (sqlite)
+- Error handling!!

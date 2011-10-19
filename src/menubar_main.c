@@ -31,6 +31,8 @@ void mb_main_init(GUIData *ltrgui)
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SAVE_AS);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_file_import),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_IMPORT);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_file_export_gff3),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_EGFF3);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_file_close),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_CLOSE);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_file_quit),
@@ -63,10 +65,34 @@ static gchar* mb_main_file_import_get_filename(GUIData *ltrgui)
   return filename;
 }
 
-static gchar* mb_main_file_save_as_get_filename(GUIData *ltrgui)
+void mb_main_file_save_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                   GUIData *ltrgui)
 {
   GtkWidget *filechooser;
-  gchar *filename = NULL;
+  gchar *filename;
+
+  if (ltrgui->projectfile == NULL) {
+    filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_SAVE_AS,
+                                              GTK_WINDOW (ltrgui->main_window),
+                                              GTK_FILE_CHOOSER_ACTION_SAVE,
+                                              GTK_STOCK_CANCEL,
+                                              GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE,
+                                              GTK_RESPONSE_ACCEPT, NULL);
+
+    if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
+      filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+    }
+    gtk_widget_destroy(filechooser);
+    /*if (filename != NULL) ltrgui->project_filename = filename;*/
+    /* TODO: if (filename != NULL) Save project data */
+  } /* TODO: else Save as project data*/
+}
+
+void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                      GUIData *ltrgui)
+{
+  GtkWidget *filechooser;
+  gchar *filename;
 
   filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_SAVE_AS,
                                             GTK_WINDOW (ltrgui->main_window),
@@ -81,34 +107,83 @@ static gchar* mb_main_file_save_as_get_filename(GUIData *ltrgui)
 
   gtk_widget_destroy(filechooser);
 
-  return filename;
-}
-
-void mb_main_file_save_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                   GUIData *ltrgui)
-{
-  gchar *filename;
-
-  if (ltrgui->project_filename == NULL) {
-    filename = mb_main_file_save_as_get_filename(ltrgui);
-    if (filename != NULL) ltrgui->project_filename = filename;
-    /* TODO: if (filename != NULL) Save project data */
-  } /* TODO: else Save as project data*/
-}
-
-void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                      GUIData *ltrgui)
-{
-  gchar *filename;
-
-  filename = mb_main_file_save_as_get_filename(ltrgui);
-
-  if (filename != NULL) {
-    if (ltrgui->project_filename != NULL) g_free(ltrgui->project_filename);
-    ltrgui->project_filename = filename;
-  }
+  /*if (filename != NULL) {
+    if (ltrgui->projectfile != NULL) g_free(ltrgui->projectfile);
+    ltrgui->projectfile = filename;
+  }*/
   /* TODO: - Check for overwriting existing file
            - Save project data */
+}
+
+void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                       GUIData *ltrgui)
+{
+  GtkWidget *dialog;
+  gchar *filename;
+
+  dialog = gtk_file_chooser_dialog_new("Export as GFF3...",
+                                       GTK_WINDOW (ltrgui->main_window),
+                                       GTK_FILE_CHOOSER_ACTION_SAVE,
+                                       GTK_STOCK_CANCEL,
+                                       GTK_RESPONSE_CANCEL, "Export",
+                                       GTK_RESPONSE_ACCEPT, NULL);
+  if (ltrgui->projectdir != NULL)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                        ltrgui->projectdir);
+
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+    gtk_widget_destroy(dialog);
+
+    if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
+      gchar buffer[BUFSIZ];
+      g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, filename);
+      dialog = gtk_message_dialog_new(NULL,
+                                      GTK_DIALOG_MODAL |
+                                      GTK_DIALOG_DESTROY_WITH_PARENT,
+                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                      buffer);
+      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+      if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+        gtk_widget_destroy(dialog);
+        return;
+      }
+      gtk_widget_destroy(dialog);
+    }
+    GtNodeStream *last_stream = NULL,
+                 *array_in_stream = NULL,
+                 *gff3_out_stream = NULL;
+    GtArray *nodes;
+    GtFile *outfp;
+    GtError *err;
+    int had_err;
+    unsigned long i;
+
+    nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltr_families));
+
+    if (gt_array_size(nodes) == 0) {
+      g_warning("No data to export");
+      return;
+    }
+    err = gt_error_new();
+    outfp = gt_file_new(filename, "w", err);
+
+    for (i = 0; i < gt_array_size(nodes); i++) {
+      GtGenomeNode *gn;
+      gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
+    }
+
+    last_stream = array_in_stream = gt_ltrgui_array_in_stream_new(nodes, err);
+    last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
+
+    had_err = gt_node_stream_pull(last_stream, err);
+
+    gt_node_stream_delete(array_in_stream);
+    gt_node_stream_delete(gff3_out_stream);
+    gt_error_delete(err);
+    gt_file_delete(outfp);
+  }
 }
 
 static void mb_main_view_columns_toggled(GtkCheckMenuItem *menuitem,
@@ -156,8 +231,7 @@ static int get_keys(void *key, GT_UNUSED void *values, void *cptns,
   return 0;
 }
 
-void mb_main_view_columns_set_submenu(GUIData *ltrgui,
-                                      GtHashmap *features,
+void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
                                       GtError *err)
 {
   GtkWidget *menu,

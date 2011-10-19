@@ -20,8 +20,7 @@
 
 #include "ltrgui.h"
 
-#define PW_SELECT_FILE "Select files..."
-#define PW_FILE_EXISTS "%s exists. Do you want to overwrite it?"
+#define PW_SELECT_GFF3_FILES "Select GFF3 files..."
 
 typedef enum {
   PW_INTRODUCTION = 0,

@@ -28,6 +28,8 @@ void free_hash(void *elem)
 
 static void free_gui(GUIData *ltrgui)
 {
+  g_free(ltrgui->projectfile);
+  g_free(ltrgui->projectdir);
   g_slice_free(GUIData, ltrgui);
 }
 
@@ -51,6 +53,7 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(mb_main_file_import);
   GW(mb_main_file_close);
   GW(mb_main_file_quit);
+  GW(mb_main_file_export_gff3);
   GW(mb_main_view_columns);
   GW(vbox1_main);
   GW(sb_main);
@@ -94,7 +97,8 @@ static gboolean init_gui(GUIData *ltrgui)
 
   g_object_unref(G_OBJECT(builder));
 
-  ltrgui->project_filename = NULL;
+  ltrgui->projectfile = NULL;
+  ltrgui->projectdir = NULL;
   //ltrgui->project_files = NULL;
 
   return TRUE;
@@ -104,8 +108,7 @@ gint main(gint argc, gchar *argv[])
 {
   GUIData *ltrgui;
 
-
-   /* allocate the memory needed by GUIData */
+  /* allocate the memory needed by GUIData */
   ltrgui = g_slice_new(GUIData);
   ltrgui->err = NULL;
   /* initialize libraries */

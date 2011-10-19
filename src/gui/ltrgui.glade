@@ -174,6 +174,25 @@
                       </object>
                     </child>
                     <child>
+                      <object class="GtkMenuItem" id="mb_main_file_export_gff3">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="label" translatable="yes">Export as GFF_3...</property>
+                        <property name="use_underline">True</property>
+                        <signal name="activate" handler="mb_main_file_export_gff3_activate" swapped="no"/>
+                        <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                        <signal name="leave-notify-event" handler="sb_main_menuhints" swapped="no"/>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkSeparatorMenuItem" id="separatormenuitem4">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="use_action_appearance">False</property>
+                      </object>
+                    </child>
+                    <child>
                       <object class="GtkMenuItem" id="mb_main_file_close">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>

@@ -163,4 +163,6 @@ void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 
+GtArray* gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+
 #endif /* GTK_LTR_FAMILIES_H */

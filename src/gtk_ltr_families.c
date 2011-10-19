@@ -33,6 +33,12 @@ GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams)
 {
   return GTK_NOTEBOOK(ltrfams->nb_family);
 }
+
+GtArray* gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams)
+{
+  return ltrfams->nodes;
+}
+
 /* get functions end */
 
 /* "support" functions start */
@@ -1607,7 +1613,7 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
 
 /* <tv_details> related functions start */
 static void gtk_ltr_families_tv_det_changed(GtkTreeView *tree_view,
-                                            GT_UNUSED GtkLTRFamilies *ltrfams)
+                                            GtkLTRFamilies *ltrfams)
 {
   GtkTreeSelection *selection;
   GtkTreeModel *tree_model;
@@ -1635,7 +1641,7 @@ static void gtk_ltr_families_tv_det_changed(GtkTreeView *tree_view,
                      LTRFAMS_DETAIL_TV_NODE, &fn,
                      -1);
   gt_feature_node_mark(fn);
-  //draw_image(ltrfams, gn);
+  draw_image(ltrfams, gn);
 }
 
 static void gtk_ltr_families_tv_det_create(GtkTreeView *tree_view)
@@ -1693,18 +1699,22 @@ gtk_ltr_families_lv_fams_check_if_name_exists(GtkTreeView *list_view,
                      LTRFAMS_FAM_LV_OLDNAME, &famname,
                      -1);
   iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
-  if ((g_strcmp0(famname, new_name) == 0) && (g_strcmp0(iter_str, tmp) != 0))
+  if ((g_strcmp0(famname, new_name) == 0) && (g_strcmp0(iter_str, tmp) != 0)) {
+    g_free(famname);
+    g_free(iter_str);
     return TRUE;
-  g_free(famname);
-  g_free(iter_str);
+  }
   while (gtk_tree_model_iter_next(model, &iter)) {
     iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
     gtk_tree_model_get(model, &iter,
                        LTRFAMS_FAM_LV_OLDNAME, &famname,
                        -1);
     if ((g_strcmp0(famname, new_name) == 0) &&
-        (g_strcmp0(iter_str, tmp) != 0))
+        (g_strcmp0(iter_str, tmp) != 0)) {
+      g_free(famname);
+      g_free(iter_str);
       return TRUE;
+    }
     g_free(famname);
     g_free(iter_str);
   }
