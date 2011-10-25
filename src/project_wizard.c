@@ -214,8 +214,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                                                                     features,
                                                                     &n_features,
                                                                     err);
-    last_stream = ltrgui_array_out_stream =
-                                     gt_ltrgui_array_out_stream_new(last_stream,
+    last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
                                                                     nodes,
                                                                     err);
   }

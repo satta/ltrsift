@@ -191,7 +191,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
 
-    last_stream = array_in_stream = gt_ltrgui_array_in_stream_new(nodes, err);
+    last_stream = array_in_stream = gt_array_in_stream_new(nodes, err);
     last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
 
     had_err = gt_node_stream_pull(last_stream, err);
@@ -324,12 +324,12 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
     n_features = LTRFAMS_LV_N_COLUMS;
     last_stream = gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
     last_stream = preprocess_stream =
-                  gt_ltrgui_preprocess_stream_new(last_stream,
-                                                  features,
-                                                  &n_features, err);
-    last_stream = array_out_stream = gt_ltrgui_array_out_stream_new(last_stream,
-                                                                    nodes,
+                                    gt_ltrgui_preprocess_stream_new(last_stream,
+                                                                    features,
+                                                                    &n_features,
                                                                     err);
+    last_stream = array_out_stream = gt_array_out_stream_new(last_stream, nodes,
+                                                             err);
     had_err = gt_node_stream_pull(last_stream, err);
     if (!had_err) {
       gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),

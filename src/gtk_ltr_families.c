@@ -818,8 +818,7 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
 
-    last_stream = array_in_stream = gt_ltrgui_array_in_stream_new(nodes,
-                                                                  ltrfams->err);
+    last_stream = array_in_stream = gt_array_in_stream_new(nodes, ltrfams->err);
     last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
 
     had_err = gt_node_stream_pull(last_stream, ltrfams->err);
@@ -1048,11 +1047,11 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
 
   new_nodes = gt_array_new(sizeof(GtGenomeNode*));
   err = gt_error_new();
-  last_stream = array_in_stream = gt_ltrgui_array_in_stream_new(nodes, err);
+  last_stream = array_in_stream = gt_array_in_stream_new(nodes, err);
   last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream, err);
-  last_stream = array_out_stream = gt_ltrgui_array_out_stream_new(last_stream,
-                                                                  new_nodes,
-                                                                  err);
+  last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
+                                                           new_nodes,
+                                                           err);
   had_err = gt_node_stream_pull(last_stream, err);
 
   if (!had_err) {
