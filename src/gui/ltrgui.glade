@@ -124,6 +124,7 @@
                       <object class="GtkImageMenuItem" id="mb_main_file_save">
                         <property name="label">gtk-save</property>
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
@@ -137,6 +138,7 @@
                       <object class="GtkImageMenuItem" id="mb_main_file_save_as">
                         <property name="label">Save _As...</property>
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="use_underline">True</property>
@@ -176,6 +178,7 @@
                     <child>
                       <object class="GtkMenuItem" id="mb_main_file_export_gff3">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="label" translatable="yes">Export as GFF_3...</property>
@@ -195,6 +198,7 @@
                     <child>
                       <object class="GtkMenuItem" id="mb_main_file_close">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="label" translatable="yes">_Close</property>
@@ -305,6 +309,9 @@
     <property name="destroy_with_parent">True</property>
     <signal name="apply" handler="pw_apply" swapped="no"/>
     <signal name="cancel" handler="pw_cancel" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <object class="GtkLabel" id="pw_label_desc_page1">
         <property name="visible">True</property>

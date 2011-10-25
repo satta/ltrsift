@@ -32,7 +32,8 @@
 
 #define GUI_FILE            "ltrgui.glade"
 #define GUI_DIALOG_OPEN     "Open file..."
-#define GUI_DIALOG_SAVE_AS  "Save file as"
+#define GUI_DIALOG_IMPORT     "Import GFF3 file..."
+#define GUI_DIALOG_SAVE_AS  "Save file as..."
 
 /* Information used by gtk_about_dialog */
 #define GUI_NAME            "LTRGui"

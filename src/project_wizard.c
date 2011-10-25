@@ -228,6 +228,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                                     features,
                                     n_features);
     mb_main_view_columns_set_submenu(ltrgui, features, err);
+    mb_main_activate_menuitems(ltrgui);
     ltrgui->projectfile = projectfile;
     ltrgui->projectdir = projectdir;
   } else {

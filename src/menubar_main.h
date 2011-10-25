@@ -36,5 +36,6 @@ void mb_main_help_about_activate(GtkMenuItem *menutiem, GUIData *ltrgui);
 
 void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
                                       GtError *err);
+void mb_main_activate_menuitems(GUIData *ltrgui);
 
 #endif /* MENUBAR_MAIN_H */

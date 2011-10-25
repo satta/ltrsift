@@ -73,7 +73,8 @@
                        "operation and added to the 'General' tab.\n"\
                        "Are you sure?"
 
-#define FILE_EXISTS_DIALOG "%s exists. Do you want to overwrite it?"
+#define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
+                           "want to replace it?"
 
 #define REMOVE  "Remove selected"
 #define UNCLASS "Unclassify selected"

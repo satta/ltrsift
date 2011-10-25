@@ -241,9 +241,10 @@ static void draw_image(GtkLTRFamilies *ltrfams, GtGenomeNode *gn)
   const char *seqid;
 
   features = gt_feature_index_memory_new();
-  gt_feature_index_add_feature_node(features, (GtFeatureNode*) gn);
-  seqid = gt_feature_index_get_first_seqid(features);
-  gt_feature_index_get_range_for_seqid(features, &range, seqid);
+  gt_feature_index_add_feature_node(features, (GtFeatureNode*) gn,
+                                    ltrfams->err);
+  seqid = gt_feature_index_get_first_seqid(features, ltrfams->err);
+  gt_feature_index_get_range_for_seqid(features, &range, seqid, ltrfams->err);
   gt_diagram_delete(ltrfams->diagram);
   ltrfams->diagram = gt_diagram_new(features, seqid, &range,
                                     ltrfams->style, ltrfams->err);
@@ -764,7 +765,7 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
     tmp = tmp->next;
   }
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-  gt_array_sort_stable(nodes, (GtCompare) gt_genome_node_from_array_cmp);
+  gt_genome_nodes_sort_stable(nodes);
 
   dialog = gtk_file_chooser_dialog_new("Export as GFF3...",
                                        NULL,
@@ -1043,7 +1044,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
     gtk_tree_row_reference_free(rowref);
     tmp = tmp->next;
   }
-  gt_array_sort_stable(nodes, (GtCompare) gt_genome_node_from_array_cmp);
+  gt_genome_nodes_sort_stable(nodes);
 
   new_nodes = gt_array_new(sizeof(GtGenomeNode*));
   err = gt_error_new();
