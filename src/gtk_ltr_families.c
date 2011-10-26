@@ -518,6 +518,7 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                   GTK_DIALOG_MODAL |
                                   GTK_DIALOG_DESTROY_WITH_PARENT,
                                   GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                  "%s",
                                   (tab_no == main_tab_no) ? CAND_RM_DIALOG :
                                                             CAND_UC_DIALOG);
   gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
@@ -705,6 +706,7 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                   GTK_DIALOG_MODAL |
                                   GTK_DIALOG_DESTROY_WITH_PARENT,
                                   GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                  "%s",
                                   text);
   gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -740,7 +742,8 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtkTreeSelection *sel;
-  gchar *filename;
+  gchar *filename,
+        tmp_filename[BUFSIZ];
   GList *rows,
         *tmp;
   GtArray *nodes,
@@ -790,6 +793,7 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
                                       GTK_DIALOG_MODAL |
                                       GTK_DIALOG_DESTROY_WITH_PARENT,
                                       GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                      "%s",
                                       buffer);
       gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
       gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -797,10 +801,8 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
         gtk_widget_destroy(dialog);
         return;
       } else {
-        /* TODO: use something like g_cpy */
-        gchar abc[BUFSIZ];
-        g_snprintf(abc, BUFSIZ, "mv %s %s.bak", filename, filename);
-        system(abc);
+        g_snprintf(tmp_filename, BUFSIZ, "%s.bak", filename);
+        g_rename(filename, tmp_filename);
         bakfile = TRUE;
       }
       gtk_widget_destroy(dialog);
@@ -827,10 +829,7 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
 
     if (had_err) {
       if (bakfile) {
-        /* TODO: use something like g_cpy */
-        gchar abc[BUFSIZ];
-        g_snprintf(abc, BUFSIZ, "mv %s.bak %s", filename, filename);
-        system(abc);
+        g_rename(tmp_filename, filename);
       }
       g_set_error(&ltrfams->gerr,
                   G_FILE_ERROR,
@@ -1018,6 +1017,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_OK,
+                                    "%s",
                                     NEW_FAM_DIALOG);
     gtk_window_set_title(GTK_WINDOW(dialog), "Information");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -1917,6 +1917,7 @@ static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
                                   GTK_DIALOG_MODAL |
                                   GTK_DIALOG_DESTROY_WITH_PARENT,
                                   GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                  "%s",
                                   text);
   gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -1973,6 +1974,7 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    "%s",
                                     FAMS_EMPTY_DIALOG);
     gtk_window_set_title(GTK_WINDOW(dialog), "Information");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -1993,6 +1995,7 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                                       GTK_DIALOG_MODAL |
                                       GTK_DIALOG_DESTROY_WITH_PARENT,
                                       GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                      "%s",
                                       FAMS_EXIST_DIALOG);
       gtk_window_set_title(GTK_WINDOW(dialog), "Information");
       gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);

@@ -104,6 +104,7 @@ void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                    "%s",
                                     buffer);
     gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -196,6 +197,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
     dialog = gtk_message_dialog_new(GTK_WINDOW(ltrgui->main_window),
                                     GTK_DIALOG_MODAL,
                                     GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    "%s",
                                     NO_DATA_DIALOG);
     gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
@@ -225,6 +227,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
                                       GTK_DIALOG_MODAL |
                                       GTK_DIALOG_DESTROY_WITH_PARENT,
                                       GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                      "%s",
                                       buffer);
       gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
       gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);

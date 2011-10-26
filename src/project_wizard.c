@@ -119,6 +119,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                    "%s",
                                     buffer);
     gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
