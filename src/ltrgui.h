@@ -18,6 +18,7 @@
 #ifndef GUI_TEST_H
 #define GUI_TEST_H
 
+#include <sqlite3.h>
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
@@ -31,12 +32,12 @@
   LTR_GET_OBJECT(builder, name, GTK_WIDGET, data)
 
 #define GUI_FILE            "ltrgui.glade"
+#define GUI_RECENT_GROUP    "ltrgui"
 #define GUI_DIALOG_OPEN     "Open file..."
-#define GUI_DIALOG_IMPORT     "Import GFF3 file..."
+#define GUI_DIALOG_IMPORT   "Import GFF3 file..."
 #define GUI_DIALOG_SAVE_AS  "Save file as..."
 
 /* Information used by gtk_about_dialog */
-#define GUI_NAME            "LTRGui"
 #define GUI_VERSION         "0.0.1"
 #define GUI_COPYRIGHT       "(c) 2011-2012 Sascha Kastens"
 #define GUI_COMMENTS        "COMMENT PLACEHOLDER"
@@ -45,8 +46,14 @@
 #define GUI_LOGO            "../logo.png"
 
 #define GFF3_PATTERN "*.gff3"
+#define UNTITLED_PROJECT "Untitled project"
 
-#define NO_DATA_DIALOG     "No data for export!"
+#define NO_DATA_DIALOG          "No data for export!"
+#define UNSAVED_CHANGES_DIALOG  "The project data has been modified.\nDo you "\
+                                "want to save your changes or discard them?"
+#define NO_PROJECT_DIALOG       "The data has not been saved as a project yet."\
+                                "\n Do you want to save the data as a project "\
+                                "or discard them?"
 
 typedef struct _GUIData GUIData;
 
@@ -55,6 +62,7 @@ struct _GUIData
   GtkWidget *mb_main;
   GtkWidget *mb_main_file_new;
   GtkWidget *mb_main_file_open;
+  GtkWidget *mb_main_file_open_recent;
   GtkWidget *mb_main_file_save;
   GtkWidget *mb_main_file_save_as;
   GtkWidget *mb_main_file_import;
@@ -91,12 +99,11 @@ struct _GUIData
   GtkWidget *pw_do_classification_cb;
   /* project wizard stuff end */
   guint sb_main_context_id;
-  GSList *project_files;
-  gchar *projectfile;
-  gchar *projectdir;
   GError *err;
 };
 
 void free_hash(void *elem);
+
+void create_recently_used_resource(const gchar *filename);
 
 #endif /* GUI_TEST_H */

@@ -35,7 +35,9 @@ void mb_main_file_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 void mb_main_help_about_activate(GtkMenuItem *menutiem, GUIData *ltrgui);
 
 void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
-                                      GtError *err);
+                                      GtError *err, gboolean sqlt);
 void mb_main_activate_menuitems(GUIData *ltrgui);
+
+GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
 
 #endif /* MENUBAR_MAIN_H */

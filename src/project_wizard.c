@@ -85,8 +85,8 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                *ltr_classify_stream = NULL,
                *ltrgui_preprocess_stream = NULL,
                *ltrgui_array_out_stream = NULL;
-  GtEncseqLoader *el;
-  GtEncseq *encseq;
+  GtEncseqLoader *el = NULL;
+  GtEncseq *encseq = NULL;
   GtError *err;
   GtArray *nodes;
   GtHashmap *features;
@@ -107,7 +107,6 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
           xdrop;
   unsigned long n_features;
 
-  /* TODO: check for current project */
   gtk_widget_hide(GTK_WIDGET(assistant));
   fullname = gtk_label_get_text(GTK_LABEL(ltrgui->pw_label_projectname));
   projectfile = g_path_get_basename(fullname);
@@ -224,19 +223,21 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   if (!had_err)
     had_err = gt_node_stream_pull(last_stream, err);
   if (!had_err) {
+    gtk_widget_destroy(ltrgui->ltr_families);
+    ltrgui->ltr_families = gtk_ltr_families_new();
+    gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
+                       TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),
                                     nodes,
                                     features,
                                     n_features);
-    mb_main_view_columns_set_submenu(ltrgui, features, err);
+    mb_main_view_columns_set_submenu(ltrgui, features, err, FALSE);
     mb_main_activate_menuitems(ltrgui);
-    ltrgui->projectfile = projectfile;
-    ltrgui->projectdir = projectdir;
-  } else {
-    g_free(projectfile);
-    g_free(projectdir);
+    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                     g_strdup(fullname));
   }
-
+  g_free(projectfile);
+  g_free(projectdir);
   /* TODO: handle errors */
   gt_node_stream_delete(ltr_classify_stream);
   gt_node_stream_delete(ltr_cluster_stream);

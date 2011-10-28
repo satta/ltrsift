@@ -37,6 +37,7 @@
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FAMILIES_TYPE)
 
 #define DEFAULT_STYLE "../style/default.style"
+#define GUI_NAME      "LTRGui"
 
 #define LTRFAMS_LV_CAPTION_SEQID "SeqID"
 #define LTRFAMS_LV_CAPTION_TYPE  "S"
@@ -59,9 +60,10 @@
 #define TB_FAMS_REMOVE "Remove families with less than three members"
 #define TB_NB_NEW_FAM  "Check for new family with selected candidates"
 
-#define FAMS_RM_DIALOG    "You're about to remove %d family/families.\nAll "\
-                          "members will be unclassified after this action and "\
-                          "added to the 'General' tab.\nAre you sure?"
+#define FAMS_RM_DIALOG    "You're about to remove %d family/families. All "\
+                          "members (if any) will be unclassified after this "\
+                          "action and added to the 'General' tab.\n\nAre you "\
+                          "sure?"
 #define FAMS_EMPTY_DIALOG "Family name must not be empty!"
 #define FAMS_EXIST_DIALOG "Family name already exists!"
 #define NEW_FAM_DIALOG    "Please select at least three candidates for "\
@@ -138,6 +140,8 @@ struct _GtkLTRFamilies
   GtkWidget *tb_nb_family;
   GtkWidget *tv_details;
   GtkWidget *image_area;
+  GtkWidget *hpaned;
+  GtkWidget *vpaned;
   GError *gerr;
   GtDiagram *diagram;
   GtStyle *style;
@@ -146,6 +150,8 @@ struct _GtkLTRFamilies
   GtHashmap *colors;
   GtError *err;
   unsigned long n_features;
+  gboolean modified;
+  gchar *projectfile;
 };
 
 struct _GtkLTRFamiliesClass
@@ -168,5 +174,33 @@ void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 
 GtArray* gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+
+gboolean gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
+
+const gchar* gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
+
+void gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
+                                      gchar *projectfile);
+
+void gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams, gboolean modified);
+
+GtkTreeView* gtk_ltr_families_get_lv_fams(GtkLTRFamilies *ltrfams);
+
+gint gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
+
+gint gtk_ltr_families_get_hpaned_position(GtkLTRFamilies *ltrfams);
+
+gint gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams);
+
+void gtk_ltr_families_set_position(GtkLTRFamilies *ltrfams, gint pos);
+
+void gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams, gint pos);
+
+void gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams, gint pos);
+
+void gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
+                                            GtkTreePath *path,
+                                            GtkTreeViewColumn *column,
+                                            GtkLTRFamilies *ltrfams);
 
 #endif /* GTK_LTR_FAMILIES_H */

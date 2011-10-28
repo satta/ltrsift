@@ -21,6 +21,30 @@
 #include "project_wizard.h"
 #include "statusbar_main.h"
 
+void create_recently_used_resource(const gchar *filename)
+{
+  GtkRecentManager *manager;
+  GtkRecentData *data;
+  static gchar *groups[2] = {GUI_RECENT_GROUP, NULL};
+  gchar *uri;
+
+  /* Create a new recently used resource. */
+  data = g_slice_new(GtkRecentData);
+  data->display_name = NULL;
+  data->description = NULL;
+  data->mime_type = "text/plain";
+  data->app_name = (gchar*) g_get_application_name ();
+  data->app_exec = g_strjoin(" ", g_get_prgname (), "%u", NULL);
+  data->groups = groups;
+  data->is_private = FALSE;
+  uri = g_filename_to_uri(filename, NULL, NULL);
+  manager = gtk_recent_manager_get_default();
+  gtk_recent_manager_add_full(manager, uri, data);
+  g_free(uri);
+  g_free(data->app_exec);
+  g_slice_free(GtkRecentData, data);
+}
+
 void free_hash(void *elem)
 {
   gt_free(elem);
@@ -28,9 +52,43 @@ void free_hash(void *elem)
 
 static void free_gui(GUIData *ltrgui)
 {
-  g_free(ltrgui->projectfile);
-  g_free(ltrgui->projectdir);
   g_slice_free(GUIData, ltrgui);
+}
+
+gboolean main_window_delete_event(GT_UNUSED GtkWidget *widget,
+                                  GT_UNUSED GdkEvent *event,
+                                  GUIData *ltrgui)
+{
+  GtkWidget *dialog;
+  gint response = GTK_RESPONSE_REJECT;
+
+  if (gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+    if (!gtk_ltr_families_get_projectfile(
+                                        GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+      dialog = unsaved_changes_dialog(ltrgui, NO_PROJECT_DIALOG);
+      response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+    } else if (gtk_ltr_families_get_modified(GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+      dialog = unsaved_changes_dialog(ltrgui, UNSAVED_CHANGES_DIALOG);
+      response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+    }
+  }
+
+  switch (response) {
+    case GTK_RESPONSE_CANCEL:
+      return TRUE;
+      break;
+    case GTK_RESPONSE_ACCEPT:
+      mb_main_file_save_activate(NULL, ltrgui);
+      return TRUE;
+      break;
+    case GTK_RESPONSE_REJECT:
+      break;
+    default:
+      break;
+  }
+  return FALSE;
 }
 
 static gboolean init_gui(GUIData *ltrgui)
@@ -48,6 +106,7 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(mb_main);
   GW(mb_main_file_new);
   GW(mb_main_file_open);
+  GW(mb_main_file_open_recent);
   GW(mb_main_file_save);
   GW(mb_main_file_save_as);
   GW(mb_main_file_import);
@@ -86,6 +145,7 @@ static gboolean init_gui(GUIData *ltrgui)
   mb_main_init(ltrgui); 
   pw_init(ltrgui);
 
+  gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
   ltrgui->ltr_families = gtk_ltr_families_new();
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
                      TRUE, TRUE, 0);
@@ -96,10 +156,6 @@ static gboolean init_gui(GUIData *ltrgui)
   gtk_builder_connect_signals(builder, ltrgui);
 
   g_object_unref(G_OBJECT(builder));
-
-  ltrgui->projectfile = NULL;
-  ltrgui->projectdir = NULL;
-  //ltrgui->project_files = NULL;
 
   return TRUE;
 }
@@ -130,5 +186,5 @@ gint main(gint argc, gchar *argv[])
   free_gui(ltrgui);
   /*if (gt_lib_clean())
     return GT_EXIT_PROGRAMMING_ERROR;  programmer error */
-  return 0;
+  return EXIT_SUCCESS;
 }
