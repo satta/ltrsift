@@ -203,6 +203,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                      ltrgui->pw_do_classification_cb))) {
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                                   NULL,
                                                                    err);
   }
   if (!had_err) {

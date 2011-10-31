@@ -929,6 +929,11 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
   GtkWidget *menu,
             *menuitem;
   GtStrArray *captions;
+  sqlite3 *db = NULL;
+  sqlite3_stmt *stmt;
+  gchar buffer[BUFSIZ];
+  const gchar *projectfile;
+  gint ret = 0;
   unsigned long i;
 
   captions = gt_str_array_new();
@@ -936,26 +941,75 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
 
   gt_hashmap_foreach(features, get_keys, (void*) captions, err);
 
+  if (sqlt) {
+    projectfile =
+       gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltr_families));
+    ret = sqlite3_open_v2(projectfile, &db, SQLITE_OPEN_READONLY, NULL);
+  }
+  if (ret) {
+    g_set_error(&ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Could not apply gui settings: %s",
+                sqlite3_errmsg(db));
+    sqlite3_close(db);
+    error_handle(ltrgui->err);
+  }
+
   for (i = 0; i < gt_str_array_size(captions); i++) {
     menuitem = gtk_check_menu_item_new_with_label(gt_str_array_get(captions,
                                                                    i));
-    if (!sqlt) {
+    if (sqlt && !ret) {
+      g_signal_connect(G_OBJECT(menuitem), "toggled",
+                       G_CALLBACK(mb_main_view_columns_toggled),
+                       ltrgui->ltr_families);
+      g_snprintf(buffer, BUFSIZ,
+                 "SELECT name FROM invisible_columns WHERE name = \"%s\"",
+                 double_underscores(gt_str_array_get(captions, i)));
+      sqlite3_prepare_v2(db, buffer, -1, &stmt, NULL);
+      ret = sqlite3_step(stmt);
+      if (ret == SQLITE_ERROR) {
+        g_set_error(&ltrgui->err,
+                    G_FILE_ERROR,
+                    0,
+                    "Could not apply gui settings: %s",
+                    sqlite3_errmsg(db));
+        error_handle(ltrgui->err);
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+        ret = 1;
+      } else if (ret == SQLITE_ROW) {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), FALSE);
+        ret = 0;
+      } else {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+        ret = 0;
+      }
+      sqlite3_finalize(stmt);
+    } else {
+      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+      g_signal_connect(G_OBJECT(menuitem), "toggled",
+                       G_CALLBACK(mb_main_view_columns_toggled),
+                       ltrgui->ltr_families);
+    }
+    if (g_strcmp0(gt_str_array_get(captions, i), FNT_LLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 0);
+    else if (g_strcmp0(gt_str_array_get(captions, i), FNT_RLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 1);
+    else
+      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+   /* if (!sqlt) {
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
       g_signal_connect(G_OBJECT(menuitem), "toggled",
                        G_CALLBACK(mb_main_view_columns_toggled),
                        ltrgui->ltr_families);
     } else {
-      sqlite3 *db;
-      sqlite3_stmt *stmt;
-      gchar buffer[BUFSIZ];
-      const gchar *projectfile;
-      gint ret;
       g_signal_connect(G_OBJECT(menuitem), "toggled",
                        G_CALLBACK(mb_main_view_columns_toggled),
                        ltrgui->ltr_families);
       projectfile =
        gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltr_families));
-      ret = sqlite3_open_v2(projectfile, &db, SQLITE_OPEN_READONLY, NULL);
       if (ret) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
@@ -992,11 +1046,13 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
     else if (g_strcmp0(gt_str_array_get(captions, i), FNT_RLTR) == 0)
       gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 1);
     else
-      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);*/
   }
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->mb_main_view_columns), menu);
   gtk_widget_show_all(menu);
   gtk_widget_set_sensitive(ltrgui->mb_main_view_columns, TRUE);
+  if (db)
+    sqlite3_close(db);
   gt_str_array_delete(captions);
 }
 

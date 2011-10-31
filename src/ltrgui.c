@@ -168,6 +168,8 @@ gint main(gint argc, gchar *argv[])
   ltrgui = g_slice_new(GUIData);
   ltrgui->err = NULL;
   /* initialize libraries */
+  g_thread_init(NULL);
+  gdk_threads_init();
   gtk_init(&argc, &argv);
   gt_lib_init();
 

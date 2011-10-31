@@ -84,6 +84,7 @@
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
+typedef struct _FamilyThreadData FamilyThreadData;
 
 enum {
   LTRFAMS_LV_NODE = 0,
@@ -160,47 +161,64 @@ struct _GtkLTRFamiliesClass
   void (* gtk_ltr_families) (GtkLTRFamilies *ltrfams);
 };
 
-GType      gtk_ltr_families_get_type(void);
+struct _FamilyThreadData
+{
+  GtkLTRFamilies *ltrfams;
+  GtkWidget *window;
+  GtkWidget *progressbar;
+  GtArray *old_nodes,
+          *new_nodes;
+  GtError *err;
+  GList *references;
+  GtkTreeView *list_view;
+  unsigned long progress;
+  int had_err;
+};
 
-GtkWidget* gtk_ltr_families_new();
 
-char* double_underscores(const char *str);
+GType        gtk_ltr_families_get_type(void);
 
-void       gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
+GtkWidget*   gtk_ltr_families_new();
+
+char*        double_underscores(const char *str);
+
+void         gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                            GtArray *nodes,
                                            GtHashmap *features,
                                            unsigned long noc);
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 
-GtArray* gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+GtArray*     gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
 
-gboolean gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
+gboolean     gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
 
 const gchar* gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
 
-void gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
+void         gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
                                       gchar *projectfile);
 
-void gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams, gboolean modified);
+void         gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams,
+                                           gboolean modified);
 
 GtkTreeView* gtk_ltr_families_get_lv_fams(GtkLTRFamilies *ltrfams);
 
-gint gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
+gint         gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
 
-gint gtk_ltr_families_get_hpaned_position(GtkLTRFamilies *ltrfams);
+gint         gtk_ltr_families_get_hpaned_position(GtkLTRFamilies *ltrfams);
 
-gint gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams);
+gint         gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams);
 
-void gtk_ltr_families_set_position(GtkLTRFamilies *ltrfams, gint pos);
+void         gtk_ltr_families_set_position(GtkLTRFamilies *ltrfams, gint pos);
 
-void gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams, gint pos);
+void         gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
+                                                  gint pos);
 
-void gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams, gint pos);
+void         gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
+                                                  gint pos);
 
-void gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
-                                            GtkTreePath *path,
-                                            GtkTreeViewColumn *column,
-                                            GtkLTRFamilies *ltrfams);
-
+void         gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
+                                                    GtkTreePath *path,
+                                                    GtkTreeViewColumn *column,
+                                                    GtkLTRFamilies *ltrfams);
 #endif /* GTK_LTR_FAMILIES_H */

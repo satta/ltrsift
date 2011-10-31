@@ -19,15 +19,26 @@
 #include "error.h"
 #include "gtk_ltr_families.h"
 
+/* function prototypes start */
 static void gtk_ltr_families_nb_fam_lv_append_gn(GtkTreeView*, GtGenomeNode*,
-                                              GtHashmap*, GtkTreeRowReference*,
-                                              GtkListStore*, GtStyle*,
-                                              GtHashmap*);
+                                                 GtHashmap*,
+                                                 GtkTreeRowReference*,
+                                                 GtkListStore*,
+                                                 GtStyle*,
+                                                 GtHashmap*);
 
 static void gtk_ltr_families_nb_fam_refresh_nums(GtkNotebook*);
 
-static gint nb_fam_lv_sort_function(GtkTreeModel*, GtkTreeIter*, GtkTreeIter*,
+static gint nb_fam_lv_sort_function(GtkTreeModel*,
+                                    GtkTreeIter*,
+                                    GtkTreeIter*,
                                     gpointer);
+
+static void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
+                                                    GtkTreeView *list_view,
+                                                    GtArray *nodes,
+                                                    GtkListStore *store);
+/* function prototypes end */
 
 /* get functions start */
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams)
@@ -312,6 +323,106 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
   }
 }
 /* "support" functions end */
+
+/* thread related functions start */
+gboolean gtk_ltr_families_update_progress_dialog(gpointer data)
+{
+  FamilyThreadData *threaddata = (FamilyThreadData*) data;
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->progressbar),
+                                (gdouble)threaddata->progress /
+                                (2 * gt_array_size(threaddata->old_nodes)));
+  return TRUE;
+}
+
+void create_and_set_progress_dialog(FamilyThreadData *threaddata)
+{
+  GtkWidget *label,
+            *vbox;
+  guint sid;
+
+  /* create the modal window which warns the user to wait */
+  threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
+  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
+  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
+  g_signal_connect(threaddata->window, "delete_event",
+                   G_CALLBACK(gtk_true), NULL);
+  vbox = gtk_vbox_new(FALSE, 12);
+  /* create label */
+  label = gtk_label_new("Please wait...");
+  gtk_container_add(GTK_CONTAINER(vbox), label);
+  /* create progress bar */
+  threaddata->progressbar = gtk_progress_bar_new();
+  gtk_container_add(GTK_CONTAINER(vbox), threaddata->progressbar);
+  /* add vbox to dialog */
+  gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
+  gtk_widget_show_all(threaddata->window);
+  /* refresh the progress dialog */
+  sid = g_timeout_add(100, gtk_ltr_families_update_progress_dialog,
+                      (gpointer) threaddata);
+  g_object_set_data(G_OBJECT(threaddata->window),
+                    "source_id", GINT_TO_POINTER(sid));
+}
+
+gboolean classify_nodes_finished(gpointer data)
+{
+    FamilyThreadData *threaddata = (FamilyThreadData*) data;
+
+    g_source_remove(GPOINTER_TO_INT(
+                                 g_object_get_data(G_OBJECT(threaddata->window),
+                                                   "source_id")));
+    gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+
+    if (!threaddata->had_err) {
+      g_list_foreach(threaddata->references,
+                     (GFunc) remove_row,
+                     threaddata->list_view);
+      gtk_ltr_families_nb_fam_lv_append_array(threaddata->ltrfams,
+                                              threaddata->list_view,
+                                              threaddata->new_nodes,
+                                              NULL);
+      gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
+    } else {
+      g_set_error(&threaddata->ltrfams->gerr,
+                  G_FILE_ERROR,
+                  0,
+                  "Could not classify the selected data: %s",
+                  gt_error_get(threaddata->err));
+      error_handle(threaddata->ltrfams->gerr);
+    }
+
+    g_list_foreach(threaddata->references,
+                   (GFunc) gtk_tree_row_reference_free,
+                   NULL);
+    g_list_free(threaddata->references);
+    gt_array_delete(threaddata->old_nodes);
+    gt_error_delete(threaddata->err);
+    g_slice_free(FamilyThreadData, threaddata);
+
+    return FALSE;
+}
+
+gpointer classify_nodes_start(gpointer data)
+{
+  FamilyThreadData *threaddata = (FamilyThreadData*) data;
+  GtNodeStream *last_stream = NULL,
+               *classify_stream = NULL,
+               *array_in_stream = NULL,
+               *array_out_stream = NULL;
+
+  last_stream = array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
+                                                         threaddata->err);
+  last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                             &threaddata->progress,
+                                                             threaddata->err);
+  last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
+                                                           threaddata->new_nodes,
+                                                           threaddata->err);
+  threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
+  g_idle_add(classify_nodes_finished, data);
+  return NULL;
+}
+/* thread related functions end */
 
 /* <image_area> related functions start */
 static void draw_image(GtkLTRFamilies *ltrfams, GtGenomeNode *gn)
@@ -1073,14 +1184,8 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   GtkTreeRowReference *rowref;
   GtkWidget *tab, *dialog;
   GtGenomeNode *gn;
-  GtArray *nodes,
-          *new_nodes;
-  GtNodeStream *last_stream = NULL,
-               *classify_stream = NULL,
-               *array_in_stream = NULL,
-               *array_out_stream = NULL;
-  GtError *err;
-  int had_err = 0;
+  GtArray *nodes;
+  FamilyThreadData *threaddata;
   GList *rows,
         *tmp,
         *references = NULL,
@@ -1130,31 +1235,22 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   }
   gt_genome_nodes_sort_stable(nodes);
 
-  new_nodes = gt_array_new(sizeof(GtGenomeNode*));
-  err = gt_error_new();
-  last_stream = array_in_stream = gt_array_in_stream_new(nodes, err);
-  last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream, err);
-  last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
-                                                           new_nodes,
-                                                           err);
-  had_err = gt_node_stream_pull(last_stream, err);
+  threaddata = g_slice_new(FamilyThreadData);
+  threaddata->ltrfams = ltrfams;
+  threaddata->old_nodes = nodes;
+  threaddata->new_nodes = gt_array_new(sizeof(GtGenomeNode*));
+  threaddata->err = gt_error_new();
+  threaddata->references = references;
+  threaddata->list_view = list_view;
+  threaddata->progress = 0;
+  threaddata->had_err = 0;
+  create_and_set_progress_dialog(threaddata);
 
-  if (!had_err) {
-    g_list_foreach(references, (GFunc) remove_row, list_view);
-    gtk_ltr_families_nb_fam_lv_append_array(ltrfams, list_view,
-                                            new_nodes, NULL);
-    gtk_ltr_families_set_modified(ltrfams, TRUE);
-  }
+  g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE, NULL);
 
-  g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-  g_list_free(references);
   g_list_free(rows);
   g_list_free(children);
-  gt_node_stream_delete(classify_stream);
-  gt_node_stream_delete(array_in_stream);
-  gt_node_stream_delete(array_out_stream);
-  gt_array_delete(nodes);
 }
 
 static int add_feature_columns(void *key, void *value, void *lv,

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -lgenometools -I$(gt_prefix)/include/genometools -L$(gt_prefix)/lib
-GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0` -export-dynamic
+GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0` -export-dynamic
 SOURCES := $(wildcard src/*.c)
 OBJECTS := $(SOURCES:%.c=obj/%.o)
 
