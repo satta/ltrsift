@@ -22,12 +22,25 @@
 
 #define PW_SELECT_GFF3_FILES "Select GFF3 files..."
 
+typedef struct _PWThreadData PWThreadData;
+
 typedef enum {
   PW_INTRODUCTION = 0,
   PW_SELECTFILES,
   PW_CLASSIFICATION,
   PW_SUMMARY
 } ProjectWizardPages;
+
+struct _PWThreadData {
+  GUIData *ltrgui;
+  GtArray *nodes;
+  GtHashmap *features;
+  unsigned long had_err,
+                progress,
+                n_features;
+  char *current_state;
+  GtError *err;
+};
 
 void pw_init(GUIData *ltrgui);
 

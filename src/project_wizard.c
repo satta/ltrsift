@@ -204,6 +204,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                                      ltrgui->pw_do_classification_cb))) {
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
                                                                    NULL,
+                                                                   NULL,
                                                                    err);
   }
   if (!had_err) {

@@ -20,6 +20,26 @@
 
 #include "ltrgui.h"
 
+typedef struct _MenuThreadData MenuThreadData;
+
+struct _MenuThreadData
+{
+  GUIData *ltrgui;
+  GtkWidget *window;
+  GtkWidget *progressbar;
+  GtError *err;
+  gchar *filename;
+  gchar *tmp_filename;
+  GtArray *nodes;
+  GtHashmap *features;
+  gboolean save_as;
+  gboolean open;
+  gboolean bakfile;
+  unsigned long progress,
+                n_features;
+  int had_err;
+};
+
 void mb_main_init(GUIData *ltrgui);
 
 void mb_main_file_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);

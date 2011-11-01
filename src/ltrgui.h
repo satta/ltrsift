@@ -99,6 +99,7 @@ struct _GUIData
   GtkWidget *pw_do_classification_cb;
   /* project wizard stuff end */
   guint sb_main_context_id;
+  GMutex *mutex;
   GError *err;
 };
 

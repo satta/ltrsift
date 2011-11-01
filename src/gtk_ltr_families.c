@@ -61,7 +61,7 @@ gboolean gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams)
   return ltrfams->modified;
 }
 
-const gchar* gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams)
+gchar* gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams)
 {
   return ltrfams->projectfile;
 }
@@ -328,13 +328,15 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
 gboolean gtk_ltr_families_update_progress_dialog(gpointer data)
 {
   FamilyThreadData *threaddata = (FamilyThreadData*) data;
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            threaddata->current_state);
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->progressbar),
                                 (gdouble)threaddata->progress /
                                 (2 * gt_array_size(threaddata->old_nodes)));
   return TRUE;
 }
 
-void create_and_set_progress_dialog(FamilyThreadData *threaddata)
+static void gtk_ltr_families_progress_dialog_init(FamilyThreadData *threaddata)
 {
   GtkWidget *label,
             *vbox;
@@ -344,6 +346,7 @@ void create_and_set_progress_dialog(FamilyThreadData *threaddata)
   threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
   gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
+  gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
   gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
   g_signal_connect(threaddata->window, "delete_event",
                    G_CALLBACK(gtk_true), NULL);
@@ -364,7 +367,7 @@ void create_and_set_progress_dialog(FamilyThreadData *threaddata)
                     "source_id", GINT_TO_POINTER(sid));
 }
 
-gboolean classify_nodes_finished(gpointer data)
+static gboolean classify_nodes_finished(gpointer data)
 {
     FamilyThreadData *threaddata = (FamilyThreadData*) data;
 
@@ -397,28 +400,35 @@ gboolean classify_nodes_finished(gpointer data)
     g_list_free(threaddata->references);
     gt_array_delete(threaddata->old_nodes);
     gt_error_delete(threaddata->err);
+    gt_free(threaddata->current_state);
     g_slice_free(FamilyThreadData, threaddata);
 
     return FALSE;
 }
 
-gpointer classify_nodes_start(gpointer data)
+static gpointer classify_nodes_start(gpointer data)
 {
   FamilyThreadData *threaddata = (FamilyThreadData*) data;
   GtNodeStream *last_stream = NULL,
                *classify_stream = NULL,
                *array_in_stream = NULL,
                *array_out_stream = NULL;
-
+  g_mutex_lock(threaddata->ltrfams->mutex);
   last_stream = array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
+                                                         NULL,
                                                          threaddata->err);
   last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                             &threaddata->current_state,
                                                              &threaddata->progress,
                                                              threaddata->err);
   last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
                                                            threaddata->new_nodes,
                                                            threaddata->err);
   threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
+  g_mutex_unlock(threaddata->ltrfams->mutex);
+  gt_node_stream_delete(classify_stream);
+  gt_node_stream_delete(array_in_stream);
+  gt_node_stream_delete(array_out_stream);
   g_idle_add(classify_nodes_finished, data);
   return NULL;
 }
@@ -1016,7 +1026,8 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
 
-    last_stream = array_in_stream = gt_array_in_stream_new(nodes, ltrfams->err);
+    last_stream = array_in_stream = gt_array_in_stream_new(nodes, NULL,
+                                                           ltrfams->err);
     last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
 
     had_err = gt_node_stream_pull(last_stream, ltrfams->err);
@@ -1240,11 +1251,12 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   threaddata->old_nodes = nodes;
   threaddata->new_nodes = gt_array_new(sizeof(GtGenomeNode*));
   threaddata->err = gt_error_new();
+  threaddata->current_state = gt_cstr_dup("Starting classification");
   threaddata->references = references;
   threaddata->list_view = list_view;
   threaddata->progress = 0;
   threaddata->had_err = 0;
-  create_and_set_progress_dialog(threaddata);
+  gtk_ltr_families_progress_dialog_init(threaddata);
 
   g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE, NULL);
 
@@ -2392,6 +2404,7 @@ static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
   }
   gt_array_delete(ltrfams->nodes);
   g_free(ltrfams->projectfile);
+  g_mutex_free(ltrfams->mutex);
 
   return FALSE;
 }
@@ -2552,5 +2565,6 @@ GtkWidget* gtk_ltr_families_new()
   g_signal_connect(G_OBJECT(ltrfams), "destroy",
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);
   ltrfams->modified = FALSE;
+  ltrfams->mutex = g_mutex_new();
   return GTK_WIDGET(ltrfams);
 }

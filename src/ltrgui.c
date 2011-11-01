@@ -52,6 +52,7 @@ void free_hash(void *elem)
 
 static void free_gui(GUIData *ltrgui)
 {
+  g_mutex_free(ltrgui->mutex);
   g_slice_free(GUIData, ltrgui);
 }
 
@@ -170,6 +171,7 @@ gint main(gint argc, gchar *argv[])
   /* initialize libraries */
   g_thread_init(NULL);
   gdk_threads_init();
+  ltrgui->mutex = g_mutex_new();
   gtk_init(&argc, &argv);
   gt_lib_init();
 

@@ -105,7 +105,8 @@ enum {
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
-enum {
+enum
+{
   LTRFAMS_FAM_LV_NODE_ARRAY = 0,
   LTRFAMS_FAM_LV_TAB_CHILD,
   LTRFAMS_FAM_LV_TAB_LABEL,
@@ -122,9 +123,10 @@ struct _FamilyTransferData
   GtkTreeView *list_view;
 };
 
-typedef enum {
+typedef enum
+{
   TARGET_STRING = 0
-} FamilyTargets;
+} FamilyDnDTargets;
 
 static const GtkTargetEntry family_drag_targets[] = {
   {"STRING", 0, TARGET_STRING}
@@ -144,6 +146,7 @@ struct _GtkLTRFamilies
   GtkWidget *hpaned;
   GtkWidget *vpaned;
   GError *gerr;
+  GMutex *mutex;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
@@ -171,10 +174,10 @@ struct _FamilyThreadData
   GtError *err;
   GList *references;
   GtkTreeView *list_view;
+  gchar *current_state;
   unsigned long progress;
   int had_err;
 };
-
 
 GType        gtk_ltr_families_get_type(void);
 
@@ -193,10 +196,10 @@ GtArray*     gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
 
 gboolean     gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
 
-const gchar* gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
+gchar*       gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
 
 void         gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
-                                      gchar *projectfile);
+                                              gchar *projectfile);
 
 void         gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams,
                                            gboolean modified);
