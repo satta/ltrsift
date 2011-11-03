@@ -33,11 +33,16 @@ typedef enum {
 
 struct _PWThreadData {
   GUIData *ltrgui;
+  GtkWidget *window,
+            *progressbar;
   GtArray *nodes;
   GtHashmap *features;
   unsigned long had_err,
                 progress,
                 n_features;
+  const gchar *fullname;
+  gchar *projectfile,
+        *projectdir;
   char *current_state;
   GtError *err;
 };

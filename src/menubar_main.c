@@ -25,13 +25,11 @@ static void reorder_tabs(gpointer key, gpointer value, gpointer user_data)
 
   gtk_notebook_reorder_child((GtkNotebook*) user_data,
                              (GtkWidget*) key,
-                             (gint) value);
+                             GPOINTER_TO_INT(value));
 }
 
 static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
 {
-  sqlite3 *db;
-  sqlite3_stmt *stmt;
   GtkWidget *sw,
             *label_close;
   GtkNotebook *notebook;
@@ -39,130 +37,190 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   GtkTreeViewColumn *column;
   GtkTreeModel *model;
   GtkTreeIter iter;
+  GtRDB *rdb;
+  GtRDBStmt *stmt;
   GtArray *nodes;
+  GtError *err;
   GList *children,
         *columns;
   gboolean valid;
-  gchar *errmsg,
-        *name,
+  gchar *name,
         query[BUFSIZ];
   gint width,
        height,
-       x, y, z, i, nop, ret;
+       x, y, z, i, nop, had_err = 0;
   guint noc;
 
-  ret = sqlite3_open(projectfile, &db);
-  if (ret) {
+  err = gt_error_new();
+  rdb = gt_rdb_sqlite_new(projectfile, err);
+  if (!rdb) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_close(db);
+                gt_error_get(err));
     return -1;
   }
 
-  sqlite3_prepare_v2(db,
-                     "CREATE TABLE IF NOT EXISTS gui_settings "
-                     "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "height INTEGER NOT NULL, "
-                      "width INTEGER NOT NULL, "
-                      "ltrfam INTEGER NOT NULL, "
-                      "hpaned INTEGER NOT NULL, "
-                      "vpaned INTEGER NOT NULL)",
-                     -1, &stmt, NULL);
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS gui_settings "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "height INTEGER NOT NULL, "
+                            "width INTEGER NOT NULL, "
+                            "ltrfam INTEGER NOT NULL, "
+                            "hpaned INTEGER NOT NULL, "
+                            "vpaned INTEGER NOT NULL)",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
 
-  sqlite3_prepare_v2(db,
-                     "CREATE TABLE IF NOT EXISTS project_params "
-                     "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "psmall INTEGER NOT NULL, "
-                      "plarge INTEGER NOT NULL, "
-                      "wordsize INTEGER NOT NULL, "
-                      "xdrop REAL NOT NULL, "
-                      "seq_identity REAL NOT NULL)",
-                     -1, &stmt, NULL);
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM gui_settings",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
 
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS project_params "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "psmall INTEGER NOT NULL, "
+                            "plarge INTEGER NOT NULL, "
+                            "wordsize INTEGER NOT NULL, "
+                            "xdrop REAL NOT NULL, "
+                            "seq_identity REAL NOT NULL)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
 
-  sqlite3_prepare_v2(db,
-                     "CREATE TABLE IF NOT EXISTS empty_families "
-                     "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                       "name TEXT)",
-                     -1, &stmt, NULL);
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM project_params",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
 
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS empty_families "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                             "name TEXT)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
 
-  sqlite3_prepare_v2(db,
-                     "CREATE TABLE IF NOT EXISTS invisible_columns "
-                     "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)",
-                     -1, &stmt, NULL);
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM empty_families",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
 
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS invisible_columns "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
 
-  sqlite3_prepare_v2(db,
-                     "CREATE TABLE IF NOT EXISTS notebook_tabs "
-                     "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "name TEXT, "
-                      "position INTEGER NOT NULL)",
-                     -1, &stmt, NULL);
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM invisible_columns",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
 
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS notebook_tabs "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "name TEXT, "
+                            "position INTEGER NOT NULL)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
     return -1;
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
+
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE UNIQUE INDEX nbtabs ON notebook_tabs (name)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
+    g_set_error(&ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM notebook_tabs",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
 
   gtk_window_get_size(GTK_WINDOW(ltrgui->main_window), &width, &height);
   x = gtk_ltr_families_get_position(GTK_LTR_FAMILIES(ltrgui->ltr_families));
@@ -178,17 +236,22 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
              height,
              width,
              x, y, z);
-  ret = sqlite3_exec(db, query, NULL, NULL, &errmsg);
-  if (ret) {
+  had_err = gt_rdb_prepare(rdb,
+                           query,
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not save gui settings: %s",
-                errmsg);
-    sqlite3_free(errmsg);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
+  gt_rdb_stmt_delete(stmt);
 
   notebook = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrgui->ltr_families));
   sw = gtk_notebook_get_nth_page(notebook, 0);
@@ -202,17 +265,24 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
       g_snprintf(query, BUFSIZ,
                  "INSERT INTO invisible_columns (name) values (\"%s\")",
                  gtk_tree_view_column_get_title(column));
-      ret = sqlite3_exec(db, query, NULL, NULL, &errmsg);
-      if (ret) {
+      had_err = gt_rdb_prepare(rdb,
+                               query,
+                               -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+      if (had_err == -1) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
                     0,
                     "Could not save gui settings: %s",
-                    errmsg);
-        sqlite3_free(errmsg);
-        sqlite3_close(db);
-        return -1;
+                    gt_error_get(err));
+        gt_rdb_stmt_delete(stmt);
+        gt_rdb_delete(rdb);
+        g_list_free(children);
+        g_list_free(columns);
+        return had_err;
       }
+      gt_rdb_stmt_delete(stmt);
     }
   }
   g_list_free(children);
@@ -226,17 +296,22 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                "INSERT INTO notebook_tabs (name, position) values (\"%s\", %d)",
                gtk_label_close_get_text(GTKLABELCLOSE(label_close)),
                i);
-    ret = sqlite3_exec(db, query, NULL, NULL, &errmsg);
-    if (ret) {
+    had_err = gt_rdb_prepare(rdb,
+                             query,
+                             -1, &stmt, err);
+    if (!had_err)
+      had_err = gt_rdb_stmt_exec(stmt, err);
+    if (had_err == -1) {
       g_set_error(&ltrgui->err,
                   G_FILE_ERROR,
                   0,
                   "Could not save gui settings: %s",
-                  errmsg);
-      sqlite3_free(errmsg);
-      sqlite3_close(db);
-      return -1;
+                  gt_error_get(err));
+      gt_rdb_stmt_delete(stmt);
+      gt_rdb_delete(rdb);
+      return had_err;
     }
+    gt_rdb_stmt_delete(stmt);
   }
 
   list_view =
@@ -253,17 +328,23 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
       g_snprintf(query, BUFSIZ,
                  "INSERT INTO empty_families (name) values (\"%s\")",
                  name);
-      ret = sqlite3_exec(db, query, NULL, NULL, &errmsg);
-      if (ret) {
+      had_err = gt_rdb_prepare(rdb,
+                               query,
+                               -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+      if (had_err == -1) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
                     0,
                     "Could not save gui settings: %s",
-                    errmsg);
-        sqlite3_free(errmsg);
-        sqlite3_close(db);
-        return -1;
+                    gt_error_get(err));
+        gt_rdb_stmt_delete(stmt);
+        gt_rdb_delete(rdb);
+        g_free(name);
+        return had_err;
       }
+      gt_rdb_stmt_delete(stmt);
     }
     g_free(name);
     while (gtk_tree_model_iter_next(model, &iter)) {
@@ -275,30 +356,36 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
         g_snprintf(query, BUFSIZ,
                    "INSERT INTO empty_families (name) values (\"%s\")",
                    name);
-        ret = sqlite3_exec(db, query, NULL, NULL, &errmsg);
-        if (ret) {
+        had_err = gt_rdb_prepare(rdb,
+                                 query,
+                                 -1, &stmt, err);
+        if (!had_err)
+          had_err = gt_rdb_stmt_exec(stmt, err);
+        if (had_err == -1) {
           g_set_error(&ltrgui->err,
                       G_FILE_ERROR,
                       0,
                       "Could not save gui settings: %s",
-                      errmsg);
-          sqlite3_free(errmsg);
-          sqlite3_close(db);
-          return -1;
+                      gt_error_get(err));
+          gt_rdb_stmt_delete(stmt);
+          gt_rdb_delete(rdb);
+          g_free(name);
+          return had_err;
         }
+        gt_rdb_stmt_delete(stmt);
       }
       g_free(name);
     }
   }
-  sqlite3_close(db);
+  gt_rdb_delete(rdb);
 
   return 0;
 }
 
 static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
 {
-  sqlite3 *db;
-  sqlite3_stmt *stmt;
+  GtRDB *rdb;
+  GtRDBStmt *stmt;
   GtkWidget *sw,
             *label_close;
   GtkNotebook *nb;
@@ -307,110 +394,137 @@ static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   GtkTreeIter iter;
   GtkTreePath *path;
   GtArray *nodes;
+  GtStr *result;
   GHashTable *hash;
   gboolean valid;
   gchar *name,
         buffer[BUFSIZ];
-  gint ret, nop, i;
+  gint had_err = 0, nop, i;
+  GtError *err;
+  err = gt_error_new();
 
-  ret = sqlite3_open_v2(projectfile, &db, SQLITE_OPEN_READONLY, NULL);
-  if (ret) {
+  rdb = gt_rdb_sqlite_new(projectfile, err);
+  if (!rdb) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not apply gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_close(db);
+                gt_error_get(err));
     return -1;
   }
 
-  sqlite3_prepare_v2(db,
-                     "SELECT height, width, ltrfam, hpaned, "
-                     "vpaned FROM gui_settings",
-                     -1,
-                     &stmt,
-                     NULL);
-  ret = sqlite3_step(stmt);
-  if (ret == SQLITE_ERROR) {
+  had_err = gt_rdb_prepare(rdb,
+                           "SELECT height, width, ltrfam, hpaned, "
+                           "vpaned FROM gui_settings",
+                           -1,
+                           &stmt,
+                           err);
+  had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not apply gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
     return -1;
   }
 
-  if (ret == SQLITE_ROW) {
-    gtk_window_resize(GTK_WINDOW(ltrgui->main_window),
-                      sqlite3_column_int(stmt, 1),
-                      sqlite3_column_int(stmt, 0));
-    gtk_ltr_families_set_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
-                                  sqlite3_column_int(stmt, 2));
-    gtk_ltr_families_set_hpaned_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
-                                         sqlite3_column_int(stmt, 3));
-    gtk_ltr_families_set_vpaned_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
-                                         sqlite3_column_int(stmt, 4));
+  if (!had_err) {
+    gint height, width, ltrfam, hpaned, vpaned;
+    had_err = gt_rdb_stmt_get_int(stmt, 0, &height, err);
+    had_err = gt_rdb_stmt_get_int(stmt, 1, &width, err);
+    if (!had_err)
+      gtk_window_resize(GTK_WINDOW(ltrgui->main_window), width, height);
+      had_err = gt_rdb_stmt_get_int(stmt, 2, &ltrfam, err);
+      had_err = gt_rdb_stmt_get_int(stmt, 3, &hpaned, err);
+      had_err = gt_rdb_stmt_get_int(stmt, 4, &vpaned, err);
+    if (!had_err) {
+
+      gtk_ltr_families_set_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                    ltrfam);
+      gtk_ltr_families_set_hpaned_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                           hpaned);
+      gtk_ltr_families_set_vpaned_position(GTK_LTR_FAMILIES(ltrgui->ltr_families),
+                                           vpaned);
+    }
   }
-  sqlite3_finalize(stmt);
+  gt_rdb_stmt_delete(stmt);
 
-  sqlite3_prepare_v2(db, "SELECT name FROM empty_families", -1, &stmt, NULL);
-
-  list_view =
+  had_err = gt_rdb_prepare(rdb,
+                           "SELECT name FROM empty_families",
+                           -1, &stmt, NULL);
+  if (!had_err) {
+    list_view =
            gtk_ltr_families_get_lv_fams(GTK_LTR_FAMILIES(ltrgui->ltr_families));
-  model = gtk_tree_view_get_model(list_view);
-  while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
-    nodes = gt_array_new(sizeof(GtGenomeNode*));
-    g_snprintf(buffer, BUFSIZ, "%s (0)", sqlite3_column_text(stmt, 0));
-    gtk_tree_store_append(GTK_TREE_STORE(model), &iter, NULL);
-    gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                       LTRFAMS_FAM_LV_NODE_ARRAY, nodes,
-                       LTRFAMS_FAM_LV_TAB_CHILD, NULL,
-                       LTRFAMS_FAM_LV_TAB_LABEL, NULL,
-                       LTRFAMS_FAM_LV_OLDNAME, sqlite3_column_text(stmt, 0),
-                       LTRFAMS_FAM_LV_CURNAME, buffer,
-                       -1);
+    model = gtk_tree_view_get_model(list_view);
+    while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
+      result = gt_str_new();
+      nodes = gt_array_new(sizeof(GtGenomeNode*));
+      had_err = gt_rdb_stmt_get_string(stmt, 0, result, err);
+      if (!had_err) {
+        g_snprintf(buffer, BUFSIZ, "%s (0)", gt_str_get(result));
+        gtk_tree_store_append(GTK_TREE_STORE(model), &iter, NULL);
+        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+                           LTRFAMS_FAM_LV_NODE_ARRAY, nodes,
+                           LTRFAMS_FAM_LV_TAB_CHILD, NULL,
+                           LTRFAMS_FAM_LV_TAB_LABEL, NULL,
+                           LTRFAMS_FAM_LV_OLDNAME, gt_str_get(result),
+                           LTRFAMS_FAM_LV_CURNAME, buffer,
+                           -1);
+      }
+      gt_str_delete(result);
+    }
+    gt_rdb_stmt_delete(stmt);
   }
-  sqlite3_finalize(stmt);
-  if (ret == SQLITE_ERROR) {
+  if (had_err == -1) {
     g_set_error(&ltrgui->err,
                 G_FILE_ERROR,
                 0,
                 "Could not apply gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_finalize(stmt);
-    sqlite3_close(db);
-    return -1;
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
   }
 
   valid = gtk_tree_model_get_iter_first(model, &iter);
   if (valid) {
+    GtArray *tmp_nodes;
     gtk_tree_model_get(model, &iter,
                        LTRFAMS_FAM_LV_OLDNAME, &name,
                        -1);
     g_snprintf(buffer, BUFSIZ,
                "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
                name);
-    sqlite3_prepare_v2(db, buffer, -1, &stmt, NULL);
-    ret = sqlite3_step(stmt);
-    if (ret == SQLITE_ERROR) {
+    g_free(name);
+    had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
+    if (!had_err)
+      had_err = gt_rdb_stmt_exec(stmt, err);
+    if (had_err == -1) {
       g_set_error(&ltrgui->err,
                   G_FILE_ERROR,
                   0,
                   "Could not apply gui settings: %s",
-                  sqlite3_errmsg(db));
-      sqlite3_finalize(stmt);
-      sqlite3_close(db);
-      return -1;
+                  gt_error_get(err));
+      gt_rdb_stmt_delete(stmt);
+      gt_rdb_delete(rdb);
+      return had_err;
     }
-    if (sqlite3_column_text(stmt, 0)) {
+    if (!had_err) {
+      gtk_tree_model_get(model, &iter,
+                         LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
+                         -1);
       path = gtk_tree_model_get_path(model, &iter);
-      gtk_ltr_families_lv_fams_row_activated(list_view, path, NULL,
-                                        GTK_LTR_FAMILIES(ltrgui->ltr_families));
+      gtk_ltr_families_nb_fam_add_tab(model, &iter, tmp_nodes, TRUE,
+                                      GTK_LTR_FAMILIES(ltrgui->ltr_families));
+      /*gtk_ltr_families_lv_fams_row_activated(list_view, path, NULL,
+                                        GTK_LTR_FAMILIES(ltrgui->ltr_families));*/
       gtk_tree_path_free(path);
     }
-    sqlite3_finalize(stmt);
+    /*gt_str_delete(result);*/
+    gt_rdb_stmt_delete(stmt);
     while (gtk_tree_model_iter_next(model, &iter)) {
       gtk_tree_model_get(model, &iter,
                          LTRFAMS_FAM_LV_OLDNAME, &name,
@@ -418,31 +532,40 @@ static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
       g_snprintf(buffer, BUFSIZ,
                  "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
                  name);
-      sqlite3_prepare_v2(db, buffer, -1, &stmt, NULL);
-      ret = sqlite3_step(stmt);
-      if (ret == SQLITE_ERROR) {
+      g_free(name);
+      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+      if (had_err == -1) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
                     0,
                     "Could not apply gui settings: %s",
-                    sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
+                    gt_error_get(err));
+        gt_rdb_stmt_delete(stmt);
+        gt_rdb_delete(rdb);
         return -1;
       }
-      if (ret == SQLITE_ROW) {
+      if (!had_err) {
         path = gtk_tree_model_get_path(model, &iter);
-        gtk_ltr_families_lv_fams_row_activated(list_view, path, NULL,
+        gtk_tree_model_get(model, &iter,
+                           LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
+                           -1);
+        gtk_ltr_families_nb_fam_add_tab(model, &iter, tmp_nodes, TRUE,
                                         GTK_LTR_FAMILIES(ltrgui->ltr_families));
+        /*gtk_ltr_families_lv_fams_row_activated(list_view, path, NULL,
+                                        GTK_LTR_FAMILIES(ltrgui->ltr_families));*/
         gtk_tree_path_free(path);
       }
-      sqlite3_finalize(stmt);
+      gt_rdb_stmt_delete(stmt);
     }
   }
 
+  had_err = 0;
   nb = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrgui->ltr_families));
   nop = gtk_notebook_get_n_pages(nb);
   if (nop > 1) {
+    gint tab_pos;
     hash = g_hash_table_new(NULL, NULL);
     for (i = 0; i < nop; i++) {
       sw = gtk_notebook_get_nth_page(nb, i);
@@ -450,29 +573,39 @@ static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
       g_snprintf(buffer, BUFSIZ,
                  "SELECT position FROM notebook_tabs WHERE name = \"%s\"",
                  gtk_label_close_get_text(GTKLABELCLOSE(label_close)));
-      sqlite3_prepare_v2(db, buffer, -1, &stmt, NULL);
-      ret = sqlite3_step(stmt);
-      if (ret == SQLITE_ERROR) {
+      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+      if (had_err == -1) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
                     0,
                     "Could not apply gui settings: %s",
-                    sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        sqlite3_close(db);
+                    gt_error_get(err));
+        gt_rdb_stmt_delete(stmt);
+        gt_rdb_delete(rdb);
         return -1;
       }
-      if (ret == SQLITE_ROW) {
-        g_hash_table_insert(hash, (gpointer) sw,
-                            (gpointer) sqlite3_column_int(stmt, 0));
+      if (!had_err) {
+        had_err = gt_rdb_stmt_get_int(stmt, 0, &tab_pos, err);
+        if (!had_err)
+          g_hash_table_insert(hash, (gpointer) sw, GINT_TO_POINTER(tab_pos));
       }
-      sqlite3_finalize(stmt);
+      gt_rdb_stmt_delete(stmt);
     }
-    g_hash_table_foreach(hash, (GHFunc) reorder_tabs, (gpointer) nb);
+    if (!had_err)
+      g_hash_table_foreach(hash, (GHFunc) reorder_tabs, (gpointer) nb);
     g_hash_table_destroy(hash);
   }
-  sqlite3_close(db);
-  return 0;
+  if (had_err) {
+    g_set_error(&ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Could not apply gui settings: %s",
+                gt_error_get(err));
+  }
+  gt_rdb_delete(rdb);
+  return had_err;
 }
 
 gboolean mb_main_update_progress_dialog(gpointer data)
@@ -521,13 +654,14 @@ static gboolean mb_save_project_data_finished(gpointer data)
 {
   MenuThreadData *threaddata = (MenuThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltr_families;
-
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
   gtk_widget_destroy(GTK_WIDGET(threaddata->window));
 
   if (!threaddata->had_err) {
+    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
+                                     threaddata->filename);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
     threaddata->had_err = save_gui_settings(threaddata->ltrgui,
                                             threaddata->filename);
@@ -547,17 +681,15 @@ static gboolean mb_save_as_project_data_finished(gpointer data)
 {
   MenuThreadData *threaddata = (MenuThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltr_families;
-
+;
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
   gtk_widget_destroy(GTK_WIDGET(threaddata->window));
 
-
   if (!threaddata->had_err)
     threaddata->had_err = save_gui_settings(threaddata->ltrgui,
                                             threaddata->filename);
-
   if (!threaddata->had_err) {
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      threaddata->filename);
@@ -576,7 +708,7 @@ static gboolean mb_save_as_project_data_finished(gpointer data)
   return FALSE;
 }
 
-static gboolean mb_open_projct_data_finished(gpointer data)
+static gboolean mb_open_project_data_finished(gpointer data)
 {
   MenuThreadData *threaddata = (MenuThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltr_families;
@@ -588,7 +720,8 @@ static gboolean mb_open_projct_data_finished(gpointer data)
 
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    ltrfams = gtk_ltr_families_new();
+    threaddata->ltrgui->ltr_families = gtk_ltr_families_new();
+    ltrfams = threaddata->ltrgui->ltr_families;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
                        ltrfams, TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
@@ -603,8 +736,7 @@ static gboolean mb_open_projct_data_finished(gpointer data)
     mb_main_activate_menuitems(threaddata->ltrgui);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
     create_recently_used_resource(threaddata->filename);
-  }
-  if (threaddata->had_err) {
+  } else {
     g_set_error(&threaddata->ltrgui->err,
                 G_FILE_ERROR,
                 0,
@@ -636,6 +768,7 @@ static gpointer mb_main_save_project_data_start(gpointer data)
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Saving data");
+
   rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->err);
   if (!rdb)
     threaddata->had_err = -1;
@@ -701,9 +834,9 @@ static gpointer mb_main_open_project_data_start(gpointer data)
   GtAnnoDB *adb;
   GtStrArray *seqids = NULL;
   unsigned long i, n_features;
-
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Reading data from file");
+
   rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->err);
   if (!rdb)
     threaddata->had_err = -1;
@@ -759,7 +892,7 @@ static gpointer mb_main_open_project_data_start(gpointer data)
   threaddata->features = features;
   threaddata->n_features = n_features;
   //gt_feature_index_delete(fi);
-  g_idle_add(mb_open_projct_data_finished, data);
+  g_idle_add(mb_open_project_data_finished, data);
   return NULL;
 }
 
@@ -1040,6 +1173,7 @@ static void mb_main_view_columns_toggled(GtkCheckMenuItem *menuitem,
   GList *children,
         *columns;
   const gchar *caption;
+  gchar *file;
   gint i, j, nop;
   guint noc;
 
@@ -1062,6 +1196,34 @@ static void mb_main_view_columns_toggled(GtkCheckMenuItem *menuitem,
     g_list_free(children);
     g_list_free(columns);
   }
+  file = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(user_data));
+   if (file) {
+    GtRDB *rdb = NULL;
+    GtRDBStmt *stmt = NULL;
+    GtError *err = gt_error_new();
+    gint had_err = 0;
+    gchar query[BUFSIZ];
+
+    rdb = gt_rdb_sqlite_new(file, err);
+    if (!rdb)
+      return;
+    if (!gtk_check_menu_item_get_active(menuitem)) {
+      g_snprintf(query, BUFSIZ,
+                 "INSERT INTO invisible_columns (name) values (\"%s\")",
+                 caption);
+      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+    } else {
+      g_snprintf(query, BUFSIZ,
+                 "DELETE FROM invisible_columns WHERE name = \"%s\"", caption);
+      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+    }
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+  }
 }
 
 void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
@@ -1070,11 +1232,11 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
   GtkWidget *menu,
             *menuitem;
   GtStrArray *captions;
-  sqlite3 *db = NULL;
-  sqlite3_stmt *stmt;
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
   gchar buffer[BUFSIZ];
   const gchar *projectfile;
-  gint ret = 0;
+  gint had_err = 0;
   unsigned long i;
 
   captions = gt_str_array_new();
@@ -1085,48 +1247,46 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
   if (sqlt) {
     projectfile =
        gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltr_families));
-    ret = sqlite3_open_v2(projectfile, &db, SQLITE_OPEN_READONLY, NULL);
-  }
-  if (ret) {
-    g_set_error(&ltrgui->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                sqlite3_errmsg(db));
-    sqlite3_close(db);
-    error_handle(ltrgui->err);
-  }
+    rdb = gt_rdb_sqlite_new(projectfile, err);
+
+    if (!rdb) {
+      g_set_error(&ltrgui->err,
+                  G_FILE_ERROR,
+                  0,
+                  "Could not apply gui settings: %s",
+                  gt_error_get(err));
+      error_handle(ltrgui->err);
+    }
+   }
 
   for (i = 0; i < gt_str_array_size(captions); i++) {
     menuitem = gtk_check_menu_item_new_with_label(gt_str_array_get(captions,
                                                                    i));
-    if (sqlt && !ret) {
+    if (sqlt && rdb) {
       g_signal_connect(G_OBJECT(menuitem), "toggled",
                        G_CALLBACK(mb_main_view_columns_toggled),
                        ltrgui->ltr_families);
       g_snprintf(buffer, BUFSIZ,
                  "SELECT name FROM invisible_columns WHERE name = \"%s\"",
                  double_underscores(gt_str_array_get(captions, i)));
-      sqlite3_prepare_v2(db, buffer, -1, &stmt, NULL);
-      ret = sqlite3_step(stmt);
-      if (ret == SQLITE_ERROR) {
+      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+      if (had_err == -1) {
         g_set_error(&ltrgui->err,
                     G_FILE_ERROR,
                     0,
                     "Could not apply gui settings: %s",
-                    sqlite3_errmsg(db));
+                    gt_error_get(err));
         error_handle(ltrgui->err);
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-        ret = 1;
-      } else if (ret == SQLITE_ROW) {
+      } else if (had_err == 0) {
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), FALSE);
-        ret = 0;
       } else {
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-        ret = 0;
       }
-      sqlite3_finalize(stmt);
+      gt_rdb_stmt_delete(stmt);
     } else {
       gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
       g_signal_connect(G_OBJECT(menuitem), "toggled",
@@ -1143,8 +1303,8 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
   gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->mb_main_view_columns), menu);
   gtk_widget_show_all(menu);
   gtk_widget_set_sensitive(ltrgui->mb_main_view_columns, TRUE);
-  if (db)
-    sqlite3_close(db);
+  if (rdb)
+    gt_rdb_delete(rdb);
   gt_str_array_delete(captions);
 }
 

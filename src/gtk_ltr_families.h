@@ -48,7 +48,7 @@
 
 #define ATTR_RID       "ID"
 #define ATTR_CLUSTID   "clid"
-#define ATTR_PFAMN     "pfamname"
+#define ATTR_PFAMN     "name"
 #define FNT_PROTEINM   "protein_match"
 #define FNT_LTR        "long_terminal_repeat"
 #define FNT_REPEATR    "repeat_region"
@@ -220,8 +220,9 @@ void         gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
 void         gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
                                                   gint pos);
 
-void         gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
-                                                    GtkTreePath *path,
-                                                    GtkTreeViewColumn *column,
-                                                    GtkLTRFamilies *ltrfams);
+void         gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
+                                             GtkTreeIter *iter,
+                                             GtArray *nodes,
+                                             gboolean load,
+                                             GtkLTRFamilies *ltrfams);
 #endif /* GTK_LTR_FAMILIES_H */

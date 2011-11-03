@@ -171,7 +171,7 @@ style =
     stroke             = {red=0.0, green=0.0, blue=0.0, alpha = 1.0},
     stroke_marked      = {red=1.0, green=0.0, blue=0.0},
     block_caption      = function(fn)
-                           return fn:get_attribute("pfamname")
+                           return fn:get_attribute("name")
                          end,
     fill               = function(gn)
                            if gn:get_score() then
@@ -180,7 +180,7 @@ style =
                            else
                              aval = 1.0
                            end
-                           type = gn:get_attribute("pfamname")
+                           type = gn:get_attribute("name")
                              if type == "RVT_1"  or type == "RVT_thumb" then
                                -- RT domain
                                return {red=0.8, green=0.5, blue=0.5, alpha = 1.0}

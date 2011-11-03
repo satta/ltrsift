@@ -68,9 +68,82 @@ void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
   pw_reset_defaults(ltrgui);
 }
 
-void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
+gboolean pw_update_progress_dialog(gpointer data)
 {
-  GtkWidget *dialog;
+  PWThreadData *threaddata = (PWThreadData*) data;
+  gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
+  return TRUE;
+}
+
+static void pw_progress_dialog_init(PWThreadData *threaddata)
+{
+  GtkWidget *label,
+            *vbox;
+  guint sid;
+
+  /* create the modal window which warns the user to wait */
+  threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
+  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
+  gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
+  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
+  g_signal_connect(threaddata->window, "delete_event",
+                   G_CALLBACK(gtk_true), NULL);
+  vbox = gtk_vbox_new(FALSE, 12);
+  /* create label */
+  label = gtk_label_new("Please wait...");
+  gtk_container_add(GTK_CONTAINER(vbox), label);
+  /* create progress bar */
+  threaddata->progressbar = gtk_progress_bar_new();
+  gtk_container_add(GTK_CONTAINER(vbox), threaddata->progressbar);
+  /* add vbox to dialog */
+  gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
+  gtk_widget_show_all(threaddata->window);
+  /* refresh the progress dialog */
+  sid = g_timeout_add(100, pw_update_progress_dialog,
+                      (gpointer) threaddata);
+  g_object_set_data(G_OBJECT(threaddata->window),
+                    "source_id", GINT_TO_POINTER(sid));
+}
+
+static gboolean finish(gpointer data)
+{
+  PWThreadData *threaddata = (PWThreadData*) data;
+  GtkWidget *ltrfams = threaddata->ltrgui->ltr_families;
+
+  g_source_remove(GPOINTER_TO_INT(
+                               g_object_get_data(G_OBJECT(threaddata->window),
+                                                 "source_id")));
+  gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+
+  if (!threaddata->had_err) {
+    gtk_widget_destroy(ltrfams);
+    threaddata->ltrgui->ltr_families = gtk_ltr_families_new();
+    ltrfams = threaddata->ltrgui->ltr_families;
+    gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
+                       TRUE, TRUE, 0);
+    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
+                                    threaddata->nodes,
+                                    threaddata->features,
+                                    threaddata->n_features);
+    mb_main_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
+                                     threaddata->err, FALSE);
+    mb_main_activate_menuitems(threaddata->ltrgui);
+    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
+                                     g_strdup(threaddata->fullname));
+  }
+  g_free(threaddata->projectfile);
+  g_free(threaddata->projectdir);
+  gt_error_delete(threaddata->err);
+  g_slice_free(PWThreadData, threaddata);
+
+  return FALSE;
+}
+
+static gpointer start(gpointer data)
+{
+  PWThreadData *threaddata = (PWThreadData*) data;
+  GUIData *ltrgui = threaddata->ltrgui;
   GtkSpinButton *sbutton;
   GtkTreeSelection *sel;
   GtkTreeView *list_view;
@@ -87,25 +160,126 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                *ltrgui_array_out_stream = NULL;
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
-  GtError *err;
   GtArray *nodes;
   GtHashmap *features;
-  const gchar *fullname,
-              *indexname;
-  gchar *projectdir,
-        *projectfile,
-        projecttmpdir[BUFSIZ],
-        buf[BUFSIZ];
   gint psmall,
        plarge,
        wordsize,
-       had_err = 0,
        i = 0,
        num_of_files;
-  const char **gff3_files;
+  char buf[BUFSIZ];
+  const char **gff3_files,
+              *indexname;
   gdouble seqid,
-          xdrop;
-  unsigned long n_features;
+         xdrop;
+
+  g_snprintf(buf, BUFSIZ, "%s/tmp/%s", threaddata->projectdir,
+             threaddata->projectfile);
+  tmpdirprefix = gt_str_new_cstr(buf);
+
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
+  psmall = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
+  plarge = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
+  wordsize = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
+  xdrop = gtk_spin_button_get_value(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
+  seqid = gtk_spin_button_get_value(sbutton);
+
+  list_view = GTK_TREE_VIEW(ltrgui->pw_treeview_gff3);
+  sel = gtk_tree_view_get_selection(list_view);
+  gtk_tree_selection_select_all(sel);
+  num_of_files = gtk_tree_selection_count_selected_rows(sel);
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  gff3_files = g_malloc((size_t) num_of_files * sizeof(const char*));
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       0, &gff3_files[i],
+                       -1);
+    i++;
+    tmp = tmp->next;
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+
+  last_stream = gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files,
+                                                                gff3_files);
+
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                     ltrgui->pw_do_clustering_cb))) {
+    indexname = gtk_label_get_text(GTK_LABEL(ltrgui->pw_label_encseq));
+    el = gt_encseq_loader_new();
+    encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
+    if (!encseq)
+      threaddata->had_err = -1;
+    if (!threaddata->had_err)
+      last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
+                                                                   encseq,
+                                                                   tmpdirprefix,
+                                                                   plarge,
+                                                                   psmall,
+                                                                   wordsize,
+                                                                   xdrop,
+                                                                   seqid,
+                                                                   threaddata->err);
+  }
+  if (!threaddata->had_err &&
+      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                     ltrgui->pw_do_classification_cb))) {
+    last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                                   NULL,
+                                                                   NULL,
+                                                                   threaddata->err);
+  }
+  if (!threaddata->had_err) {
+    nodes = gt_array_new(sizeof(GtGenomeNode*));
+    features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+    last_stream = ltrgui_preprocess_stream =
+                                    gt_ltrgui_preprocess_stream_new(last_stream,
+                                                                    features,
+                                                                    &threaddata->n_features,
+                                                                    threaddata->err);
+    last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
+                                                                    nodes,
+                                                                    threaddata->err);
+  }
+  if (!ltrgui_array_out_stream)
+    threaddata->had_err = -1;
+  if (!threaddata->had_err)
+    threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
+
+  if (!threaddata->had_err) {
+    threaddata->nodes = nodes;
+    threaddata->features = features;
+  }
+  gt_node_stream_delete(ltr_classify_stream);
+  gt_node_stream_delete(ltr_cluster_stream);
+  gt_node_stream_delete(gff3_in_stream);
+  gt_node_stream_delete(ltrgui_array_out_stream);
+  gt_node_stream_delete(ltrgui_preprocess_stream);
+  gt_encseq_loader_delete(el);
+  gt_encseq_delete(encseq);
+
+  for (i = 0; i < num_of_files; i++)
+    g_free((gpointer) gff3_files[i]);
+  g_free(gff3_files);
+
+  g_idle_add(finish, data);
+  return NULL;
+}
+
+void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
+{
+  GtkWidget *dialog;
+
+  const gchar *fullname;
+  gchar *projectdir,
+        *projectfile,
+        projecttmpdir[BUFSIZ];
+  gint had_err = 0;
 
   gtk_widget_hide(GTK_WIDGET(assistant));
   fullname = gtk_label_get_text(GTK_LABEL(ltrgui->pw_label_projectname));
@@ -142,115 +316,20 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                 "Could not make dir: %s",
                 projecttmpdir);
     error_handle(ltrgui->err);
-    /* TODO: think about handling this error */
     return;
   }
 
-  g_snprintf(buf, BUFSIZ, "%s/%s", projecttmpdir, projectfile);
-  tmpdirprefix = gt_str_new_cstr(buf);
+  PWThreadData *threaddata;
+  threaddata = g_slice_new(PWThreadData);
+  threaddata->ltrgui = ltrgui;
+  threaddata->had_err = 0;
+  threaddata->fullname = fullname;
+  threaddata->projectfile = projectfile;
+  threaddata->projectdir = projectdir;
+  threaddata->n_features = LTRFAMS_LV_N_COLUMS;
+  threaddata->err = gt_error_new();
+  pw_progress_dialog_init(threaddata);
 
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
-  psmall = gtk_spin_button_get_value_as_int(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
-  plarge = gtk_spin_button_get_value_as_int(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
-  wordsize = gtk_spin_button_get_value_as_int(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
-  xdrop = gtk_spin_button_get_value(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
-  seqid = gtk_spin_button_get_value(sbutton);
+  g_thread_create(start, (gpointer) threaddata, FALSE, NULL);
 
-  list_view = GTK_TREE_VIEW(ltrgui->pw_treeview_gff3);
-  sel = gtk_tree_view_get_selection(list_view);
-  gtk_tree_selection_select_all(sel);
-  num_of_files = gtk_tree_selection_count_selected_rows(sel);
-  rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  tmp = rows;
-  gff3_files = g_malloc((size_t) num_of_files * sizeof(const char*));
-  while (tmp != NULL) {
-    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
-    gtk_tree_model_get(model, &iter,
-                       0, &gff3_files[i],
-                       -1);
-    i++;
-    tmp = tmp->next;
-  }
-  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-
-  err = gt_error_new();
-  last_stream = gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files,
-                                                                gff3_files);
-
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
-                                     ltrgui->pw_do_clustering_cb))) {
-    indexname = gtk_label_get_text(GTK_LABEL(ltrgui->pw_label_encseq));
-    el = gt_encseq_loader_new();
-    encseq = gt_encseq_loader_load(el, indexname, err);
-    if (!encseq)
-      had_err = -1;
-    if (!had_err)
-      last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
-                                                                   encseq,
-                                                                   tmpdirprefix,
-                                                                   plarge,
-                                                                   psmall,
-                                                                   wordsize,
-                                                                   xdrop,
-                                                                   seqid,
-                                                                   err);
-  }
-  if (!had_err &&
-      gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
-                                     ltrgui->pw_do_classification_cb))) {
-    last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
-                                                                   NULL,
-                                                                   NULL,
-                                                                   err);
-  }
-  if (!had_err) {
-    nodes = gt_array_new(sizeof(GtGenomeNode*));
-    features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
-    n_features = LTRFAMS_LV_N_COLUMS;
-    last_stream = ltrgui_preprocess_stream =
-                                    gt_ltrgui_preprocess_stream_new(last_stream,
-                                                                    features,
-                                                                    &n_features,
-                                                                    err);
-    last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
-                                                                    nodes,
-                                                                    err);
-  }
-  if (!ltrgui_array_out_stream)
-    had_err = -1;
-  if (!had_err)
-    had_err = gt_node_stream_pull(last_stream, err);
-  if (!had_err) {
-    gtk_widget_destroy(ltrgui->ltr_families);
-    ltrgui->ltr_families = gtk_ltr_families_new();
-    gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
-                       TRUE, TRUE, 0);
-    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltr_families),
-                                    nodes,
-                                    features,
-                                    n_features);
-    mb_main_view_columns_set_submenu(ltrgui, features, err, FALSE);
-    mb_main_activate_menuitems(ltrgui);
-    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrgui->ltr_families),
-                                     g_strdup(fullname));
-  }
-  g_free(projectfile);
-  g_free(projectdir);
-  /* TODO: handle errors */
-  gt_node_stream_delete(ltr_classify_stream);
-  gt_node_stream_delete(ltr_cluster_stream);
-  gt_node_stream_delete(gff3_in_stream);
-  gt_node_stream_delete(ltrgui_array_out_stream);
-  gt_node_stream_delete(ltrgui_preprocess_stream);
-  gt_encseq_loader_delete(el);
-  gt_encseq_delete(encseq);
-  gt_error_delete(err);
-
-  for (i = 0; i < num_of_files; i++)
-    g_free((gpointer) gff3_files[i]);
-  g_free(gff3_files);
 }

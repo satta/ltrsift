@@ -18,7 +18,6 @@
 #ifndef GUI_TEST_H
 #define GUI_TEST_H
 
-#include <sqlite3.h>
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>

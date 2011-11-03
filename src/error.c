@@ -37,5 +37,6 @@ void error_handle(GError *err)
     gtk_window_set_title(GTK_WINDOW(dialog), "An Error has occurred!");
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
+    /* TODO: check free error etc. */
   }
 }
