@@ -24,6 +24,7 @@
 #include "genometools.h"
 #include "gtk_label_close.h"
 #include "gtk_ltr_families.h"
+#include "gtk_ltr_filter.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
@@ -71,6 +72,7 @@ struct _GUIData
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
   GtkWidget *ltr_families;
+  GtkWidget *ltr_filter;
   GtkWidget *sb_main;
   GtkWidget *main_window;
   /* project wizard stuff start */
@@ -98,7 +100,6 @@ struct _GUIData
   GtkWidget *pw_do_classification_cb;
   /* project wizard stuff end */
   guint sb_main_context_id;
-  GMutex *mutex;
   GError *err;
 };
 

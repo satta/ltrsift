@@ -27,7 +27,8 @@
 #define GTKLABELCLOSE(obj)\
         G_TYPE_CHECK_INSTANCE_CAST((obj), GTKLABELCLOSE_TYPE, GtkLabelClose)
 #define GTKLABELCLOSE_CLASS(klass)\
-        G_TYPE_CHECK_CLASS_CAST((klass), GTKLTRFAMILY_TYPE, GtkLabelCloseClass)
+        G_TYPE_CHECK_CLASS_CAST((klass),\
+                                GTKLTRLABELCLOSE_TYPE, GtkLabelCloseClass)
 #define IS_GTKLABELCLOSE(obj)\
         G_TYPE_CHECK_INSTANCE_TYPE((obj), GTKLABELCLOSE_TYPE)
 #define IS_GTKLABELCLOSE_CLASS(klass)\

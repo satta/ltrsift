@@ -17,26 +17,21 @@
 
 #include "error.h"
 
-/* TODO: -replace "test"
-         -check for functionality of the dialog*/
-
-void error_handle(GError *err)
+void error_handle(GUIData *ltrgui)
 {
-  if (err != NULL) {
+  if (ltrgui->err != NULL) {
     GtkWidget *dialog;
 
-    /* log to stderr */
-    fprintf(stderr, "ERROR: %s\n", err->message);
-
     /* create an error message dialog and display modally to the user */
-    dialog = gtk_message_dialog_new(NULL,
+    dialog = gtk_message_dialog_new(GTK_WINDOW(ltrgui->main_window),
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-                                    err->message);
+                                    "%s",
+                                    ltrgui->err->message);
     gtk_window_set_title(GTK_WINDOW(dialog), "An Error has occurred!");
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
-    /* TODO: check free error etc. */
+    g_clear_error(&ltrgui->err);
   }
 }

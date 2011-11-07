@@ -20,6 +20,6 @@
 
 #include "ltrgui.h"
 
-void error_handle(GError *err);
+void error_handle(GUIData *ltrgui);
 
 #endif /* ERROR_H */

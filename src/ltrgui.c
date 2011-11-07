@@ -52,7 +52,6 @@ void free_hash(void *elem)
 
 static void free_gui(GUIData *ltrgui)
 {
-  g_mutex_free(ltrgui->mutex);
   g_slice_free(GUIData, ltrgui);
 }
 
@@ -150,8 +149,11 @@ static gboolean init_gui(GUIData *ltrgui)
   ltrgui->ltr_families = gtk_ltr_families_new();
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
                      TRUE, TRUE, 0);
+  ltrgui->ltr_filter = gtk_ltr_filter_new();
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->project_wizard),
+                               GTK_WINDOW(ltrgui->main_window));
+  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->ltr_filter),
                                GTK_WINDOW(ltrgui->main_window));
 
   gtk_builder_connect_signals(builder, ltrgui);
@@ -170,8 +172,6 @@ gint main(gint argc, gchar *argv[])
   ltrgui->err = NULL;
   /* initialize libraries */
   g_thread_init(NULL);
-  gdk_threads_init();
-  ltrgui->mutex = g_mutex_new();
   gtk_init(&argc, &argv);
   gt_lib_init();
 

@@ -71,6 +71,8 @@ void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
 gboolean pw_update_progress_dialog(gpointer data)
 {
   PWThreadData *threaddata = (PWThreadData*) data;
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            threaddata->current_state);
   gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
   return TRUE;
 }
@@ -131,9 +133,11 @@ static gboolean finish(gpointer data)
     mb_main_activate_menuitems(threaddata->ltrgui);
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      g_strdup(threaddata->fullname));
+    gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), TRUE);
   }
   g_free(threaddata->projectfile);
   g_free(threaddata->projectdir);
+  gt_free(threaddata->current_state);
   gt_error_delete(threaddata->err);
   g_slice_free(PWThreadData, threaddata);
 
@@ -224,13 +228,14 @@ static gpointer start(gpointer data)
                                                                    wordsize,
                                                                    xdrop,
                                                                    seqid,
+                                                                   &threaddata->current_state,
                                                                    threaddata->err);
   }
   if (!threaddata->had_err &&
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                      ltrgui->pw_do_classification_cb))) {
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
-                                                                   NULL,
+                                                                   &threaddata->current_state,
                                                                    NULL,
                                                                    threaddata->err);
   }
@@ -315,7 +320,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
                 0,
                 "Could not make dir: %s",
                 projecttmpdir);
-    error_handle(ltrgui->err);
+    error_handle(ltrgui);
     return;
   }
 
@@ -327,6 +332,7 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   threaddata->projectfile = projectfile;
   threaddata->projectdir = projectdir;
   threaddata->n_features = LTRFAMS_LV_N_COLUMS;
+  threaddata->current_state = gt_cstr_dup("Starting...");
   threaddata->err = gt_error_new();
   pw_progress_dialog_init(threaddata);
 

@@ -146,7 +146,6 @@ struct _GtkLTRFamilies
   GtkWidget *hpaned;
   GtkWidget *vpaned;
   GError *gerr;
-  GMutex *mutex;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;

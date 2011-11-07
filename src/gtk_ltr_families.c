@@ -391,7 +391,7 @@ static gboolean classify_nodes_finished(gpointer data)
                   0,
                   "Could not classify the selected data: %s",
                   gt_error_get(threaddata->err));
-      error_handle(threaddata->ltrfams->gerr);
+      //error_handle(threaddata->ltrfams);
     }
 
     g_list_foreach(threaddata->references,
@@ -413,7 +413,6 @@ static gpointer classify_nodes_start(gpointer data)
                *classify_stream = NULL,
                *array_in_stream = NULL,
                *array_out_stream = NULL;
-  g_mutex_lock(threaddata->ltrfams->mutex);
   last_stream = array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
                                                          NULL,
                                                          threaddata->err);
@@ -425,7 +424,6 @@ static gpointer classify_nodes_start(gpointer data)
                                                            threaddata->new_nodes,
                                                            threaddata->err);
   threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
-  g_mutex_unlock(threaddata->ltrfams->mutex);
   gt_node_stream_delete(classify_stream);
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(array_out_stream);
@@ -1043,7 +1041,7 @@ gtk_ltr_families_lv_fams_pmenu_export_clicked(GT_UNUSED GtkWidget *menuitem,
                   0,
                   "Error while exporting data: %s",
                   gt_error_get(ltrfams->err));
-      error_handle(ltrfams->gerr);
+      //error_handle(ltrfams->gerr);
     }
     gt_node_stream_delete(array_in_stream);
     gt_node_stream_delete(gff3_out_stream);
@@ -2475,7 +2473,6 @@ static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
   }
   gt_array_delete(ltrfams->nodes);
   g_free(ltrfams->projectfile);
-  g_mutex_free(ltrfams->mutex);
 
   return FALSE;
 }
@@ -2637,6 +2634,5 @@ GtkWidget* gtk_ltr_families_new()
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);
   ltrfams->projectfile = NULL;
   ltrfams->modified = FALSE;
-  ltrfams->mutex = g_mutex_new();
   return GTK_WIDGET(ltrfams);
 }
