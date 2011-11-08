@@ -113,11 +113,11 @@ static void pw_page_basic_settings_complete(GUIData *ltrgui)
       (g_strcmp0(gtk_label_get_label(label_encseq), "") != 0)) {
     gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
         gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
-                                                        PW_SELECTFILES), TRUE);
+                                                        PW_GENERAL), TRUE);
   } else {
     gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
         gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
-                                                        PW_SELECTFILES), FALSE);
+                                                        PW_GENERAL), FALSE);
   }
 }
 

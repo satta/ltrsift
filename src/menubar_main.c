@@ -98,11 +98,21 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   had_err = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS project_params "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "evalue REAL NOT NULL, "
+                            "dust INTEGER NOT NULL, "
+                            "gapopen INTEGER NOT NULL, "
+                            "gapextend INTEGER NOT NULL, "
+                            "xdrop REAL NOT NULL, "
+                            "penalty INTEGER NOT NULL, "
+                            "reward INTEGER NOT NULL, "
+                            "threads INTEGER NOT NULL, "
+                            "wordsize INTEGER NOT NULL, "
+                            "seq_identity REAL NOT NULL, "
                             "psmall INTEGER NOT NULL, "
                             "plarge INTEGER NOT NULL, "
-                            "wordsize INTEGER NOT NULL, "
-                            "xdrop REAL NOT NULL, "
-                            "seq_identity REAL NOT NULL)",
+                            "ltr_tolerance REAL NOT NULL, "
+                            "cand_tolerance REAL NOT NULL, "
+                            "encseq TEXT)",
                            -1, &stmt, err);
 
   if (!had_err)
@@ -121,6 +131,33 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
 
   had_err = gt_rdb_prepare(rdb,
                            "DELETE FROM project_params",
+                           -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  gt_rdb_stmt_delete(stmt);
+
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS project_gff3 "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "file TEXT)",
+                           -1, &stmt, err);
+
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
+    g_set_error(&ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
+  }
+  gt_rdb_stmt_delete(stmt);
+
+  had_err = gt_rdb_prepare(rdb,
+                           "DELETE FROM project_gff3",
                            -1, &stmt, err);
   if (!had_err)
     had_err = gt_rdb_stmt_exec(stmt, err);
@@ -256,6 +293,121 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   }
   gt_rdb_stmt_delete(stmt);
 
+  /* save project wizard parameter start */
+  GtkSpinButton *sbutton;
+  gint psmall,
+       plarge,
+       gapopen,
+       gapextend,
+       wordsize,
+       penalty,
+       reward,
+       num_threads,
+       num_of_files;
+  const char *indexname;
+  gchar *gff3file;
+  GtkTreeSelection *sel;
+  gboolean dust;
+  gdouble evalue,
+          seqid,
+          xdrop,
+          ltrtol,
+          candtol;
+  GList *rows,
+        *tmp;
+
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_evalue);
+  evalue = gtk_spin_button_get_value(sbutton);
+  dust =
+       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                      ltrgui->pw_checkbutton_dust));
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_gapopen);
+  gapopen = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_gapextend);
+  gapextend = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
+  xdrop = gtk_spin_button_get_value(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_penalty);
+  penalty = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_reward);
+  reward = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_threads);
+  num_threads = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
+  wordsize = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
+  seqid = gtk_spin_button_get_value(sbutton);
+
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
+  psmall = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
+  plarge = gtk_spin_button_get_value_as_int(sbutton);
+
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_ltrtol);
+  ltrtol = gtk_spin_button_get_value(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_candtol);
+  candtol = gtk_spin_button_get_value(sbutton);
+
+  indexname = gtk_label_get_text(GTK_LABEL(ltrgui->pw_label_encseq));
+
+  g_snprintf(query, BUFSIZ,
+             "INSERT INTO project_params (evalue, dust, gapopen, "
+              "gapextend, xdrop, penalty, reward, threads, wordsize, "
+              "seq_identity, psmall, plarge, ltr_tolerance, "
+              "cand_tolerance, encseq) values (%f, %d, %d, %d, %f, %d, "
+              "%d, %d, %d, %f, %d, %d, %f, %f, \"%s\")",
+             evalue, dust ? 1 : 0, gapopen, gapextend, xdrop, penalty,
+             reward, num_threads, wordsize, seqid, psmall, plarge,
+             ltrtol, candtol, indexname);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  if (!had_err)
+    had_err = gt_rdb_stmt_exec(stmt, err);
+  if (had_err == -1) {
+    g_set_error(&ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
+    gt_rdb_delete(rdb);
+    return had_err;
+  }
+  gt_rdb_stmt_delete(stmt);
+
+  list_view = GTK_TREE_VIEW(ltrgui->pw_treeview_gff3);
+  sel = gtk_tree_view_get_selection(list_view);
+  gtk_tree_selection_select_all(sel);
+  num_of_files = gtk_tree_selection_count_selected_rows(sel);
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       0, &gff3file,
+                       -1);
+
+    g_snprintf(query, BUFSIZ,
+               "INSERT INTO project_gff3 (file) values (\"%s\")", gff3file);
+    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+    if (!had_err)
+      had_err = gt_rdb_stmt_exec(stmt, err);
+    if (had_err == -1) {
+      g_set_error(&ltrgui->err,
+                  G_FILE_ERROR,
+                  0,
+                  "Could not save gui settings: %s",
+                  gt_error_get(err));
+      gt_rdb_stmt_delete(stmt);
+      gt_rdb_delete(rdb);
+      return had_err;
+    }
+    gt_rdb_stmt_delete(stmt);
+    tmp = tmp->next;
+    g_free(gff3file);
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
+
   notebook = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrgui->ltr_families));
   sw = gtk_notebook_get_nth_page(notebook, 0);
   children = gtk_container_get_children(GTK_CONTAINER(sw));
@@ -290,6 +442,7 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   }
   g_list_free(children);
   g_list_free(columns);
+  /* save project wizard parameter end */
 
   nop = gtk_notebook_get_n_pages(notebook);
   for (i = 0; i < nop; i++) {
@@ -868,6 +1021,7 @@ static gpointer mb_main_open_project_data_start(gpointer data)
                                     gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     features,
                                                                     &n_features,
+                                                                    FALSE,
                                                                     threaddata->err);
     threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
   }
@@ -1308,10 +1462,6 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_file_filter_add_pattern(gff3_file_filter, GFF3_PATTERN);
   gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), gff3_file_filter);
 
-
-  gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(filechooser), "/local/skastens/masterarbeit/ltrgui/bin");
-
-
   if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
     gtk_widget_destroy(filechooser);
@@ -1327,6 +1477,7 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   last_stream = preprocess_stream = gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     features,
                                                                     &n_features,
+                                                                    FALSE,
                                                                     err);
   last_stream = array_out_stream = gt_array_out_stream_new(last_stream, nodes,
                                                            err);
@@ -1451,8 +1602,8 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
     default:
       break;
   }
-  gtk_widget_show(ltrgui->ltr_filter);
-  /*gtk_widget_show(ltrgui->project_wizard);*/
+  /*gtk_widget_show(ltrgui->ltr_filter);*/
+  gtk_widget_show(ltrgui->project_wizard);
 }
 
 void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,

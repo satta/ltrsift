@@ -21,17 +21,117 @@
 #include "project_wizard_page_basic_settings.h"
 #include "statusbar_main.h"
 
+void pw_list_view_features_selection_changed(GtkTreeSelection *sel,
+                                                 GUIData *ltrgui)
+{
+  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+    gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
+        gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
+                                                        PW_CLASSIFICATION), FALSE);
+  else
+    gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
+        gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
+                                                        PW_CLASSIFICATION), TRUE);
+}
+
+static int fill_feature_list(void *key, GT_UNUSED void *value,
+                             void *lv, GT_UNUSED GtError *err)
+{
+  GtkTreeView *list_view;
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  gchar *feature = (gchar*) key;
+
+  list_view = (GtkTreeView*) lv;
+  model = gtk_tree_view_get_model(list_view);
+  gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+  gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                     0, feature,
+                     -1);
+  return 0;
+}
+
+void get_feature_list(GUIData *ltrgui)
+{
+  GtkTreeView *list_view;
+  GtkTreeIter iter;
+  GtkTreeSelection *sel;
+  GtkTreeModel *model;
+  GList *rows, *tmp;
+  GtNodeStream *last_stream = NULL,
+               *gff3_in_stream = NULL,
+               *ltrgui_preprocess_stream = NULL;
+  GtHashmap *features;
+  GtError *err;
+  const char **gff3_files;
+  gint num_of_files, had_err = 0, i = 0;
+  unsigned long n = 0;
+
+  err = gt_error_new();
+  list_view = GTK_TREE_VIEW(ltrgui->pw_treeview_gff3);
+  sel = gtk_tree_view_get_selection(list_view);
+  gtk_tree_selection_select_all(sel);
+  num_of_files = gtk_tree_selection_count_selected_rows(sel);
+  if (num_of_files == 0)
+    return;
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  gff3_files = g_malloc((size_t) num_of_files * sizeof(const char*));
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       0, &gff3_files[i],
+                       -1);
+    i++;
+    tmp = tmp->next;
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
+
+  last_stream = gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files,
+                                                                gff3_files);
+  features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+  last_stream = ltrgui_preprocess_stream =
+                                  gt_ltrgui_preprocess_stream_new(last_stream,
+                                                                  features,
+                                                                  &n,
+                                                                  TRUE,
+                                                                  err);
+  had_err = gt_node_stream_pull(last_stream, err);
+
+  gtk_list_store_clear(GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(ltrgui->pw_list_view_features))));
+  gt_hashmap_foreach(features, fill_feature_list,
+                     (void*) ltrgui->pw_list_view_features, err);
+
+  gt_error_delete(err);
+  gt_hashmap_delete(features);
+  gt_node_stream_delete(gff3_in_stream);
+  gt_node_stream_delete(ltrgui_preprocess_stream);
+  for (i = 0; i < num_of_files; i++)
+    g_free((gpointer) gff3_files[i]);
+  g_free(gff3_files);
+}
+
+
 gint pw_forward(gint current_page, GUIData *ltrgui)
 {
   gint next_page;
 
   switch (current_page) {
     case PW_INTRODUCTION:
-      next_page = PW_SELECTFILES;
+      next_page = PW_GENERAL;
       break;
-    case PW_SELECTFILES:
+    case PW_GENERAL:
       next_page = (gtk_toggle_button_get_active(
                    GTK_TOGGLE_BUTTON(ltrgui->pw_do_clustering_cb))
+                                              ? PW_CLUSTERING : PW_SUMMARY);
+      break;
+    case PW_CLUSTERING:
+      if (gtk_toggle_button_get_active(
+                       GTK_TOGGLE_BUTTON(ltrgui->pw_do_classification_cb)))
+          get_feature_list(ltrgui);
+      next_page = (gtk_toggle_button_get_active(
+                   GTK_TOGGLE_BUTTON(ltrgui->pw_do_classification_cb))
                                               ? PW_CLASSIFICATION : PW_SUMMARY);
       break;
     case PW_CLASSIFICATION:
@@ -45,10 +145,15 @@ gint pw_forward(gint current_page, GUIData *ltrgui)
 
 void pw_init(GUIData *ltrgui)
 {
-  gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(
-                                                  ltrgui->pw_treeview_gff3)),
-                                                        GTK_SELECTION_MULTIPLE);
+  GtkTreeSelection *sel;
 
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrgui->pw_treeview_gff3));
+  gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
+  sel =
+      gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrgui->pw_list_view_features));
+  gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
+  g_signal_connect(G_OBJECT(sel), "changed",
+                   (GCallback) pw_list_view_features_selection_changed, ltrgui);
   gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrgui->project_wizard),
                                (GtkAssistantPageFunc) pw_forward, ltrgui, NULL);
 }
@@ -58,7 +163,7 @@ void pw_reset_defaults(GUIData *ltrgui)
   pw_page_basic_settings_reset_defaults(ltrgui);
   gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrgui->project_wizard),
       gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrgui->project_wizard),
-                                                        PW_SELECTFILES), FALSE);
+                                                        PW_GENERAL), FALSE);
 }
 
 void pw_cancel(GtkAssistant *assistant, GUIData *ltrgui)
@@ -133,7 +238,8 @@ static gboolean finish(gpointer data)
     mb_main_activate_menuitems(threaddata->ltrgui);
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      g_strdup(threaddata->fullname));
-    gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), TRUE);
+    mb_main_file_save_activate(NULL, threaddata->ltrgui);
+    //gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), TRUE);
   }
   g_free(threaddata->projectfile);
   g_free(threaddata->projectdir);
@@ -165,32 +271,68 @@ static gpointer start(gpointer data)
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
   GtArray *nodes;
-  GtHashmap *features;
+  GtHashmap *features,
+            *sel_features = NULL;
   gint psmall,
        plarge,
+       gapopen,
+       gapextend,
        wordsize,
+       penalty,
+       reward,
+       num_threads,
        i = 0,
        num_of_files;
   char buf[BUFSIZ];
   const char **gff3_files,
-              *indexname;
-  gdouble seqid,
-         xdrop;
+             *indexname;
+  gboolean dust;
+  gdouble evalue,
+          seqid,
+          xdrop;
 
   g_snprintf(buf, BUFSIZ, "%s/tmp/%s", threaddata->projectdir,
              threaddata->projectfile);
   tmpdirprefix = gt_str_new_cstr(buf);
 
+
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_evalue);
+  evalue = gtk_spin_button_get_value(sbutton);
+  dust =
+       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                      threaddata->ltrgui->pw_checkbutton_dust));
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_gapopen);
+  gapopen = gtk_spin_button_get_value_as_int(sbutton);
+  if (gapopen == 0)
+    gapopen = GT_UNDEF_INT;
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_gapextend);
+  gapextend = gtk_spin_button_get_value_as_int(sbutton);
+  if (gapextend == 0)
+    gapextend = GT_UNDEF_INT;
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
+  xdrop = gtk_spin_button_get_value(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_penalty);
+  penalty = gtk_spin_button_get_value_as_int(sbutton);
+  /* according to BLASTN help -penalty must be <=0 but BLASTN shows an error:
+     BLASTN penalty must be negative. Therefore -penalty will be omitted when
+     the value is zero */
+  if (penalty == 0)
+    penalty = GT_UNDEF_INT;
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_reward);
+  reward = gtk_spin_button_get_value_as_int(sbutton);
+  if (reward == 0)
+    reward = GT_UNDEF_INT;
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_threads);
+  num_threads = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
+  wordsize = gtk_spin_button_get_value_as_int(sbutton);
+  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
+  seqid = gtk_spin_button_get_value(sbutton);
+
   sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
   psmall = gtk_spin_button_get_value_as_int(sbutton);
   sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
   plarge = gtk_spin_button_get_value_as_int(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
-  wordsize = gtk_spin_button_get_value_as_int(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
-  xdrop = gtk_spin_button_get_value(sbutton);
-  sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
-  seqid = gtk_spin_button_get_value(sbutton);
 
   list_view = GTK_TREE_VIEW(ltrgui->pw_treeview_gff3);
   sel = gtk_tree_view_get_selection(list_view);
@@ -208,6 +350,7 @@ static gpointer start(gpointer data)
     tmp = tmp->next;
   }
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
 
   last_stream = gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files,
                                                                 gff3_files);
@@ -225,7 +368,14 @@ static gpointer start(gpointer data)
                                                                    tmpdirprefix,
                                                                    plarge,
                                                                    psmall,
+                                                                   evalue,
+                                                                   dust,
                                                                    wordsize,
+                                                                   gapopen,
+                                                                   gapextend,
+                                                                   penalty,
+                                                                   reward,
+                                                                   num_threads,
                                                                    xdrop,
                                                                    seqid,
                                                                    &threaddata->current_state,
@@ -234,7 +384,33 @@ static gpointer start(gpointer data)
   if (!threaddata->had_err &&
       gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                      ltrgui->pw_do_classification_cb))) {
+    GtkTreeView *list_view;
+    GtkTreeModel *model;
+    GtkTreeSelection *sel;
+    GtkTreeIter iter;
+    GList *rows;
+    gchar *feature_name;
+
+    sel_features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+    list_view = GTK_TREE_VIEW(ltrgui->pw_list_view_features);
+    sel = gtk_tree_view_get_selection(list_view);
+    rows = gtk_tree_selection_get_selected_rows(sel, &model);
+    tmp = rows;
+    while (tmp != NULL) {
+      gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+      gtk_tree_model_get(model, &iter,
+                         0, &feature_name,
+                         -1);
+      gt_hashmap_add(sel_features, (void*) gt_cstr_dup(feature_name),
+                     (void*) 1);
+      g_free(feature_name);
+      tmp = tmp->next;
+    }
+    g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+    g_list_free(rows);
+
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                                   sel_features,
                                                                    &threaddata->current_state,
                                                                    NULL,
                                                                    threaddata->err);
@@ -246,6 +422,7 @@ static gpointer start(gpointer data)
                                     gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     features,
                                                                     &threaddata->n_features,
+                                                                    FALSE,
                                                                     threaddata->err);
     last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
                                                                     nodes,
@@ -267,6 +444,7 @@ static gpointer start(gpointer data)
   gt_node_stream_delete(ltrgui_preprocess_stream);
   gt_encseq_loader_delete(el);
   gt_encseq_delete(encseq);
+  gt_hashmap_delete(sel_features);
 
   for (i = 0; i < num_of_files; i++)
     g_free((gpointer) gff3_files[i]);

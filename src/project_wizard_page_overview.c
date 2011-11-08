@@ -21,12 +21,12 @@ void pw_edit_general_settings_clicked(GT_UNUSED GtkButton *button,
                                       GUIData *ltrgui)
 {
   gtk_assistant_set_current_page(GTK_ASSISTANT(ltrgui->project_wizard),
-                                 PW_SELECTFILES);
+                                 PW_GENERAL);
 }
 
 void pw_edit_cluster_settings_clicked(GT_UNUSED GtkButton *button,
                                       GUIData *ltrgui)
 {
   gtk_assistant_set_current_page(GTK_ASSISTANT(ltrgui->project_wizard),
-                                 PW_CLASSIFICATION);
+                                 PW_CLUSTERING);
 }

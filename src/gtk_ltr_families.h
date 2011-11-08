@@ -170,6 +170,7 @@ struct _FamilyThreadData
   GtkWidget *progressbar;
   GtArray *old_nodes,
           *new_nodes;
+  GtHashmap *sel_features;
   GtError *err;
   GList *references;
   GtkTreeView *list_view;

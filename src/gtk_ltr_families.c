@@ -135,6 +135,23 @@ void gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams, gint pos)
 /* set functions end */
 
 /* "support" functions start */
+static int fill_feature_list(void *key, GT_UNUSED void *value,
+                             void *lv, GT_UNUSED GtError *err)
+{
+  GtkTreeView *list_view;
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  gchar *feature = (gchar*) key;
+
+  list_view = (GtkTreeView*) lv;
+  model = gtk_tree_view_get_model(list_view);
+  gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+  gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                     0, feature,
+                     -1);
+  return 0;
+}
+
 void free_tdata(FamilyTransferData *tdata)
 {
   g_list_foreach(tdata->references, (GFunc) gtk_tree_row_reference_free, NULL);
@@ -401,6 +418,7 @@ static gboolean classify_nodes_finished(gpointer data)
     gt_array_delete(threaddata->old_nodes);
     gt_error_delete(threaddata->err);
     gt_free(threaddata->current_state);
+    gt_hashmap_delete(threaddata->sel_features);
     g_slice_free(FamilyThreadData, threaddata);
 
     return FALSE;
@@ -417,6 +435,7 @@ static gpointer classify_nodes_start(gpointer data)
                                                          NULL,
                                                          threaddata->err);
   last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream,
+                                                             threaddata->sel_features,
                                                              &threaddata->current_state,
                                                              &threaddata->progress,
                                                              threaddata->err);
@@ -1183,6 +1202,84 @@ static void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
   gt_hashmap_delete(iter_hash);
 }
 
+GtHashmap* get_features_for_classification(GtkLTRFamilies *ltrfams)
+{
+  GtkWidget *label, *list_view, *vbox, *sw, *dialog;
+  GtkTreeSelection *sel;
+  GtkTreeViewColumn *column;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkCellRenderer *renderer;
+  GtkListStore *store;
+  GtHashmap *sel_features;
+  GList *rows, *tmp;
+  gchar *feature_name;
+
+  dialog = gtk_dialog_new_with_buttons("Information", NULL,
+                                        GTK_DIALOG_MODAL,
+                                        GTK_STOCK_OK, GTK_RESPONSE_OK,
+                                        GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        NULL);
+  gtk_dialog_set_has_separator (GTK_DIALOG (dialog), FALSE);
+  label = gtk_label_new ("Select features for classification");
+  list_view = gtk_tree_view_new();
+  sw = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
+                                 GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("Features",
+                                                    renderer,
+                                                    "text",
+                                                    0,
+                                                    NULL);
+  gtk_tree_view_column_set_sort_column_id(column, 0);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(list_view), column);
+  store = gtk_list_store_new(1, G_TYPE_STRING);
+  gtk_tree_view_set_model(GTK_TREE_VIEW(list_view), GTK_TREE_MODEL(store));
+  g_object_unref(store);
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(list_view));
+  gtk_tree_selection_set_mode(sel,GTK_SELECTION_MULTIPLE);
+  gt_hashmap_foreach(ltrfams->features, fill_feature_list,
+                     (void*) list_view, ltrfams->err);
+  gtk_container_add(GTK_CONTAINER(sw), list_view);
+  vbox = gtk_vbox_new(FALSE, 5);
+  gtk_container_set_border_width (GTK_CONTAINER (vbox), 5);
+  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
+  gtk_box_pack_start_defaults(GTK_BOX(vbox), sw);
+  gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), vbox);
+  gtk_window_resize(GTK_WINDOW(dialog), 200, 350);
+  gtk_widget_show_all(dialog);
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_OK) {
+    gtk_widget_destroy(dialog);
+    return NULL;
+  }
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(list_view));
+  if (gtk_tree_selection_count_selected_rows(sel) == 0) {
+    gtk_widget_destroy(dialog);
+    return NULL;
+  }
+  sel_features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(list_view));
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       0, &feature_name,
+                       -1);
+    gt_hashmap_add(sel_features, (void*) gt_cstr_dup(feature_name),
+                   (void*) 1);
+    g_free(feature_name);
+    tmp = tmp->next;
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
+  gtk_widget_destroy(dialog);
+  return sel_features;
+}
+
+
 static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
                                                   GtkLTRFamilies *ltrfams)
 {
@@ -1195,6 +1292,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   GtkWidget *tab, *dialog;
   GtGenomeNode *gn;
   GtArray *nodes;
+  GtHashmap *sel_features = NULL;
   FamilyThreadData *threaddata;
   GList *rows,
         *tmp,
@@ -1224,6 +1322,10 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
     gtk_widget_destroy(dialog);
     return;
   }
+
+  if (!(sel_features = get_features_for_classification(ltrfams)))
+    return;
+
   if (main_tab_no != cur_tab_no)
     /* TODO: ask Sascha whether existing families should be re-classified */
     return;
@@ -1253,8 +1355,10 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   threaddata->current_state = gt_cstr_dup("Starting classification");
   threaddata->references = references;
   threaddata->list_view = list_view;
+  threaddata->sel_features = sel_features;
   threaddata->progress = 0;
   threaddata->had_err = 0;
+
   gtk_ltr_families_progress_dialog_init(threaddata);
 
   g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE, NULL);

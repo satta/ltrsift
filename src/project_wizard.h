@@ -26,7 +26,8 @@ typedef struct _PWThreadData PWThreadData;
 
 typedef enum {
   PW_INTRODUCTION = 0,
-  PW_SELECTFILES,
+  PW_GENERAL,
+  PW_CLUSTERING,
   PW_CLASSIFICATION,
   PW_SUMMARY
 } ProjectWizardPages;

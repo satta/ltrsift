@@ -91,11 +91,21 @@ struct _GUIData
   GtkWidget *pw_label_xdrop;
   GtkWidget *pw_label_words;
   GtkWidget *pw_label_seqid;
-  GtkWidget *pw_spinbutton_psmall;
-  GtkWidget *pw_spinbutton_plarge;
+  GtkWidget *pw_spinbutton_evalue;
+  GtkWidget *pw_checkbutton_dust;
+  GtkWidget *pw_spinbutton_gapopen;
+  GtkWidget *pw_spinbutton_gapextend;
   GtkWidget *pw_spinbutton_xdrop;
+  GtkWidget *pw_spinbutton_penalty;
+  GtkWidget *pw_spinbutton_reward;
+  GtkWidget *pw_spinbutton_threads;
   GtkWidget *pw_spinbutton_words;
   GtkWidget *pw_spinbutton_seqid;
+  GtkWidget *pw_spinbutton_psmall;
+  GtkWidget *pw_spinbutton_plarge;
+  GtkWidget *pw_spinbutton_ltrtol;
+  GtkWidget *pw_spinbutton_candtol;
+  GtkWidget *pw_list_view_features;
   GtkWidget *pw_label_classification;
   GtkWidget *pw_do_classification_cb;
   /* project wizard stuff end */

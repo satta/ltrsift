@@ -130,11 +130,23 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(pw_label_xdrop);
   GW(pw_label_words);
   GW(pw_label_seqid);
-  GW(pw_spinbutton_psmall);
-  GW(pw_spinbutton_plarge);
+  /* get widgets holding BLASTN parameter settings */
+  GW(pw_spinbutton_evalue);
+  GW(pw_checkbutton_dust);
+  GW(pw_spinbutton_gapopen);
+  GW(pw_spinbutton_gapextend);
   GW(pw_spinbutton_xdrop);
+  GW(pw_spinbutton_penalty);
+  GW(pw_spinbutton_reward);
+  GW(pw_spinbutton_threads);
   GW(pw_spinbutton_words);
   GW(pw_spinbutton_seqid);
+  /* get widgets holding cluster parameter settings */
+  GW(pw_spinbutton_psmall);
+  GW(pw_spinbutton_plarge);
+  GW(pw_spinbutton_ltrtol);
+  GW(pw_spinbutton_candtol);
+  GW(pw_list_view_features);
   GW(pw_treeview_gff3);
   GW(pw_do_clustering_cb);
   GW(pw_do_classification_cb);
