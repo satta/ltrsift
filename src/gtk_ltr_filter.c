@@ -17,10 +17,6 @@
 
 #include "gtk_ltr_filter.h"
 
-/* LUA start */
-
-/* LUA end */
-
 GT_UNUSED static void gtk_ltr_filter_list_view_changed(GtkTreeView *list_view,
                                              GT_UNUSED GtkLTRFilter *ltrfilt)
 {
@@ -30,7 +26,6 @@ GT_UNUSED static void gtk_ltr_filter_list_view_changed(GtkTreeView *list_view,
 
 
 }
-
 
 static void gtk_ltr_filter_cancel_clicked(GT_UNUSED GtkButton *button,
                                           gpointer user_data)

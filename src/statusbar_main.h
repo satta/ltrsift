@@ -20,20 +20,24 @@
 
 #include "ltrgui.h"
 
-#define SB_MAIN_CONTEXT           "LTRGui"
-#define SB_MAIN_MSG_WELCOME       "Welcome to LTRGui"
-#define SB_MAIN_MENU_HINT         "menuhint"
-#define SB_MAIN_MENU_HINT_NEW     "Create a new project."
-#define SB_MAIN_MENU_HINT_OPEN    "Open an existing project."
-#define SB_MAIN_MENU_HINT_SAVE    "Save the current project."
-#define SB_MAIN_MENU_HINT_SAVE_AS "Save the current project " \
-                                  "with a different name."
-#define SB_MAIN_MENU_HINT_IMPORT  "Import GFF3 annotation file. NOTE: "\
-                                  "This file should contain at least cluster "\
-                                  "numbers for features."
-#define SB_MAIN_MENU_HINT_EGFF3   "Export the complete data as GFF3 annotation."
-#define SB_MAIN_MENU_HINT_CLOSE   "Close the current project."
-#define SB_MAIN_MENU_HINT_QUIT    "Quit the program."
+#define SB_MAIN_CONTEXT            "LTRGui"
+#define SB_MAIN_MSG_WELCOME        "Welcome to LTRGui"
+#define SB_MAIN_MENU_HINT          "menuhint"
+#define SB_MAIN_MENU_HINT_NEW      "Create a new project."
+#define SB_MAIN_MENU_HINT_OPEN     "Open an existing project."
+#define SB_MAIN_MENU_HINT_SAVE     "Save the current project."
+#define SB_MAIN_MENU_HINT_SAVE_AS  "Save the current project " \
+                                   "with a different name."
+#define SB_MAIN_MENU_HINT_IMPORT   "Import GFF3 annotation file. NOTE: "\
+                                   "This file should contain at least cluster "\
+                                   "numbers for features."
+#define SB_MAIN_MENU_HINT_EGFF3    "Export the complete data as GFF3 "\
+                                   "annotation."
+#define SB_MAIN_MENU_HINT_FASTA    "Export sequences for the current project."
+#define SB_MAIN_MENU_HINT_CLOSE    "Close the current project."
+#define SB_MAIN_MENU_HINT_QUIT     "Quit the program."
+#define SB_MAIN_MENU_HINT_SETTINGS "View settings for the current project."
+#define SB_MAIN_MENU_HINT_COLUMNS  "Show/Hide feature columns."
 
 void sb_main_init(GUIData *ltrgui);
 
