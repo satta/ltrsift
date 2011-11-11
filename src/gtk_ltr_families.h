@@ -141,6 +141,7 @@ struct _GtkLTRFamilies
   GtkWidget *tb_lv_families;
   GtkWidget *nb_family;
   GtkWidget *tb_nb_family;
+  GtkToolItem *new_fam;
   GtkWidget *tv_details;
   GtkWidget *image_area;
   GtkWidget *hpaned;
@@ -155,6 +156,7 @@ struct _GtkLTRFamilies
   unsigned long n_features;
   gboolean modified;
   gchar *projectfile;
+  GtkWidget *statusb;
 };
 
 struct _GtkLTRFamiliesClass
@@ -181,7 +183,7 @@ struct _FamilyThreadData
 
 GType        gtk_ltr_families_get_type(void);
 
-GtkWidget*   gtk_ltr_families_new();
+GtkWidget*   gtk_ltr_families_new(GtkWidget *statusb);
 
 char*        double_underscores(const char *str);
 

@@ -21,6 +21,7 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <string.h>
 #include "genometools.h"
 #include "gtk_label_close.h"
 #include "gtk_ltr_assistant.h"
@@ -60,8 +61,6 @@
 
 typedef struct _GUIData GUIData;
 
-typedef struct _PWThreadData PWThreadData;
-
 struct _GUIData
 {
   GtkWidget *mb_main;
@@ -86,22 +85,6 @@ struct _GUIData
   GtkWidget *assistant;
   guint sb_main_context_id;
   GError *err;
-};
-
-struct _PWThreadData {
-  GUIData *ltrgui;
-  GtkWidget *window,
-            *progressbar;
-  GtArray *nodes;
-  GtHashmap *features;
-  unsigned long had_err,
-                progress,
-                n_features;
-  const gchar *fullname;
-  gchar *projectfile,
-        *projectdir;
-  char *current_state;
-  GtError *err;
 };
 
 void free_hash(void *elem);

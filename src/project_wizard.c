@@ -151,7 +151,9 @@ static void pw_progress_dialog_init(PWThreadData *threaddata)
   gtk_container_add(GTK_CONTAINER(vbox), label);
   /* create progress bar */
   threaddata->progressbar = gtk_progress_bar_new();
-  gtk_container_add(GTK_CONTAINER(vbox), threaddata->progressbar);
+  gtk_widget_show_all(threaddata->progressbar);
+  gtk_container_add(GTK_CONTAINER(threaddata->ltrgui->sb_main),
+                    threaddata->progressbar);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
@@ -170,11 +172,13 @@ static gboolean assistant_finish(gpointer data)
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
-  gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+  gtk_widget_destroy(threaddata->window);
+  gtk_widget_destroy(threaddata->progressbar);
 
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltr_families = gtk_ltr_families_new();
+    threaddata->ltrgui->ltr_families =
+                              gtk_ltr_families_new(threaddata->ltrgui->sb_main);
     ltrfams = threaddata->ltrgui->ltr_families;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
                        TRUE, TRUE, 0);

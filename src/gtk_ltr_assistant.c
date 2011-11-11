@@ -15,6 +15,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <string.h>
 #include "gtk_ltr_assistant.h"
 
 typedef struct {
@@ -48,6 +49,8 @@ gboolean gtk_ltr_assistant_get_clustering(GtkLTRAssistant *ltrassi)
 
 gdouble gtk_ltr_assistant_get_evalue(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_evalue)))
+    return GT_UNDEF_DOUBLE;
   return gtk_spin_button_get_value(GTK_SPIN_BUTTON(ltrassi->spinb_evalue));
 }
 
@@ -58,47 +61,64 @@ gboolean gtk_ltr_assistant_get_dust(GtkLTRAssistant *ltrassi)
 
 gint gtk_ltr_assistant_get_gapopen(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_gapopen)))
+    return GT_UNDEF_INT;
   return
       gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_gapopen));
 }
 
 gint gtk_ltr_assistant_get_gapextend(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                     ltrassi->checkb_gapextend)))
+    return GT_UNDEF_INT;
   return
     gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_gapextend));
 }
 
 gdouble gtk_ltr_assistant_get_xdrop(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_xdrop)))
+    return GT_UNDEF_DOUBLE;
   return gtk_spin_button_get_value(GTK_SPIN_BUTTON(ltrassi->spinb_xdrop));
 }
 
 gint gtk_ltr_assistant_get_penalty(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_penalty)))
+    return GT_UNDEF_INT;
   return
       gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_penalty));
 }
 
 gint gtk_ltr_assistant_get_reward(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_reward)))
+    return GT_UNDEF_INT;
   return
        gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_reward));
 }
 
 gint gtk_ltr_assistant_get_threads(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_threads)))
+    return GT_UNDEF_INT;
   return
       gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_threads));
 }
 
 gint gtk_ltr_assistant_get_wordsize(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_words)))
+    return GT_UNDEF_INT;
   return
       gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(ltrassi->spinb_words));
 }
 
 gdouble gtk_ltr_assistant_get_seqid(GtkLTRAssistant *ltrassi)
 {
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(ltrassi->checkb_seqid)))
+    return GT_UNDEF_DOUBLE;
   return gtk_spin_button_get_value(GTK_SPIN_BUTTON(ltrassi->spinb_seqid));
 }
 
@@ -133,6 +153,14 @@ gdouble gtk_ltr_assistant_get_candtol(GtkLTRAssistant *ltrassi)
 GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi)
 {
   return GTK_TREE_VIEW(ltrassi->list_view_features);
+}
+
+static void show_hide_tab(GtkNotebook *notebook, int pagenumber, gboolean show)
+{
+  GtkWidget *page;
+
+  page = gtk_notebook_get_nth_page(notebook, pagenumber);
+  show ? gtk_widget_show(page) : gtk_widget_hide(page);
 }
 
 static void check_complete_page_general(GtkLTRAssistant *ltrassi)
@@ -171,10 +199,13 @@ static int fill_feature_list(void *key, GT_UNUSED void *value,
 
   list_view = (GtkTreeView*) lv;
   model = gtk_tree_view_get_model(list_view);
-  gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-  gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                     0, feature,
-                     -1);
+  if ((g_strcmp0(feature, "repeat_region") != 0) &&
+      (g_strcmp0(feature, "LTR_retrotransposon") != 0)) {
+    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                       0, feature,
+                       -1);
+  }
   return 0;
 }
 
@@ -193,6 +224,9 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   const char **gff3_files;
   gint num_of_files, had_err = 0, i = 0;
   unsigned long n = 0;
+
+  if (ltrassi->added_features)
+    return;
 
   err = gt_error_new();
   list_view = GTK_TREE_VIEW(ltrassi->list_view_gff3files);
@@ -240,6 +274,7 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   for (i = 0; i < num_of_files; i++)
     g_free((gpointer) gff3_files[i]);
   g_free(gff3_files);
+  ltrassi->added_features = TRUE;
 }
 
 static gboolean file_in_list_view(GtkTreeModel *model, const gchar *file)
@@ -283,6 +318,131 @@ static void remove_list_view_row(GtkTreeRowReference *rowref,
   gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
 }
 
+static void update_cluster_overview(GtkLTRAssistant *ltrassi)
+{
+  gint psmall,
+       plarge,
+       gapopen,
+       gapextend,
+       wordsize,
+       penalty,
+       reward,
+       num_threads;
+  gboolean dust;
+  gdouble evalue,
+          seqid,
+          xdrop;
+  gchar buffer[BUFSIZ];
+
+  evalue = gtk_ltr_assistant_get_evalue(ltrassi);
+  dust =  gtk_ltr_assistant_get_dust(ltrassi);
+  gapopen = gtk_ltr_assistant_get_gapopen(ltrassi);
+  gapextend = gtk_ltr_assistant_get_gapextend(ltrassi);
+  xdrop = gtk_ltr_assistant_get_xdrop(ltrassi);
+  penalty = gtk_ltr_assistant_get_penalty(ltrassi);
+  reward = gtk_ltr_assistant_get_reward(ltrassi);
+  num_threads = gtk_ltr_assistant_get_threads(ltrassi);
+  wordsize = gtk_ltr_assistant_get_wordsize(ltrassi);
+  seqid = gtk_ltr_assistant_get_seqid(ltrassi);
+  psmall = gtk_ltr_assistant_get_psmall(ltrassi);
+  plarge = gtk_ltr_assistant_get_plarge(ltrassi);
+
+  if (evalue == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_evalue), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.6f", evalue);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_evalue), buffer);
+  }
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_dust), dust ? "Yes" : "No");
+  if (gapopen == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_gapopen), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", gapopen);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_gapopen), buffer);
+  }
+  if (gapextend == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_gapextend), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", gapextend);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_gapextend), buffer);
+  }
+  if (xdrop == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_xdrop), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.2f", xdrop);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_xdrop), buffer);
+  }
+  if (penalty == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_penalty), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", penalty);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_penalty), buffer);
+  }
+  if (reward == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_reward), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", reward);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_reward), buffer);
+  }
+  if (num_threads == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_threads), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", num_threads);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_threads), buffer);
+  }
+  if (wordsize == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_wordsize), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", wordsize);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_wordsize), buffer);
+  }
+  if (seqid == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_seqidentity), USE_DEFAULT_A);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.2f", seqid);
+    gtk_label_set_text(GTK_LABEL(ltrassi->label_seqidentity), buffer);
+  }
+  g_snprintf(buffer, BUFSIZ, "%d", psmall);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_psmall), buffer);
+  g_snprintf(buffer, BUFSIZ, "%d", plarge);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_plarge), buffer);
+}
+
+static void update_classification_overview(GtkLTRAssistant *ltrassi)
+{
+  gdouble ltrtol,
+          candtol;
+  gchar buffer[BUFSIZ];
+
+  ltrtol = gtk_ltr_assistant_get_ltrtol(ltrassi);
+  candtol = gtk_ltr_assistant_get_candtol(ltrassi);
+  g_snprintf(buffer, BUFSIZ, "%.2f", ltrtol);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_ltrtolerance), buffer);
+  g_snprintf(buffer, BUFSIZ, "%.2f", candtol);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_candtolerance), buffer);
+}
+
+static void
+cluster_settings_dust_toggled(GT_UNUSED GtkToggleButton *togglebutton,
+                              GtkLTRAssistant *ltrassi)
+{
+  update_cluster_overview(ltrassi);
+}
+
+static void
+cluster_settings_adjustment_value_changed(GT_UNUSED GtkAdjustment *adj,
+                                          GtkLTRAssistant *ltrassi)
+{
+  update_cluster_overview(ltrassi);
+}
+
+static void
+cassification_settings_adjustment_value_changed(GT_UNUSED GtkAdjustment *adj,
+                                                GtkLTRAssistant *ltrassi)
+{
+  update_classification_overview(ltrassi);
+}
+
 static void update_gff3_label(GtkTreeView *list_view, GtkLabel *gff3_label)
 {
   GtkTreeModel *model;
@@ -308,7 +468,8 @@ static void update_gff3_label(GtkTreeView *list_view, GtkLabel *gff3_label)
     }
     gtk_label_set_label(gff3_label, text);
     g_free(text);
-  }
+  } else
+    gtk_label_set_label(gff3_label, "");
 }
 
 static void update_features_label(GtkTreeView *list_view,
@@ -316,28 +477,36 @@ static void update_features_label(GtkTreeView *list_view,
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
-  gboolean valid;
+  GtkTreeSelection *sel;
+  GList *rows, *tmp;
+  gboolean first = TRUE;
   gchar *text,
         *buffer;
 
-  model = gtk_tree_view_get_model(list_view);
-  valid = gtk_tree_model_get_iter_first(model, &iter);
-  if (valid) {
+  sel = gtk_tree_view_get_selection(list_view);
+  if (gtk_tree_selection_count_selected_rows(sel) == 0) {
+    gtk_label_set_label(feature_label, "");
+    return;
+  }
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
     gtk_tree_model_get(model, &iter,
                        0, &buffer,
                        -1);
-    text = g_strdup(buffer);
-    g_free(buffer);
-    while (gtk_tree_model_iter_next(model, &iter)) {
-      gtk_tree_model_get(model, &iter,
-                         0, &buffer,
-                         -1);
+    if (first) {
+      text = g_strdup(buffer);
+      first = FALSE;
+    } else
       text = g_strjoin("\n", text, buffer, NULL);
-      g_free(buffer);
-    }
-    gtk_label_set_label(feature_label, text);
-    g_free(text);
+    g_free(buffer);
+    tmp = tmp->next;
   }
+  gtk_label_set_label(feature_label, text);
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
+  g_free(text);
 }
 
 void list_view_features_selection_changed(GtkTreeSelection *sel,
@@ -410,6 +579,9 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
                                             NULL);
 
   gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(filechooser), TRUE);
+  if (ltrassi->last_dir)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
+                                        ltrassi->last_dir);
   gff3_file_filter = gtk_file_filter_new();
   gtk_file_filter_set_name(gff3_file_filter, GFF3_PATTERN);
   gtk_file_filter_add_pattern(gff3_file_filter, GFF3_PATTERN);
@@ -428,7 +600,12 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            0, file,
                            -1);
+        if (ltrassi->last_dir)
+          g_free(ltrassi->last_dir);
+        ltrassi->last_dir = g_path_get_dirname(file);
+        ltrassi->added_features = FALSE;
       }
+
       filenames = filenames->next;
     }
     update_gff3_label(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
@@ -436,6 +613,8 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
   }
   gtk_widget_destroy(filechooser);
   check_complete_page_general(ltrassi);
+  g_slist_foreach(filenames, (GFunc) g_free, NULL);
+  g_slist_free(filenames);
 }
 
 static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
@@ -449,7 +628,17 @@ static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL, GTK_STOCK_OK,
                                             GTK_RESPONSE_ACCEPT, NULL);
-
+  if (ltrassi->last_dir)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
+                                        ltrassi->last_dir);
+  if (g_strcmp0(gtk_button_get_label(button), BROWSE_PROJECT) != 0) {
+    GtkFileFilter *esq_file_filter;
+    esq_file_filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(esq_file_filter, ESQ_PATTERN);
+    gtk_file_filter_add_pattern(esq_file_filter, ESQ_PATTERN);
+    gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), esq_file_filter);
+    gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(filechooser), FALSE);
+  }
   if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
     if (g_strcmp0(gtk_button_get_label(button), BROWSE_PROJECT) == 0) {
@@ -457,14 +646,37 @@ static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
       gtk_label_set_label(GTK_LABEL(ltrassi->label_projectfile2),
                           g_path_get_basename(filename));
     } else {
-      gtk_label_set_label(GTK_LABEL(ltrassi->label_indexname), filename);
+      gchar *tmp = g_strndup(filename, strlen(filename) - 4);
+      gtk_label_set_label(GTK_LABEL(ltrassi->label_indexname), tmp);
       gtk_label_set_label(GTK_LABEL(ltrassi->label_indexname2),
-                          g_path_get_basename(filename));
+                          g_path_get_basename(tmp));
+      g_free(tmp);
     }
+    if (ltrassi->last_dir)
+      g_free(ltrassi->last_dir);
+    ltrassi->last_dir = g_path_get_dirname(filename);
     g_free(filename);
   }
   gtk_widget_destroy(filechooser);
   check_complete_page_general(ltrassi);
+}
+
+static void edit_general_settings_clicked(GT_UNUSED GtkButton *button,
+                                                 GtkLTRAssistant *ltrassi)
+{
+  gtk_assistant_set_current_page(GTK_ASSISTANT(ltrassi), PAGE_GENERAL);
+}
+
+static void edit_clustering_settings_clicked(GT_UNUSED GtkButton *button,
+                                                 GtkLTRAssistant *ltrassi)
+{
+  gtk_assistant_set_current_page(GTK_ASSISTANT(ltrassi), PAGE_CLUSTERING);
+}
+
+static void edit_classification_settings_clicked(GT_UNUSED GtkButton *button,
+                                                 GtkLTRAssistant *ltrassi)
+{
+  gtk_assistant_set_current_page(GTK_ASSISTANT(ltrassi), PAGE_CLASSIFICATION);
 }
 
 static void checkb_clustering_toggled(GtkToggleButton *togglebutton,
@@ -473,28 +685,9 @@ static void checkb_clustering_toggled(GtkToggleButton *togglebutton,
   gboolean active;
   active = gtk_toggle_button_get_active(togglebutton);
   gtk_label_set_label(GTK_LABEL(ltrassi->label_doclustering),
-                      active ? "yes" : "no");
-  /*if (active) {
-    GtkSpinButton *sbutton;
-    gchar buf[6];
-
-    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_psmall);
-    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
-    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_psmall), buf);
-    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_plarge);
-    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
-    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_plarge), buf);
-    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_xdrop);
-    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
-    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_xdrop), buf);
-    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_words);
-    g_snprintf(buf, 6, "%d", gtk_spin_button_get_value_as_int(sbutton));
-    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_words), buf);
-    sbutton = GTK_SPIN_BUTTON(ltrgui->pw_spinbutton_seqid);
-    g_snprintf(buf, 6, "%.1f", gtk_spin_button_get_value(sbutton));
-    gtk_label_set_label(GTK_LABEL(ltrgui->pw_label_seqid), buf);
-  }*/
-  /* pw_page_basic_settings_complete(ltrgui); */
+                      active ? "Yes" : "No");
+  show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 1, active);
+  update_cluster_overview(ltrassi);
 }
 
 static void checkb_classification_toggled(GtkToggleButton *togglebutton,
@@ -503,7 +696,102 @@ static void checkb_classification_toggled(GtkToggleButton *togglebutton,
   gboolean active;
   active = gtk_toggle_button_get_active(togglebutton);
   gtk_label_set_label(GTK_LABEL(ltrassi->label_doclassification),
-                      active ? "yes" : "no");
+                      active ? "Yes" : "No");
+  show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 2, active);
+  update_classification_overview(ltrassi);
+}
+
+static void checkb_evalue_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_evalue, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_gapopen_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_gapopen, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_gapextend_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_gapextend, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_xdrop_toggled(GtkToggleButton *togglebutton,
+                                 GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_xdrop, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_penalty_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_penalty, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_reward_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_reward, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_threads_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_threads, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_words_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_words, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static void checkb_seqid_toggled(GtkToggleButton *togglebutton,
+                                   GtkLTRAssistant *ltrassi)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrassi->spinb_seqid, !active);
+  update_cluster_overview(ltrassi);
+}
+
+static gboolean gtk_ltr_assistant_destroy(GtkWidget *widget,
+                                          GT_UNUSED GdkEvent *event,
+                                          GT_UNUSED gpointer user_data)
+{
+  GtkLTRAssistant *ltrassi;
+  ltrassi = GTK_LTR_ASSISTANT(widget);
+  if (ltrassi->last_dir)
+    g_free(ltrassi->last_dir);
+
+  return FALSE;
 }
 
 static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
@@ -523,7 +811,9 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
             *vbox1,
             *vbox2,
             *sw,
-            *align;
+            *align,
+            *tmpbox,
+            *checkb;;
   GtkTreeViewColumn *column;
   GtkTreeSelection *sel;
   GtkCellRenderer *renderer;
@@ -611,8 +901,6 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                      hsep, FALSE, FALSE, 1);
   ltrassi->checkb_clustering =
                               gtk_check_button_new_with_label("Do clustering?");
-  g_signal_connect(G_OBJECT(ltrassi->checkb_clustering), "toggled",
-                   G_CALLBACK(checkb_clustering_toggled), (gpointer) ltrassi);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      ltrassi->checkb_clustering, FALSE, FALSE, 1);
 
@@ -676,38 +964,122 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
+
   vbox = gtk_vbox_new(TRUE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(10.0, 0.0001, 50.0, 0.0001, 0.1, 0.0);
   ltrassi->spinb_evalue = gtk_spin_button_new(GTK_ADJUSTMENT(adjust),
                                               0.0001, 4);
+  gtk_widget_set_sensitive(ltrassi->spinb_evalue, FALSE);
+  checkb =
+          ltrassi->checkb_evalue = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_evalue_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_evalue, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(FALSE, 1);
   ltrassi->checkb_dust = gtk_check_button_new();
+  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), ltrassi->checkb_dust);
+  gtk_box_pack_start(GTK_BOX(tmpbox), align, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_gapopen = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_gapopen, FALSE);
+  checkb =
+         ltrassi->checkb_gapopen = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_gapopen_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_gapopen, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_gapextend = gtk_spin_button_new(GTK_ADJUSTMENT(adjust),
                                                  1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_gapextend, FALSE);
+  checkb =
+       ltrassi->checkb_gapextend = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_gapextend_toggled),
+                   (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_gapextend, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(20.0, 5.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_xdrop = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_xdrop, FALSE);
+  checkb = ltrassi->checkb_xdrop = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_xdrop_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_xdrop, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(0.0, -100.0, 0.0, -1.0, -10.0, 0.0);
   ltrassi->spinb_penalty = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), -1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_penalty, FALSE);
+  checkb =
+         ltrassi->checkb_penalty = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_penalty_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_penalty, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_reward = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_reward, FALSE);
+  checkb =
+          ltrassi->checkb_reward = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_reward_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_reward, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(1.0, 1.0, 8.0, 1.0, 2.0, 0.0);
   ltrassi->spinb_threads = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_threads, FALSE);
+  checkb =
+         ltrassi->checkb_threads = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_threads_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_threads, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(4.0, 4.0, 20.0, 1.0, 4.0, 0.0);
   ltrassi->spinb_words = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  gtk_widget_set_sensitive(ltrassi->spinb_words, FALSE);
+  checkb = ltrassi->checkb_words = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_words_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_words, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
+  tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(80.0, 30.0, 100.0, 0.1, 1.0, 0.0);
   ltrassi->spinb_seqid = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.1, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_evalue, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->checkb_dust, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_gapopen, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_gapextend, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_xdrop, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_penalty, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_reward, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_threads, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_words, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_seqid, FALSE, FALSE, 1);
+  gtk_widget_set_sensitive(ltrassi->spinb_seqid, FALSE);
+  checkb = ltrassi->checkb_seqid = gtk_check_button_new_with_label(USE_DEFAULT);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(checkb), TRUE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(checkb_seqid_toggled), (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_seqid, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
   hsep = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
@@ -724,7 +1096,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for psmall:");
+  label = gtk_label_new("Value for plarge:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -741,9 +1113,6 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
   ltrassi->checkb_classification =
                           gtk_check_button_new_with_label("Do classification?");
-  g_signal_connect(G_OBJECT(ltrassi->checkb_classification), "toggled",
-                   G_CALLBACK(checkb_classification_toggled),
-                   (gpointer) ltrassi);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      hbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
@@ -850,11 +1219,16 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = ltrassi->label_doclustering = gtk_label_new("");
+  label = ltrassi->label_doclustering = gtk_label_new("No");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  button = gtk_button_new_with_mnemonic("_Edit settings");
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(edit_general_settings_clicked),
+                   (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), vbox1, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
@@ -989,11 +1363,16 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = ltrassi->label_doclassification = gtk_label_new("");
+  label = ltrassi->label_doclassification = gtk_label_new("No");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  button = gtk_button_new_with_mnemonic("_Edit settings");
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(edit_clustering_settings_clicked),
+                   (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), vbox1, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
@@ -1032,6 +1411,11 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  button = gtk_button_new_with_mnemonic("_Edit settings");
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(edit_classification_settings_clicked),
+                   (gpointer) ltrassi);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 0);
   gtk_box_pack_start(GTK_BOX(hbox), vbox1, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
@@ -1050,6 +1434,58 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
     gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrassi), page_info[i].widget,
                                     page_info[i].complete);
   }
+
+  /* connect signals */
+  g_signal_connect(G_OBJECT(ltrassi->checkb_clustering), "toggled",
+                   G_CALLBACK(checkb_clustering_toggled), (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_evalue), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->checkb_dust), "toggled",
+                   G_CALLBACK(cluster_settings_dust_toggled),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_gapopen), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_gapextend), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_xdrop), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_penalty), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_reward), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_threads), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_words), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_seqid), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_psmall), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_plarge), "value-changed",
+                   G_CALLBACK(cluster_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->checkb_classification), "toggled",
+                   G_CALLBACK(checkb_classification_toggled),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_ltrtol), "value-changed",
+                   G_CALLBACK(cassification_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+  g_signal_connect(G_OBJECT(ltrassi->spinb_candtol), "value-changed",
+                   G_CALLBACK(cassification_settings_adjustment_value_changed),
+                   (gpointer) ltrassi);
+
+  ltrassi->last_dir = NULL;
+  ltrassi->added_features = FALSE;
 }
 
 gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
@@ -1121,10 +1557,14 @@ GtkWidget* gtk_ltr_assistant_new()
                                       (GtkAssistantPageFunc) page_forward,
                                       ltrassi, NULL);
   gtk_window_set_position(GTK_WINDOW(ltrassi), GTK_WIN_POS_CENTER_ALWAYS);
+  g_signal_connect(G_OBJECT(ltrassi), "destroy",
+                   G_CALLBACK(gtk_ltr_assistant_destroy), NULL);
   g_signal_connect(G_OBJECT(ltrassi), "cancel",
                    G_CALLBACK(gtk_ltr_assistant_cancel), NULL);
   g_signal_connect(G_OBJECT(ltrassi), "close",
                    G_CALLBACK(gtk_ltr_assistant_cancel), NULL);
+  show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 1, FALSE);
+  show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 2, FALSE);
 
   return GTK_WIDGET(ltrassi);
 }

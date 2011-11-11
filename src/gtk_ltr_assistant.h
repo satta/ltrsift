@@ -39,8 +39,11 @@
 #define SELECT_GFF3_FILES "Select GFF3 files..."
 
 #define GFF3_PATTERN   "*.gff3"
+#define ESQ_PATTERN    "*.esq"
 #define BROWSE_PROJECT "Bro_wse..."
 #define BROWSE_INDEX   "Brow_se..."
+#define USE_DEFAULT    "Use default?"
+#define USE_DEFAULT_A  "Use default"
 
 typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
@@ -64,15 +67,24 @@ struct _GtkLTRAssistant
   GtkWidget *checkb_clustering;
   /* Matching/Clustering settings page */
   GtkWidget *spinb_evalue;
+  GtkWidget *checkb_evalue;
   GtkWidget *checkb_dust;
   GtkWidget *spinb_gapopen;
+  GtkWidget *checkb_gapopen;
   GtkWidget *spinb_gapextend;
+  GtkWidget *checkb_gapextend;
   GtkWidget *spinb_xdrop;
+  GtkWidget *checkb_xdrop;
   GtkWidget *spinb_penalty;
+  GtkWidget *checkb_penalty;
   GtkWidget *spinb_reward;
+  GtkWidget *checkb_reward;
   GtkWidget *spinb_threads;
+  GtkWidget *checkb_threads;
   GtkWidget *spinb_words;
+  GtkWidget *checkb_words;
   GtkWidget *spinb_seqid;
+  GtkWidget *checkb_seqid;
   GtkWidget *spinb_psmall;
   GtkWidget *spinb_plarge;
   GtkWidget *checkb_classification;
@@ -102,6 +114,9 @@ struct _GtkLTRAssistant
   GtkWidget *label_ltrtolerance;
   GtkWidget *label_candtolerance;
   GtkWidget *label_usedfeatures;
+  /* misc */
+  gchar *last_dir;
+  gboolean added_features;
 };
 
 struct _GtkLTRAssistantClass

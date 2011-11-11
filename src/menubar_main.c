@@ -604,7 +604,9 @@ static void mb_main_progress_dialog_init(MenuThreadData *threaddata)
   gtk_container_add(GTK_CONTAINER(vbox), label);
   /* create progress bar */
   threaddata->progressbar = gtk_progress_bar_new();
-  gtk_container_add(GTK_CONTAINER(vbox), threaddata->progressbar);
+  gtk_container_add(GTK_CONTAINER(threaddata->ltrgui->sb_main),
+                    threaddata->progressbar);
+  gtk_widget_show_all(threaddata->progressbar);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
@@ -622,7 +624,8 @@ static gboolean mb_save_project_data_finished(gpointer data)
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
-  gtk_widget_destroy(GTK_WIDGET(threaddata->window)); 
+  gtk_widget_destroy(threaddata->window);
+  gtk_widget_destroy(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
     threaddata->had_err = save_gui_settings(threaddata->ltrgui,
@@ -652,7 +655,8 @@ gboolean mb_save_as_project_data_finished(gpointer data)
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
-  gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+  gtk_widget_destroy(threaddata->window);
+  gtk_widget_destroy(threaddata->progressbar);
 
   if (threaddata->had_err) {
     g_set_error(&threaddata->ltrgui->err,
@@ -696,11 +700,13 @@ static gboolean mb_open_project_data_finished(gpointer data)
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
-  gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+  gtk_widget_destroy(threaddata->window);
+  gtk_widget_destroy(threaddata->progressbar);
 
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltr_families = gtk_ltr_families_new();
+    threaddata->ltrgui->ltr_families =
+                              gtk_ltr_families_new(threaddata->ltrgui->sb_main);
     ltrfams = threaddata->ltrgui->ltr_families;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
                        ltrfams, TRUE, TRUE, 0);
@@ -1480,7 +1486,7 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
       gtk_widget_set_sensitive(ltrgui->mb_main_file_close, FALSE);
       gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
       gtk_widget_destroy(ltrgui->ltr_families);
-      ltrgui->ltr_families = gtk_ltr_families_new();
+      ltrgui->ltr_families = gtk_ltr_families_new(ltrgui->sb_main);
       gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
                          TRUE, TRUE, 0);
       break;
@@ -1633,7 +1639,7 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
               *indexname;
   char *buffer, header[BUFSIZ];
   const char *attr;
-  gint had_err;
+  gint had_err = 0;
   unsigned long i,
                 seqnum,
                 startpos;
@@ -1666,11 +1672,12 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
                                     NO_INDEX_DIALOG);
     gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
     gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
       gtk_widget_destroy(dialog);
       return;
     } else {
       gtk_widget_destroy(dialog);
+
       dialog = gtk_file_chooser_dialog_new("Select indexname...",
                                            GTK_WINDOW(ltrgui->main_window),
                                            GTK_FILE_CHOOSER_ACTION_SAVE,
@@ -1683,12 +1690,20 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
       else
         gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                             g_get_home_dir());
+      GtkFileFilter *esq_file_filter;
+      esq_file_filter = gtk_file_filter_new();
+      gtk_file_filter_set_name(esq_file_filter, ESQ_PATTERN);
+      gtk_file_filter_add_pattern(esq_file_filter, ESQ_PATTERN);
+      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), esq_file_filter);
       if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-        gchar *tmpname;
+        gchar *tmpname, *tmp;
         tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+        tmp = g_strndup(tmpname, strlen(tmpname) - 4);
+
         gtk_widget_destroy(dialog);
         gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(projset),
-                                              tmpname);
+                                              tmp);
+        g_free(tmp);
         g_free(tmpname);
         indexname =
               gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(projset));
@@ -1779,6 +1794,7 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
     }
 
     if (had_err) {
+      g_warning("had_err");
       if (bakfile)
         g_rename(tmp_filename, filename);
       g_set_error(&ltrgui->err,

@@ -65,25 +65,61 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
   gtk_label_set_text(GTK_LABEL(projset->label_indexname), indexname);
   gtk_label_set_text(GTK_LABEL(projset->label_didclustering),
                                clustering ? "yes" : "no");
-  g_snprintf(buffer, BUFSIZ, "%.8f", evalue);
-  gtk_label_set_text(GTK_LABEL(projset->label_evalue), buffer);
+  if (evalue == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(projset->label_evalue), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.6f", evalue);
+    gtk_label_set_text(GTK_LABEL(projset->label_evalue), buffer);
+  }
   gtk_label_set_text(GTK_LABEL(projset->label_dust), dust ? "yes" : "no");
-  g_snprintf(buffer, BUFSIZ, "%d", gapopen);
-  gtk_label_set_text(GTK_LABEL(projset->label_gapopen), buffer);
-  g_snprintf(buffer, BUFSIZ, "%d", gapextend);
-  gtk_label_set_text(GTK_LABEL(projset->label_gapextend), buffer);
-  g_snprintf(buffer, BUFSIZ, "%.2f", xdrop);
-  gtk_label_set_text(GTK_LABEL(projset->label_xdrop), buffer);
-  g_snprintf(buffer, BUFSIZ, "%d", penalty);
-  gtk_label_set_text(GTK_LABEL(projset->label_penalty), buffer);
-  g_snprintf(buffer, BUFSIZ, "%d", reward);
-  gtk_label_set_text(GTK_LABEL(projset->label_reward), buffer);
-  g_snprintf(buffer, BUFSIZ, "%d", threads);
-  gtk_label_set_text(GTK_LABEL(projset->label_threads), buffer);
-  g_snprintf(buffer, BUFSIZ, "%d", wordsize);
-  gtk_label_set_text(GTK_LABEL(projset->label_wordsize), buffer);
-  g_snprintf(buffer, BUFSIZ, "%.2f", seqid);
-  gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), buffer);
+  if (gapopen == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_gapopen), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", gapopen);
+    gtk_label_set_text(GTK_LABEL(projset->label_gapopen), buffer);
+  }
+  if (gapextend == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_gapextend), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", gapextend);
+    gtk_label_set_text(GTK_LABEL(projset->label_gapextend), buffer);
+  }
+  if (xdrop == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(projset->label_xdrop), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.2f", xdrop);
+    gtk_label_set_text(GTK_LABEL(projset->label_xdrop), buffer);
+  }
+  if (penalty == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_penalty), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", penalty);
+    gtk_label_set_text(GTK_LABEL(projset->label_penalty), buffer);
+  }
+  if (reward == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_reward), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", reward);
+    gtk_label_set_text(GTK_LABEL(projset->label_reward), buffer);
+  }
+  if (threads == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_threads), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", threads);
+    gtk_label_set_text(GTK_LABEL(projset->label_threads), buffer);
+  }
+  if (wordsize == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_wordsize), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", wordsize);
+    gtk_label_set_text(GTK_LABEL(projset->label_wordsize), buffer);
+  }
+  if (seqid == GT_UNDEF_DOUBLE)
+    gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%.2f", seqid);
+    gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), buffer);
+  }
   g_snprintf(buffer, BUFSIZ, "%d", psmall);
   gtk_label_set_text(GTK_LABEL(projset->label_psmall), buffer);
   g_snprintf(buffer, BUFSIZ, "%d", plarge);

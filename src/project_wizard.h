@@ -20,6 +20,24 @@
 #ifndef PROJECT_WIZARD_H
 #define PROJECT_WIZARD_H
 
+typedef struct _PWThreadData PWThreadData;
+
+struct _PWThreadData {
+  GUIData *ltrgui;
+  GtkWidget *window,
+            *progressbar;
+  GtArray *nodes;
+  GtHashmap *features;
+  unsigned long had_err,
+                progress,
+                n_features;
+  const gchar *fullname;
+  gchar *projectfile,
+        *projectdir;
+  char *current_state;
+  GtError *err;
+};
+
 void pw_apply(GtkAssistant *assistant, GUIData *ltrgui);
 
 #endif /* PROJECT_WIZARD_H */

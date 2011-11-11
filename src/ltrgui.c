@@ -122,7 +122,7 @@ static gboolean init_gui(GUIData *ltrgui)
   mb_main_init(ltrgui); 
 
   gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
-  ltrgui->ltr_families = gtk_ltr_families_new();
+  ltrgui->ltr_families = gtk_ltr_families_new(ltrgui->sb_main);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
                      TRUE, TRUE, 0);
   ltrgui->ltr_filter = gtk_ltr_filter_new();

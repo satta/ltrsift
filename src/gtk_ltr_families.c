@@ -373,7 +373,9 @@ static void gtk_ltr_families_progress_dialog_init(FamilyThreadData *threaddata)
   gtk_container_add(GTK_CONTAINER(vbox), label);
   /* create progress bar */
   threaddata->progressbar = gtk_progress_bar_new();
-  gtk_container_add(GTK_CONTAINER(vbox), threaddata->progressbar);
+  gtk_container_add(GTK_CONTAINER(threaddata->ltrfams->statusb),
+                    threaddata->progressbar);
+  gtk_widget_show_all(threaddata->progressbar);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
@@ -391,7 +393,8 @@ static gboolean classify_nodes_finished(gpointer data)
     g_source_remove(GPOINTER_TO_INT(
                                  g_object_get_data(G_OBJECT(threaddata->window),
                                                    "source_id")));
-    gtk_widget_destroy(GTK_WIDGET(threaddata->window));
+    gtk_widget_destroy(threaddata->window);
+    gtk_widget_destroy(threaddata->progressbar);
 
     if (!threaddata->had_err) {
       g_list_foreach(threaddata->references,
@@ -505,6 +508,7 @@ static gboolean image_area_expose_event(GtkWidget *widget,
   gt_layout_sketch(l, canvas, err);
   gt_layout_delete(l);
   gt_canvas_delete(canvas);
+  cairo_destroy(cr);
   gt_error_delete(err);
   return FALSE;
 }
@@ -744,7 +748,7 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                                             CAND_UC_DIALOG);
   gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
     gtk_widget_destroy(dialog);
     return;
   } else {
@@ -932,7 +936,7 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                   text);
   gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
     gtk_widget_destroy(dialog);
     return;
   } else {
@@ -1298,14 +1302,11 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
         *tmp,
         *references = NULL,
         *children;
-  gint cur_tab_no,
-       main_tab_no;
+  gint curtab_no;
 
   notebook = GTK_NOTEBOOK(ltrfams->nb_family);
-  cur_tab_no = gtk_notebook_get_current_page(notebook);
-  main_tab_no = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notebook),
-                                                  "main_tab"));
-  tab = gtk_notebook_get_nth_page(notebook, cur_tab_no);
+  curtab_no = gtk_notebook_get_current_page(notebook);
+  tab = gtk_notebook_get_nth_page(notebook, curtab_no);
   children = gtk_container_get_children(GTK_CONTAINER(tab));
   list_view = GTK_TREE_VIEW(g_list_first(children)->data);
   sel = gtk_tree_view_get_selection(list_view);
@@ -1326,9 +1327,6 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   if (!(sel_features = get_features_for_classification(ltrfams)))
     return;
 
-  if (main_tab_no != cur_tab_no)
-    /* TODO: ask Sascha whether existing families should be re-classified */
-    return;
   nodes = gt_array_new(sizeof(GtGenomeNode*));
   model = gtk_tree_view_get_model(list_view);
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -2038,6 +2036,20 @@ gtk_ltr_families_nb_fam_page_reordered(GT_UNUSED GtkNotebook *notebook,
   gtk_ltr_families_nb_fam_refresh_nums(user_data);
 }
 
+static gboolean gtk_ltr_families_nb_fam_switch_page(GtkNotebook *notebook,
+                                                    GT_UNUSED gpointer arg1,
+                                                    guint arg2,
+                                                    GtkLTRFamilies *ltrfams)
+{
+  gint main_tab;
+  main_tab = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notebook), "main_tab"));
+  if (main_tab != arg2)
+    gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), FALSE);
+  else
+    gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
+  return FALSE;
+}
+
 static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
 {
   GtkWidget *child,
@@ -2096,6 +2108,9 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
   g_object_set_data(G_OBJECT(ltrfams->nb_family),
                     "main_tab",
                     GINT_TO_POINTER(nbpage));
+  g_signal_connect(G_OBJECT(ltrfams->nb_family), "switch-page",
+                   G_CALLBACK(gtk_ltr_families_nb_fam_switch_page),
+                   (gpointer) ltrfams);
 }
 /* <nb_family> related functions end */
 
@@ -2289,7 +2304,7 @@ static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
   gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
 
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
     gtk_widget_destroy(dialog);
     gtk_tree_selection_unselect_all(sel);
     return;
@@ -2598,8 +2613,7 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
 
   GtkAdjustment *vadj = NULL;
   GtkToolItem *add,
-              *remove,
-              *new_fam;
+              *remove;
   GdkColor color;
   GtkTreeSelection *selection;
 
@@ -2644,13 +2658,13 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->tb_nb_family), FALSE);
   gtk_toolbar_set_show_arrow(GTK_TOOLBAR(ltrfams->tb_nb_family), TRUE);
   gtk_toolbar_set_style(GTK_TOOLBAR(ltrfams->tb_nb_family), GTK_TOOLBAR_ICONS);
-  new_fam = gtk_tool_button_new_from_stock(GTK_STOCK_INDEX);
-  gtk_tool_item_set_tooltip_text(new_fam, TB_NB_NEW_FAM);
-  gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), new_fam, 0);
+  ltrfams->new_fam = gtk_tool_button_new_from_stock(GTK_STOCK_INDEX);
+  gtk_tool_item_set_tooltip_text(ltrfams->new_fam, TB_NB_NEW_FAM);
+  gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), ltrfams->new_fam, 0);
   ltrfams->nb_family = gtk_notebook_new();
-  g_signal_connect(G_OBJECT(new_fam), "clicked",
-                           G_CALLBACK(gtk_ltr_families_nb_fam_tb_nf_clicked),
-                           ltrfams);
+  g_signal_connect(G_OBJECT(ltrfams->new_fam), "clicked",
+                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_nf_clicked),
+                   ltrfams);
   hsep2 = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(vbox2), ltrfams->tb_nb_family, FALSE, TRUE, 1);
   gtk_box_pack_start(GTK_BOX(vbox2), hsep2, FALSE, FALSE, 1);
@@ -2726,7 +2740,7 @@ GType gtk_ltr_families_get_type(void)
   return ltrfams_type;
 }
 
-GtkWidget* gtk_ltr_families_new()
+GtkWidget* gtk_ltr_families_new(GtkWidget *statusb)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
@@ -2738,5 +2752,6 @@ GtkWidget* gtk_ltr_families_new()
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);
   ltrfams->projectfile = NULL;
   ltrfams->modified = FALSE;
+  ltrfams->statusb = statusb;
   return GTK_WIDGET(ltrfams);
 }

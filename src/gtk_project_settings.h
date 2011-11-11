@@ -36,6 +36,8 @@
 #define IS_GTK_PROJECT_SETTINGS_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_PROJECT_SETTINGS_TYPE)
 
+#define USED_DEFAULT "Used default."
+
 typedef struct _GtkProjectSettings GtkProjectSettings;
 typedef struct _GtkProjectSettingsClass GtkProjectSettingsClass;
 
