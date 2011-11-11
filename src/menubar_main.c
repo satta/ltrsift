@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "error.h"
 #include "menubar_main.h"
+#include "project_wizard.h"
 #include "statusbar_main.h"
 
 static void reorder_tabs(gpointer key, gpointer value, gpointer user_data)
@@ -1437,6 +1438,12 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
     default:
       break;
   }
+
+  if (ltrgui->assistant)
+    gtk_widget_destroy(ltrgui->assistant);
+  ltrgui->assistant = gtk_ltr_assistant_new();
+  g_signal_connect(G_OBJECT(ltrgui->assistant), "apply",
+                   G_CALLBACK(pw_apply), (gpointer) ltrgui);
   gtk_widget_show(ltrgui->assistant);
 }
 

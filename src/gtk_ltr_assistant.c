@@ -135,6 +135,27 @@ GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi)
   return GTK_TREE_VIEW(ltrassi->list_view_features);
 }
 
+static void check_complete_page_general(GtkLTRAssistant *ltrassi)
+{
+  GtkWidget *page;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gboolean complete = TRUE;
+
+  if (g_strcmp0(gtk_label_get_text(GTK_LABEL(ltrassi->label_projectfile)),
+                "") == 0) {
+    complete &= FALSE;
+  }
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrassi->list_view_gff3files));
+  complete &= gtk_tree_model_get_iter_first(model, &iter);
+  if (g_strcmp0(gtk_label_get_text(GTK_LABEL(ltrassi->label_indexname)),
+                "") == 0) {
+    complete &= FALSE;
+  }
+  page = gtk_assistant_get_nth_page(GTK_ASSISTANT(ltrassi), PAGE_GENERAL);
+  gtk_assistant_set_page_complete(GTK_ASSISTANT(ltrassi), page, complete);
+}
+
 static void free_hash(void *elem)
 {
   gt_free(elem);
@@ -250,7 +271,8 @@ static gboolean file_in_list_view(GtkTreeModel *model, const gchar *file)
   return FALSE;
 }
 
-static void remove_list_view_row(GtkTreeRowReference *rowref, GtkTreeModel *model)
+static void remove_list_view_row(GtkTreeRowReference *rowref,
+                                 GtkTreeModel *model)
 {
   GtkTreeIter iter;
   GtkTreePath *path;
@@ -361,7 +383,7 @@ static void remove_gff3_button_clicked(GT_UNUSED GtkButton *button,
   }
 
   g_list_foreach(references, (GFunc) remove_list_view_row, model);
-  /*pw_page_basic_settings_complete(ltrgui);*/
+  check_complete_page_general(ltrassi);
   update_gff3_label(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
                     GTK_LABEL(ltrassi->label_gff3files));
   g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
@@ -413,7 +435,7 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
                       GTK_LABEL(ltrassi->label_gff3files));
   }
   gtk_widget_destroy(filechooser);
-  /*pw_page_basic_settings_complete(ltrgui);*/
+  check_complete_page_general(ltrassi);
 }
 
 static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
@@ -442,7 +464,7 @@ static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
     g_free(filename);
   }
   gtk_widget_destroy(filechooser);
-  /* pw_page_basic_settings_complete(ltrgui); */
+  check_complete_page_general(ltrassi);
 }
 
 static void checkb_clustering_toggled(GtkToggleButton *togglebutton,
@@ -488,11 +510,10 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 {
   LTRAssistantPageInfo page_info[N_PAGES] = {
     {NULL, -1, "Introduction", GTK_ASSISTANT_PAGE_INTRO, TRUE},
-    {NULL, -1, "General settings", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
+    {NULL, -1, "General settings", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
     {NULL, -1, "Matching/Clustering", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
-    {NULL, -1, "Classification", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
-    {NULL, -1, "Overview", GTK_ASSISTANT_PAGE_CONFIRM, TRUE},
-    };
+    {NULL, -1, "Classification", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
+    {NULL, -1, "Overview", GTK_ASSISTANT_PAGE_CONFIRM, TRUE}};
 
   GtkWidget *label,
             *hsep,
@@ -1099,6 +1120,7 @@ GtkWidget* gtk_ltr_assistant_new()
   gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrassi),
                                       (GtkAssistantPageFunc) page_forward,
                                       ltrassi, NULL);
+  gtk_window_set_position(GTK_WINDOW(ltrassi), GTK_WIN_POS_CENTER_ALWAYS);
   g_signal_connect(G_OBJECT(ltrassi), "cancel",
                    G_CALLBACK(gtk_ltr_assistant_cancel), NULL);
   g_signal_connect(G_OBJECT(ltrassi), "close",
