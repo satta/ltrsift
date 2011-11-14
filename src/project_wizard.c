@@ -18,6 +18,7 @@
 #include "error.h"
 #include "menubar_main.h"
 #include "project_wizard.h"
+#include "support.h"
 
 void extract_project_settings(GUIData *ltrgui)
 {
@@ -125,9 +126,9 @@ void extract_project_settings(GUIData *ltrgui)
 gboolean pw_update_progress_dialog(gpointer data)
 {
   PWThreadData *threaddata = (PWThreadData*) data;
-  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->ltrgui->progressbar),
                             threaddata->current_state);
-  gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
+  gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->ltrgui->progressbar));
   return TRUE;
 }
 
@@ -149,11 +150,6 @@ static void pw_progress_dialog_init(PWThreadData *threaddata)
   /* create label */
   label = gtk_label_new("Please wait...");
   gtk_container_add(GTK_CONTAINER(vbox), label);
-  /* create progress bar */
-  threaddata->progressbar = gtk_progress_bar_new();
-  gtk_widget_show_all(threaddata->progressbar);
-  gtk_container_add(GTK_CONTAINER(threaddata->ltrgui->sb_main),
-                    threaddata->progressbar);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
@@ -162,6 +158,7 @@ static void pw_progress_dialog_init(PWThreadData *threaddata)
                       (gpointer) threaddata);
   g_object_set_data(G_OBJECT(threaddata->window),
                     "source_id", GINT_TO_POINTER(sid));
+  gtk_widget_show(threaddata->ltrgui->progressbar);
 }
 
 static gboolean assistant_finish(gpointer data)
@@ -173,8 +170,7 @@ static gboolean assistant_finish(gpointer data)
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
   gtk_widget_destroy(threaddata->window);
-  gtk_widget_destroy(threaddata->progressbar);
-
+  reset_progressbar(threaddata->ltrgui->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
     threaddata->ltrgui->ltr_families =
@@ -328,7 +324,7 @@ static gpointer assistant_start(gpointer data)
     GtkTreeIter iter;
     GList *rows;
     gchar *feature_name;
-    sel_features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+    sel_features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
     list_view =
            gtk_ltr_assistant_get_list_view_features(GTK_LTR_ASSISTANT(ltrassi));
     sel = gtk_tree_view_get_selection(list_view);
@@ -355,7 +351,7 @@ static gpointer assistant_start(gpointer data)
   }
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));
-    features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+    features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
     last_stream = ltrgui_preprocess_stream =
                                     gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     features,

@@ -36,9 +36,6 @@
 #define IS_GTK_LTR_FAMILIES_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FAMILIES_TYPE)
 
-#define DEFAULT_STYLE "../style/default.style"
-#define GUI_NAME      "LTRGui"
-
 #define LTRFAMS_LV_CAPTION_SEQID "SeqID"
 #define LTRFAMS_LV_CAPTION_TYPE  "S"
 #define LTRFAMS_LV_CAPTION_START "Start"
@@ -75,11 +72,9 @@
                        "operation and added to the 'General' tab.\n"\
                        "Are you sure?"
 
-#define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
-                           "want to replace it?"
 
-#define REMOVE  "Remove selected"
-#define UNCLASS "Unclassify selected"
+#define REMOVE_SELECTED  "Remove selected"
+#define UNCLASS_SELECTED "Unclassify selected"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
@@ -156,7 +151,7 @@ struct _GtkLTRFamilies
   unsigned long n_features;
   gboolean modified;
   gchar *projectfile;
-  GtkWidget *statusb;
+  GtkWidget *progressbar;
 };
 
 struct _GtkLTRFamiliesClass
@@ -169,7 +164,6 @@ struct _FamilyThreadData
 {
   GtkLTRFamilies *ltrfams;
   GtkWidget *window;
-  GtkWidget *progressbar;
   GtArray *old_nodes,
           *new_nodes;
   GtHashmap *sel_features;
@@ -183,7 +177,7 @@ struct _FamilyThreadData
 
 GType        gtk_ltr_families_get_type(void);
 
-GtkWidget*   gtk_ltr_families_new(GtkWidget *statusb);
+GtkWidget*   gtk_ltr_families_new(GtkWidget *progressbar);
 
 char*        double_underscores(const char *str);
 

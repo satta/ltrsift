@@ -400,8 +400,7 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
   gt_rdb_stmt_delete(stmt);
   gt_error_delete(err);
   gt_rdb_delete(rdb);
-
-  return had_err;
+  return 0;
 }
 
 static void gtk_project_settings_delete_event(GtkWidget *widget,

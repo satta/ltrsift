@@ -18,6 +18,7 @@
 #include <string.h>
 #include "error.h"
 #include "gtk_ltr_families.h"
+#include "support.h"
 
 /* function prototypes start */
 static void gtk_ltr_families_nb_fam_lv_append_gn(GtkTreeView*, GtGenomeNode*,
@@ -249,7 +250,7 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
                   GPOINTER_TO_INT(
                    gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
                                                    "nbpage")));
-      gtk_ltr_families_nb_fam_refresh_nums(GTK_NOTEBOOK(ltrfams->nb_family));
+      gtk_ltr_families_nb_fam_refresh_nums(ltrfams);
     }
     g_list_free(children);
   }
@@ -345,9 +346,9 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
 gboolean gtk_ltr_families_update_progress_dialog(gpointer data)
 {
   FamilyThreadData *threaddata = (FamilyThreadData*) data;
-  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->ltrfams->progressbar),
                             threaddata->current_state);
-  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->progressbar),
+  gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->ltrfams->progressbar),
                                 (gdouble)threaddata->progress /
                                 (2 * gt_array_size(threaddata->old_nodes)));
   return TRUE;
@@ -371,11 +372,6 @@ static void gtk_ltr_families_progress_dialog_init(FamilyThreadData *threaddata)
   /* create label */
   label = gtk_label_new("Please wait...");
   gtk_container_add(GTK_CONTAINER(vbox), label);
-  /* create progress bar */
-  threaddata->progressbar = gtk_progress_bar_new();
-  gtk_container_add(GTK_CONTAINER(threaddata->ltrfams->statusb),
-                    threaddata->progressbar);
-  gtk_widget_show_all(threaddata->progressbar);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
@@ -384,6 +380,7 @@ static void gtk_ltr_families_progress_dialog_init(FamilyThreadData *threaddata)
                       (gpointer) threaddata);
   g_object_set_data(G_OBJECT(threaddata->window),
                     "source_id", GINT_TO_POINTER(sid));
+  gtk_widget_show(threaddata->ltrfams->progressbar);
 }
 
 static gboolean classify_nodes_finished(gpointer data)
@@ -394,7 +391,7 @@ static gboolean classify_nodes_finished(gpointer data)
                                  g_object_get_data(G_OBJECT(threaddata->window),
                                                    "source_id")));
     gtk_widget_destroy(threaddata->window);
-    gtk_widget_destroy(threaddata->progressbar);
+    reset_progressbar(threaddata->ltrfams->progressbar);
 
     if (!threaddata->had_err) {
       g_list_foreach(threaddata->references,
@@ -834,7 +831,7 @@ static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
   menu = gtk_menu_new();
 
   menuitem = gtk_menu_item_new_with_label((cur_tab_no == main_tab_no)
-                                          ? REMOVE : UNCLASS);
+                                          ? REMOVE_SELECTED : UNCLASS_SELECTED);
   g_signal_connect(menuitem, "activate",
                    (GCallback) gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked,
                    ltrfams);
@@ -1263,7 +1260,7 @@ GtHashmap* get_features_for_classification(GtkLTRFamilies *ltrfams)
     gtk_widget_destroy(dialog);
     return NULL;
   }
-  sel_features = gt_hashmap_new(GT_HASH_STRING, free_hash, NULL);
+  sel_features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(list_view));
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   tmp = rows;
@@ -1832,8 +1829,8 @@ static void gtk_ltr_families_nb_fam_refresh_nums(gpointer user_data)
     tab_child = gtk_notebook_get_nth_page(notebook, i);
     tab_label = gtk_notebook_get_tab_label(notebook, tab_child);
     old_pagenum =
-        GPOINTER_TO_INT(
-           gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
+       GPOINTER_TO_INT(gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
+                                                       "nbpage"));
     if (old_pagenum != i) {
       gtk_label_close_set_button_data(GTKLABELCLOSE(tab_label),
                                       "nbpage",
@@ -1844,13 +1841,15 @@ static void gtk_ltr_families_nb_fam_refresh_nums(gpointer user_data)
                           "main_tab",
                           GINT_TO_POINTER(i));
       }
-      g_snprintf(query, BUFSIZ,
-                 "UPDATE notebook_tabs SET position = %d WHERE name = \"%s\"",
-                 i, gtk_label_close_get_text(GTKLABELCLOSE(tab_label)));
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, ltrfams->err);
-      if (!had_err)
-        had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
-      gt_rdb_stmt_delete(stmt);
+      if (rdb) {
+        g_snprintf(query, BUFSIZ,
+                   "UPDATE notebook_tabs SET position = %d WHERE name = \"%s\"",
+                   i, gtk_label_close_get_text(GTKLABELCLOSE(tab_label)));
+        had_err = gt_rdb_prepare(rdb, query, -1, &stmt, ltrfams->err);
+        if (!had_err)
+          had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
+        gt_rdb_stmt_delete(stmt);
+      }
     }
   }
   if (rdb)
@@ -2740,7 +2739,7 @@ GType gtk_ltr_families_get_type(void)
   return ltrfams_type;
 }
 
-GtkWidget* gtk_ltr_families_new(GtkWidget *statusb)
+GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
@@ -2752,6 +2751,6 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *statusb)
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);
   ltrfams->projectfile = NULL;
   ltrfams->modified = FALSE;
-  ltrfams->statusb = statusb;
+  ltrfams->progressbar = progressbar;
   return GTK_WIDGET(ltrfams);
 }

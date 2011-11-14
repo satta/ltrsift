@@ -19,35 +19,7 @@
 #include "ltrgui.h"
 #include "menubar_main.h"
 #include "statusbar_main.h"
-
-void create_recently_used_resource(const gchar *filename)
-{
-  GtkRecentManager *manager;
-  GtkRecentData *data;
-  static gchar *groups[2] = {GUI_RECENT_GROUP, NULL};
-  gchar *uri;
-
-  /* Create a new recently used resource. */
-  data = g_slice_new(GtkRecentData);
-  data->display_name = NULL;
-  data->description = NULL;
-  data->mime_type = "text/plain";
-  data->app_name = (gchar*) g_get_application_name ();
-  data->app_exec = g_strjoin(" ", g_get_prgname (), "%u", NULL);
-  data->groups = groups;
-  data->is_private = FALSE;
-  uri = g_filename_to_uri(filename, NULL, NULL);
-  manager = gtk_recent_manager_get_default();
-  gtk_recent_manager_add_full(manager, uri, data);
-  g_free(uri);
-  g_free(data->app_exec);
-  g_slice_free(GtkRecentData, data);
-}
-
-void free_hash(void *elem)
-{
-  gt_free(elem);
-}
+#include "support.h"
 
 static void free_gui(GUIData *ltrgui)
 {
@@ -117,6 +89,7 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(mb_main_view_columns);
   GW(vbox1_main);
   GW(sb_main);
+  GW(progressbar);
 #undef GW
   sb_main_init(ltrgui);
   mb_main_init(ltrgui); 
@@ -147,7 +120,9 @@ gint main(gint argc, gchar *argv[])
   ltrgui = g_slice_new(GUIData);
   ltrgui->err = NULL;
   /* initialize libraries */
-  g_thread_init(NULL);
+  if(!g_thread_supported())
+    g_thread_init(NULL);
+  gdk_threads_init();
   gtk_init(&argc, &argv);
   gt_lib_init();
 
@@ -160,8 +135,9 @@ gint main(gint argc, gchar *argv[])
   gtk_widget_show(ltrgui->main_window);
 
   /* enter GTK+ main loop */
+  gdk_threads_enter();
   gtk_main();
-
+  gdk_threads_leave();
   /* free memory allocated for GUIData struct */
   free_gui(ltrgui);
   /*if (gt_lib_clean())

@@ -15,28 +15,21 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#ifndef SUPPORT_H
+#define SUPPORT_H
+
 #include "ltrgui.h"
 
-#ifndef PROJECT_WIZARD_H
-#define PROJECT_WIZARD_H
+#define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
+                           "want to replace it?"
 
-typedef struct _PWThreadData PWThreadData;
+#define DEFAULT_STYLE "../style/default.style"
+#define GUI_NAME      "LTRGui"
 
-struct _PWThreadData {
-  GUIData *ltrgui;
-  GtkWidget *window;
-  GtArray *nodes;
-  GtHashmap *features;
-  unsigned long had_err,
-                progress,
-                n_features;
-  const gchar *fullname;
-  gchar *projectfile,
-        *projectdir;
-  char *current_state;
-  GtError *err;
-};
+void free_gt_hash_elem(void *elem);
 
-void pw_apply(GtkAssistant *assistant, GUIData *ltrgui);
+void create_recently_used_resource(const gchar *filename);
 
-#endif /* PROJECT_WIZARD_H */
+void reset_progressbar(GtkWidget *progressbar);
+
+#endif

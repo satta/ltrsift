@@ -26,7 +26,6 @@ struct _MenuThreadData
 {
   GUIData *ltrgui;
   GtkWidget *window;
-  GtkWidget *progressbar;
   GtError *err;
   gchar *filename;
   gchar *tmp_filename;

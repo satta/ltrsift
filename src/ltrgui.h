@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef GUI_TEST_H
-#define GUI_TEST_H
+#ifndef LTRGUI_H
+#define LTRGUI_H
 
 #include <gtk/gtk.h>
 #include <glib.h>
@@ -80,6 +80,7 @@ struct _GUIData
   GtkWidget *ltr_families;
   GtkWidget *ltr_filter;
   GtkWidget *projset;
+  GtkWidget *progressbar;
   GtkWidget *sb_main;
   GtkWidget *main_window;
   GtkWidget *assistant;
@@ -87,8 +88,4 @@ struct _GUIData
   GError *err;
 };
 
-void free_hash(void *elem);
-
-void create_recently_used_resource(const gchar *filename);
-
-#endif /* GUI_TEST_H */
+#endif /* LTRGUI_H */
