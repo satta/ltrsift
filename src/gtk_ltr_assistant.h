@@ -44,6 +44,20 @@
 #define BROWSE_INDEX   "Brow_se..."
 #define USE_DEFAULT    "Use default?"
 #define USE_DEFAULT_A  "Use default"
+#define NEW_FAM_PREFIX "newfam_"
+
+#define BLASTN_STRAND        "-strand"
+#define BLASTN_CULLING       "-culling_limit"
+#define BLASTN_BESTHIT_OVERH "-best_hit_overhang"
+#define BLASTN_BESTHIT_SCORE "-best_hit_score"
+#define BLASTN_MAXT_SEQS     "-max_target_seqs"
+#define BLASTN_XDROP_UNG     "-xdrop_ungap"
+#define BLASTN_XDROP_GAP     "-xdrop_gap"
+#define BLASTN_NO_GREEDY     "-no_greedy"
+#define BLASTN_MIN_RAW       "-min_raw_gapped_score"
+#define BLASTN_UNGAPPED      "-ungapped"
+#define BLASTN_WINDOWS       "-window_size"
+#define BLASTN_OFF_DIAG      "-off_diagonal_range"
 
 typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
@@ -85,6 +99,11 @@ struct _GtkLTRAssistant
   GtkWidget *checkb_words;
   GtkWidget *spinb_seqid;
   GtkWidget *checkb_seqid;
+  GtkWidget *combob_blastparams;
+  GtkWidget *entry_blastvalues;
+  GtkWidget *button_addblastparam;
+  GtkWidget *button_rmblastparam;
+  GtkWidget *label_moreblast;
   GtkWidget *spinb_psmall;
   GtkWidget *spinb_plarge;
   GtkWidget *checkb_classification;
@@ -92,6 +111,7 @@ struct _GtkLTRAssistant
   GtkWidget *spinb_ltrtol;
   GtkWidget *spinb_candtol;
   GtkWidget *list_view_features;
+  GtkWidget *entry_famprefix;
   /* Overview page */
   GtkWidget *notebook;
   GtkWidget *label_projectfile2;
@@ -108,15 +128,18 @@ struct _GtkLTRAssistant
   GtkWidget *label_threads;
   GtkWidget *label_wordsize;
   GtkWidget *label_seqidentity;
+  GtkWidget *label_moreblast2;
   GtkWidget *label_psmall;
   GtkWidget *label_plarge;
   GtkWidget *label_doclassification;
   GtkWidget *label_ltrtolerance;
   GtkWidget *label_candtolerance;
+  GtkWidget *label_famprefix;
   GtkWidget *label_usedfeatures;
   /* misc */
   gchar *last_dir;
   gboolean added_features;
+  GHashTable *hasht_blastparams;
 };
 
 struct _GtkLTRAssistantClass
@@ -125,9 +148,9 @@ struct _GtkLTRAssistantClass
   void (* gtk_ltr_assistant) (GtkLTRAssistant *ltrassi);
 };
 
-GType gtk_ltr_assistant_get_type(void);
+GType        gtk_ltr_assistant_get_type(void);
 
-GtkWidget* gtk_ltr_assistant_new();
+GtkWidget*   gtk_ltr_assistant_new();
 
 const gchar* gtk_ltr_assistant_get_projectfile(GtkLTRAssistant *ltrassi);
 
@@ -135,38 +158,44 @@ GtkTreeView* gtk_ltr_assistant_get_list_view_gff3files(GtkLTRAssistant *ltrassi)
 
 const gchar* gtk_ltr_assistant_get_indexname(GtkLTRAssistant *ltrassi);
 
-gboolean gtk_ltr_assistant_get_clustering(GtkLTRAssistant *ltrassi);
+gboolean     gtk_ltr_assistant_get_clustering(GtkLTRAssistant *ltrassi);
 
-gdouble gtk_ltr_assistant_get_evalue(GtkLTRAssistant *ltrassi);
+gdouble      gtk_ltr_assistant_get_evalue(GtkLTRAssistant *ltrassi);
 
-gboolean gtk_ltr_assistant_get_dust(GtkLTRAssistant *ltrassi);
+gboolean     gtk_ltr_assistant_get_dust(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_gapopen(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_gapopen(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_gapextend(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_gapextend(GtkLTRAssistant *ltrassi);
 
-gdouble gtk_ltr_assistant_get_xdrop(GtkLTRAssistant *ltrassi);
+gdouble      gtk_ltr_assistant_get_xdrop(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_penalty(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_penalty(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_reward(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_reward(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_threads(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_threads(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_wordsize(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_wordsize(GtkLTRAssistant *ltrassi);
 
-gdouble gtk_ltr_assistant_get_seqid(GtkLTRAssistant *ltrassi);
+gdouble      gtk_ltr_assistant_get_seqid(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_psmall(GtkLTRAssistant *ltrassi);
+const gchar* gtk_ltr_assistant_get_moreblast(GtkLTRAssistant *ltrassi);
 
-gint gtk_ltr_assistant_get_plarge(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_psmall(GtkLTRAssistant *ltrassi);
 
-gboolean gtk_ltr_assistant_get_classification(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_plarge(GtkLTRAssistant *ltrassi);
 
-gdouble gtk_ltr_assistant_get_ltrtol(GtkLTRAssistant *ltrassi);
+gboolean     gtk_ltr_assistant_get_classification(GtkLTRAssistant *ltrassi);
 
-gdouble gtk_ltr_assistant_get_candtol(GtkLTRAssistant *ltrassi);
+gdouble      gtk_ltr_assistant_get_ltrtol(GtkLTRAssistant *ltrassi);
+
+gdouble      gtk_ltr_assistant_get_candtol(GtkLTRAssistant *ltrassi);
+
+const gchar* gtk_ltr_assistant_get_fam_prefix(GtkLTRAssistant *ltrassi);
 
 GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi);
+
+gchar*       gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi);
 
 #endif /* __GTK_LTR_ASSISTANT_H__ */

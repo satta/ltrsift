@@ -34,7 +34,8 @@ void extract_project_settings(GUIData *ltrgui)
        num_of_gff3files,
        num_of_features;
   const gchar *projectfile,
-              *indexname;
+              *indexname,
+              *moreblast;
   gchar **gff3files,
         **features;
   GtkTreeView *list_view;
@@ -84,6 +85,7 @@ void extract_project_settings(GUIData *ltrgui)
   num_threads = gtk_ltr_assistant_get_threads(ltrassi);
   wordsize = gtk_ltr_assistant_get_wordsize(ltrassi);
   seqid = gtk_ltr_assistant_get_seqid(ltrassi);
+  moreblast = gtk_ltr_assistant_get_moreblast(ltrassi);
   psmall = gtk_ltr_assistant_get_psmall(ltrassi);
   plarge = gtk_ltr_assistant_get_plarge(ltrassi);
   classification = gtk_ltr_assistant_get_classification(ltrassi);
@@ -112,8 +114,8 @@ void extract_project_settings(GUIData *ltrgui)
                                 projectfile, gff3files, indexname, clustering,
                                 evalue, dust, gapopen, gapextend, xdrop,
                                 penalty, reward, num_threads, wordsize,
-                                seqid, psmall, plarge, classification, ltrtol,
-                                candtol, features);
+                                seqid, moreblast, psmall, plarge,
+                                classification, ltrtol, candtol, features);
 
   for (i = 0; i < num_of_gff3files; i++)
     g_free(gff3files[i]);
@@ -292,6 +294,27 @@ static gpointer assistant_start(gpointer data)
                                                                 gff3_files);
 
   if (gtk_ltr_assistant_get_clustering(GTK_LTR_ASSISTANT(ltrassi))) {
+    gboolean from_file = FALSE;
+    gchar *match_params_file;
+    gchar *match_params;
+
+    match_params_file = g_strdup_printf("%s_blastn_params.match", buf);
+    match_params =
+                 gtk_ltr_assistant_get_match_params(GTK_LTR_ASSISTANT(ltrassi));
+    if (g_file_test(match_params_file, G_FILE_TEST_EXISTS)) {
+      gchar *old_params;
+      g_file_get_contents(match_params_file, &old_params, NULL, NULL);
+      if (g_strcmp0(old_params, match_params) == 0)
+        from_file = TRUE;
+      else {
+        g_file_set_contents(match_params_file, match_params, -1, NULL);
+      }
+      g_free(old_params);
+    } else {
+      g_file_set_contents(match_params_file, match_params, -1, NULL);
+    }
+    g_free(match_params);
+
     indexname = gtk_ltr_assistant_get_indexname(GTK_LTR_ASSISTANT(ltrassi));
     el = gt_encseq_loader_new();
     encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
@@ -313,17 +336,20 @@ static gpointer assistant_start(gpointer data)
                                                                    num_threads,
                                                                    xdrop,
                                                                    seqid,
-                                                                   &threaddata->current_state,
-                                                                   threaddata->err);
+                                                     &threaddata->current_state,
+                                                               threaddata->err);
   }
   if (!threaddata->had_err &&
-      gtk_ltr_assistant_get_clustering(GTK_LTR_ASSISTANT(ltrassi))) {
+      gtk_ltr_assistant_get_classification(GTK_LTR_ASSISTANT(ltrassi))) {
     GtkTreeView *list_view;
     GtkTreeModel *model;
     GtkTreeSelection *sel;
     GtkTreeIter iter;
     GList *rows;
     gchar *feature_name;
+    const char *fam_prefix;
+
+    fam_prefix = gtk_ltr_assistant_get_fam_prefix(GTK_LTR_ASSISTANT(ltrassi));
     sel_features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
     list_view =
            gtk_ltr_assistant_get_list_view_features(GTK_LTR_ASSISTANT(ltrassi));
@@ -345,9 +371,10 @@ static gpointer assistant_start(gpointer data)
 
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
                                                                    sel_features,
-                                                                   &threaddata->current_state,
+                                                                   fam_prefix,
+                                                     &threaddata->current_state,
                                                                    NULL,
-                                                                   threaddata->err);
+                                                               threaddata->err);
   }
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));

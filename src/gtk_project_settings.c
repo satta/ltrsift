@@ -49,6 +49,7 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
                                    gint threads,
                                    gint wordsize,
                                    gdouble seqid,
+                                   const gchar *moreblast,
                                    gint psmall,
                                    gint plarge,
                                    gboolean classification,
@@ -120,6 +121,7 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
     g_snprintf(buffer, BUFSIZ, "%.2f", seqid);
     gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), buffer);
   }
+  gtk_label_set_text(GTK_LABEL(projset->label_moreblast), moreblast);
   g_snprintf(buffer, BUFSIZ, "%d", psmall);
   gtk_label_set_text(GTK_LABEL(projset->label_psmall), buffer);
   g_snprintf(buffer, BUFSIZ, "%d", plarge);
@@ -163,7 +165,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
                             "dust, gapopen, gapextend, xdrop, penalty, reward, "
                             "threads, wordsize, seq_identity, psmall, plarge, "
                             "classification, ltr_tolerance, cand_tolerance, "
-                            "features FROM project_settings",
+                            "features, moreblast FROM project_settings",
                            -1, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     g_set_error(&projset->err,
@@ -275,6 +277,12 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
     gtk_label_set_text(GTK_LABEL(projset->label_usedfeatures),
                        gt_str_get(result));
   gt_str_delete(result);
+  result = gt_str_new();
+  had_err = gt_rdb_stmt_get_string(stmt, 19, result, err);
+  if (!had_err)
+    gtk_label_set_text(GTK_LABEL(projset->label_moreblast),
+                       gt_str_get(result));
+  gt_str_delete(result);
   gt_rdb_stmt_delete(stmt);
   gt_rdb_delete(rdb);
 
@@ -320,6 +328,7 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
                             "threads TEXT, "
                             "wordsize TEXT, "
                             "seq_identity TEXT, "
+                            "moreblast TEXT, "
                             "psmall TEXT, "
                             "plarge TEXT, "
                             "classification TEXT, "
@@ -360,8 +369,9 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
              "INSERT INTO project_settings (projectfile, gff3files, "
               "indexname, clustering, evalue, dust, gapopen, "
               "gapextend, xdrop, penalty, reward, threads, wordsize, "
-              "seq_identity, psmall, plarge, classification, ltr_tolerance, "
-              "cand_tolerance, features) values (\"%s\", \"%s\", \"%s\", "
+              "seq_identity, moreblast, psmall, plarge, classification, "
+              "ltr_tolerance, cand_tolerance, features) values (\"%s\", "
+              "\"%s\", \"%s\", \"%s\", "
               "\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", "
               "\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", "
               "\"%s\")",
@@ -379,6 +389,7 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
              gtk_label_get_text(GTK_LABEL(projset->label_threads)),
              gtk_label_get_text(GTK_LABEL(projset->label_wordsize)),
              gtk_label_get_text(GTK_LABEL(projset->label_seqidentity)),
+             gtk_label_get_text(GTK_LABEL(projset->label_moreblast)),
              gtk_label_get_text(GTK_LABEL(projset->label_psmall)),
              gtk_label_get_text(GTK_LABEL(projset->label_plarge)),
              gtk_label_get_text(GTK_LABEL(projset->label_didclassification)),
@@ -528,6 +539,11 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
+  label = gtk_label_new("Additional BLASTN parameter:");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
   label = gtk_label_new("Value for psmall:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
@@ -590,6 +606,11 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
   label = projset->label_seqidentity = gtk_label_new("");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
+  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  label = projset->label_moreblast = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);

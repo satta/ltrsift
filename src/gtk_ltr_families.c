@@ -435,9 +435,10 @@ static gpointer classify_nodes_start(gpointer data)
                                                          NULL,
                                                          threaddata->err);
   last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream,
-                                                             threaddata->sel_features,
-                                                             &threaddata->current_state,
-                                                             &threaddata->progress,
+                                                       threaddata->sel_features,
+                                                             NULL,
+                                                      &threaddata->current_state,
+                                                          &threaddata->progress,
                                                              threaddata->err);
   last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
                                                            threaddata->new_nodes,

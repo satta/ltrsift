@@ -58,6 +58,7 @@ struct _GtkProjectSettings
   GtkWidget *label_threads;
   GtkWidget *label_wordsize;
   GtkWidget *label_seqidentity;
+  GtkWidget *label_moreblast;
   GtkWidget *label_psmall;
   GtkWidget *label_plarge;
   GtkWidget *label_didclassification;
@@ -106,6 +107,7 @@ void         gtk_project_settings_set_data(GtkProjectSettings *projset,
                                            gint threads,
                                            gint wordsize,
                                            gdouble seqid,
+                                           const gchar *moreblast,
                                            gint psmall,
                                            gint plarge,
                                            gboolean classification,
