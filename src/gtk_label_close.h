@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GTK_LABEL_CLOSE_H__
-#define __GTK_LABEL_CLOSE_H__
+#ifndef GTK_LABEL_CLOSE_H
+#define GTK_LABEL_CLOSE_H
 
 #include <glib.h>
 #include <glib-object.h>
@@ -69,4 +69,4 @@ void gtk_label_close_set_button_data(GtkLabelClose *labelclose,
                                      const char *type,
                                      gpointer data);
 
-#endif /* __GTK_LABEL_CLOSE_H__ */
+#endif

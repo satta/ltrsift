@@ -77,7 +77,7 @@ struct _GUIData
   GtkWidget *mb_main_project_settings;
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
-  GtkWidget *ltr_families;
+  GtkWidget *ltrfams;
   GtkWidget *ltr_filter;
   GtkWidget *projset;
   GtkWidget *progressbar;
@@ -88,4 +88,4 @@ struct _GUIData
   GError *err;
 };
 
-#endif /* LTRGUI_H */
+#endif

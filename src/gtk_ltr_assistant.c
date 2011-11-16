@@ -263,7 +263,7 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
     return;
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   tmp = rows;
-  gff3_files = g_malloc((size_t) num_of_files * sizeof(const char*));
+  gff3_files = g_malloc((size_t) num_of_files * sizeof (const char*));
   while (tmp != NULL) {
     gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
     gtk_tree_model_get(model, &iter,
@@ -475,6 +475,7 @@ static void update_gff3_label(GtkTreeView *list_view, GtkLabel *gff3_label)
   GtkTreeIter iter;
   gboolean valid;
   gchar *text,
+        *old_text,
         *buffer;
 
   model = gtk_tree_view_get_model(list_view);
@@ -489,8 +490,11 @@ static void update_gff3_label(GtkTreeView *list_view, GtkLabel *gff3_label)
       gtk_tree_model_get(model, &iter,
                          0, &buffer,
                          -1);
-      text = g_strjoin("\n", text, g_path_get_basename(buffer), NULL);
+      old_text = g_strdup(text);
+      g_free(text);
+      text = g_strjoin("\n", old_text, g_path_get_basename(buffer), NULL);
       g_free(buffer);
+      g_free(old_text);
     }
     gtk_label_set_label(gff3_label, text);
     g_free(text);
@@ -507,6 +511,7 @@ static void update_features_label(GtkTreeView *list_view,
   GList *rows, *tmp;
   gboolean first = TRUE;
   gchar *text,
+        *old_text,
         *buffer;
 
   sel = gtk_tree_view_get_selection(list_view);
@@ -524,8 +529,12 @@ static void update_features_label(GtkTreeView *list_view,
     if (first) {
       text = g_strdup(buffer);
       first = FALSE;
-    } else
-      text = g_strjoin("\n", text, buffer, NULL);
+    } else {
+      old_text = g_strdup(text);
+      g_free(text);
+      text = g_strjoin("\n", old_text, buffer, NULL);
+      g_free(old_text);
+    }
     g_free(buffer);
     tmp = tmp->next;
   }
@@ -873,7 +882,7 @@ gchar* gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi)
   }
 
   sprintf(blast_call, "%s %s", blast_call, moreblast);
-  g_free(moreblast);
+  /*g_free(moreblast);*/
 
   return g_strdup(blast_call);
 }
@@ -1228,7 +1237,8 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   g_signal_connect(G_OBJECT(checkb), "toggled",
                    G_CALLBACK(checkb_gapextend_toggled),
                    (gpointer) ltrassi);
-  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_gapextend, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->spinb_gapextend,
+                     FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
   tmpbox = gtk_hbox_new(TRUE, 1);
@@ -1325,7 +1335,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_box_pack_start(GTK_BOX(tmpbox), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);  
+  gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
   hsep = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      hbox, FALSE, FALSE, 1);

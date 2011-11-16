@@ -53,12 +53,15 @@ void extract_project_settings(GUIData *ltrgui)
   gint i = 0;
 
   projectfile = gtk_ltr_assistant_get_projectfile(ltrassi);
+  if (!g_str_has_suffix(projectfile, SQLITE_PATTERN)) {
+    projectfile = g_strconcat(projectfile, SQLITE_PATTERN, NULL);
+  }
   list_view = gtk_ltr_assistant_get_list_view_gff3files(ltrassi);
   sel = gtk_tree_view_get_selection(list_view);
   gtk_tree_selection_select_all(sel);
   num_of_gff3files = gtk_tree_selection_count_selected_rows(sel);
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  gff3files = g_malloc((size_t) (num_of_gff3files + 1) * sizeof(gchar*));
+  gff3files = g_malloc((size_t) (num_of_gff3files + 1) * sizeof (gchar*));
   tmp = rows;
   while (tmp != NULL) {
     gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
@@ -96,7 +99,7 @@ void extract_project_settings(GUIData *ltrgui)
   sel = gtk_tree_view_get_selection(list_view);
   num_of_features = gtk_tree_selection_count_selected_rows(sel);
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  features = g_malloc((size_t) (num_of_features + 1) * sizeof(gchar*));
+  features = g_malloc((size_t) (num_of_features + 1) * sizeof (gchar*));
   tmp = rows;
   while (tmp != NULL) {
     gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
@@ -166,8 +169,7 @@ static void pw_progress_dialog_init(PWThreadData *threaddata)
 static gboolean assistant_finish(gpointer data)
 {
   PWThreadData *threaddata = (PWThreadData*) data;
-  GtkWidget *ltrfams = threaddata->ltrgui->ltr_families;
-
+  GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
@@ -175,9 +177,9 @@ static gboolean assistant_finish(gpointer data)
   reset_progressbar(threaddata->ltrgui->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltr_families =
-                              gtk_ltr_families_new(threaddata->ltrgui->sb_main);
-    ltrfams = threaddata->ltrgui->ltr_families;
+    threaddata->ltrgui->ltrfams =
+                          gtk_ltr_families_new(threaddata->ltrgui->progressbar);
+    ltrfams = threaddata->ltrgui->ltrfams;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
                        TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
@@ -234,10 +236,13 @@ static gpointer assistant_start(gpointer data)
        num_threads,
        i = 0,
        num_of_files;
-  char buf[BUFSIZ];
+  char buf[BUFSIZ],
+       *tmp_gff3,
+       *old_gff3;
   const char **gff3_files,
              *indexname;
-  gboolean dust;
+  gboolean dust,
+           first = TRUE;
   gdouble evalue,
           seqid,
           xdrop;
@@ -278,12 +283,21 @@ static gpointer assistant_start(gpointer data)
   num_of_files = gtk_tree_selection_count_selected_rows(sel);
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   tmp = rows;
-  gff3_files = g_malloc((size_t) num_of_files * sizeof(const char*));
+  gff3_files = g_malloc((size_t) num_of_files * sizeof (const char*));
   while (tmp != NULL) {
     gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
     gtk_tree_model_get(model, &iter,
                        0, &gff3_files[i],
                        -1);
+    if (first) {
+      tmp_gff3 = g_strdup(gff3_files[i]);
+      first = FALSE;
+    } else {
+      old_gff3 = g_strdup(tmp_gff3);
+      g_free(tmp_gff3);
+      tmp_gff3 = g_strjoin("\n", old_gff3, gff3_files[i], NULL);
+      g_free(old_gff3);
+    }
     i++;
     tmp = tmp->next;
   }
@@ -295,27 +309,37 @@ static gpointer assistant_start(gpointer data)
 
   if (gtk_ltr_assistant_get_clustering(GTK_LTR_ASSISTANT(ltrassi))) {
     gboolean from_file = FALSE;
-    gchar *match_params_file;
-    gchar *match_params;
-
-    match_params_file = g_strdup_printf("%s_blastn_params.match", buf);
-    match_params =
-                 gtk_ltr_assistant_get_match_params(GTK_LTR_ASSISTANT(ltrassi));
-    if (g_file_test(match_params_file, G_FILE_TEST_EXISTS)) {
-      gchar *old_params;
-      g_file_get_contents(match_params_file, &old_params, NULL, NULL);
-      if (g_strcmp0(old_params, match_params) == 0)
-        from_file = TRUE;
-      else {
-        g_file_set_contents(match_params_file, match_params, -1, NULL);
-      }
-      g_free(old_params);
-    } else {
-      g_file_set_contents(match_params_file, match_params, -1, NULL);
-    }
-    g_free(match_params);
+    gchar *match_params,
+          *md5,
+          *md5_file,
+          *tmp;
 
     indexname = gtk_ltr_assistant_get_indexname(GTK_LTR_ASSISTANT(ltrassi));
+    match_params =
+                 gtk_ltr_assistant_get_match_params(GTK_LTR_ASSISTANT(ltrassi));
+    tmp = g_strdup_printf("%s%s%s", match_params, indexname, tmp_gff3);
+    md5 = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
+    md5_file = g_strdup_printf("%s/tmp/%s", threaddata->projectdir, md5);
+    if (g_file_test(md5_file, G_FILE_TEST_EXISTS))
+      from_file = TRUE;
+    else {
+      FILE *fp;
+      fp = g_fopen(md5_file, "w");
+      if (!fp) {
+        g_set_error(&threaddata->ltrgui->err,
+                    G_FILE_ERROR,
+                    0,
+                    "Could not create checksum file for matching: %s",
+                    md5_file);
+        error_handle(threaddata->ltrgui);
+      } else
+        fclose(fp);
+    }
+    g_free(match_params);
+    g_free(md5);
+    g_free(md5_file);
+    g_free(tmp);
+
     el = gt_encseq_loader_new();
     encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
     if (!encseq)
@@ -382,12 +406,12 @@ static gpointer assistant_start(gpointer data)
     last_stream = ltrgui_preprocess_stream =
                                     gt_ltrgui_preprocess_stream_new(last_stream,
                                                                     features,
-                                                                    &threaddata->n_features,
+                                                       &threaddata->n_features,
                                                                     FALSE,
-                                                                    threaddata->err);
+                                                              threaddata->err);
     last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
                                                                     nodes,
-                                                                    threaddata->err);
+                                                               threaddata->err);
   }
   if (!ltrgui_array_out_stream)
     threaddata->had_err = -1;
@@ -410,6 +434,8 @@ static gpointer assistant_start(gpointer data)
   for (i = 0; i < num_of_files; i++)
     g_free((gpointer) gff3_files[i]);
   g_free(gff3_files);
+  g_free(tmp_gff3);
+  gt_str_delete(tmpdirprefix);
 
   g_idle_add(assistant_finish, data);
   return NULL;
@@ -422,16 +448,22 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
   const gchar *fullname;
   gchar *projectdir,
         *projectfile,
+        *tmp_pfile,
         projecttmpdir[BUFSIZ];
   gint had_err = 0;
 
   gtk_widget_hide(GTK_WIDGET(assistant));
   fullname = gtk_ltr_assistant_get_projectfile(GTK_LTR_ASSISTANT(assistant));
-  projectfile = g_path_get_basename(fullname);
+  if (!g_str_has_suffix(fullname, SQLITE_PATTERN)) {
+    fullname = g_strconcat(fullname, SQLITE_PATTERN, NULL);
+  }
+  tmp_pfile = g_path_get_basename(fullname);
+  projectfile = g_strndup(tmp_pfile,
+                          strlen(tmp_pfile) - strlen(SQLITE_PATTERN));
   projectdir = g_path_get_dirname(fullname);
   if (g_file_test(fullname, G_FILE_TEST_EXISTS)) {
     gchar buffer[BUFSIZ];
-    g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, projectfile);
+    g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, tmp_pfile);
     dialog = gtk_message_dialog_new(NULL,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -444,12 +476,14 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
       gtk_widget_destroy(dialog);
       gtk_widget_show(GTK_WIDGET(assistant));
       gtk_assistant_set_current_page(assistant, 0);
+      g_free(tmp_pfile);
       g_free(projectdir);
       g_free(projectfile);
       return;
     } else
       gtk_widget_destroy(dialog);
   }
+  g_free(tmp_pfile);
   g_snprintf(projecttmpdir, BUFSIZ, "%s/tmp", projectdir);
   if (!g_file_test(projecttmpdir, G_FILE_TEST_EXISTS))
     had_err = g_mkdir(projecttmpdir, 0755);
@@ -477,4 +511,3 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
 
   g_thread_create(assistant_start, (gpointer) threaddata, FALSE, NULL);
 }
-

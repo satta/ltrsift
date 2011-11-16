@@ -43,7 +43,8 @@ gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
   gchar *menu_hint = NULL;
 
   if (event->type == GDK_ENTER_NOTIFY) {
-    menu_hint = (gchar*) g_object_get_data(G_OBJECT(menuitem), SB_MAIN_MENU_HINT);
+    menu_hint = (gchar*) g_object_get_data(G_OBJECT(menuitem),
+                                           SB_MAIN_MENU_HINT);
     gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
                        ltrgui->sb_main_context_id, menu_hint);
   } else if (event->type == GDK_LEAVE_NOTIFY) {

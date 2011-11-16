@@ -23,13 +23,19 @@
 #define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
                            "want to replace it?"
 
-#define DEFAULT_STYLE "../style/default.style"
-#define GUI_NAME      "LTRGui"
+#define DEFAULT_STYLE  "../style/default.style"
+#define GUI_NAME       "LTRGui"
+#define FAS_PATTERN    ".fas"
+#define GFF3_PATTERN   ".gff3"
+#define ESQ_PATTERN    ".esq"
+#define SQLITE_PATTERN ".sqlite"
 
-void free_gt_hash_elem(void *elem);
+void       free_gt_hash_elem(void *elem);
 
-void create_recently_used_resource(const gchar *filename);
+void       create_recently_used_resource(const gchar *filename);
 
-void reset_progressbar(GtkWidget *progressbar);
+void       reset_progressbar(GtkWidget *progressbar);
+
+GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
 
 #endif

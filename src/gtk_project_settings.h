@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GTK_PROJECT_SETTINGS_H__
-#define __GTK_PROJECT_SETTINGS_H__
+#ifndef GTK_PROJECT_SETTINGS_H
+#define GTK_PROJECT_SETTINGS_H
 
 #include <glib.h>
 #include <glib-object.h>
@@ -117,4 +117,4 @@ void         gtk_project_settings_set_data(GtkProjectSettings *projset,
 
 gint         gtk_project_settings_save_data(GtkProjectSettings *projset);
 
-#endif /* __GTK_PROJECT_SETTINGS_H__ */
+#endif

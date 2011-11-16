@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GTK_LTR_ASSISTANT_H__
-#define __GTK_LTR_ASSISTANT_H__
+#ifndef GTK_LTR_ASSISTANT_H
+#define GTK_LTR_ASSISTANT_H
 
 #include <glib.h>
 #include <glib-object.h>
@@ -38,8 +38,6 @@
 
 #define SELECT_GFF3_FILES "Select GFF3 files..."
 
-#define GFF3_PATTERN   "*.gff3"
-#define ESQ_PATTERN    "*.esq"
 #define BROWSE_PROJECT "Bro_wse..."
 #define BROWSE_INDEX   "Brow_se..."
 #define USE_DEFAULT    "Use default?"
@@ -154,7 +152,8 @@ GtkWidget*   gtk_ltr_assistant_new();
 
 const gchar* gtk_ltr_assistant_get_projectfile(GtkLTRAssistant *ltrassi);
 
-GtkTreeView* gtk_ltr_assistant_get_list_view_gff3files(GtkLTRAssistant *ltrassi);
+GtkTreeView* gtk_ltr_assistant_get_list_view_gff3files(
+                                                      GtkLTRAssistant *ltrassi);
 
 const gchar* gtk_ltr_assistant_get_indexname(GtkLTRAssistant *ltrassi);
 
@@ -198,4 +197,4 @@ GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi);
 
 gchar*       gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi);
 
-#endif /* __GTK_LTR_ASSISTANT_H__ */
+#endif

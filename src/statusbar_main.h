@@ -46,4 +46,4 @@ void sb_main_set_status(GUIData *ltrgui, gchar *status_msg);
 gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
                                GUIData *ltrgui);
 
-#endif /* STATUSBAR_MAIN_H */
+#endif

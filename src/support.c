@@ -52,3 +52,31 @@ void reset_progressbar(GtkWidget *progressbar)
   gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(progressbar), 0.0);
   gtk_widget_hide(progressbar);
 }
+
+GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text)
+{
+  GtkWidget *dialog,
+            *label,
+            *image,
+            *hbox;
+
+  dialog = gtk_dialog_new_with_buttons("Close project - LTRGui",
+                                       GTK_WINDOW(ltrgui->main_window),
+                                       GTK_DIALOG_MODAL |
+                                       GTK_DIALOG_DESTROY_WITH_PARENT,
+                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                       GTK_STOCK_DISCARD, GTK_RESPONSE_REJECT,
+                                       GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+                                       NULL);
+  label = gtk_label_new(text);
+  image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_INFO,
+                                   GTK_ICON_SIZE_DIALOG);
+  hbox = gtk_hbox_new(FALSE, 5);
+  gtk_container_set_border_width(GTK_CONTAINER(hbox), 10);
+  gtk_box_pack_start_defaults(GTK_BOX(hbox), image);
+  gtk_box_pack_start_defaults(GTK_BOX (hbox), label);
+  gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), hbox);
+  gtk_widget_show_all(dialog);
+
+  return dialog;
+}

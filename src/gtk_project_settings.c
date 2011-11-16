@@ -705,8 +705,9 @@ GType gtk_project_settings_get_type(void)
       0, /* n_preallocs */
       (GInstanceInitFunc) gtk_project_settings_init,
     };
-    project_settings_type = g_type_register_static(GTK_TYPE_WINDOW, "GtkProjectSettings",
-                                             &project_settings_info, 0);
+    project_settings_type = g_type_register_static(GTK_TYPE_WINDOW,
+                                                   "GtkProjectSettings",
+                                                   &project_settings_info, 0);
   }
   return project_settings_type;
 }

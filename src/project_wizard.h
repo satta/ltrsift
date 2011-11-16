@@ -39,4 +39,4 @@ struct _PWThreadData {
 
 void pw_apply(GtkAssistant *assistant, GUIData *ltrgui);
 
-#endif /* PROJECT_WIZARD_H */
+#endif

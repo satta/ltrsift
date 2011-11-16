@@ -33,13 +33,14 @@ gboolean main_window_delete_event(GT_UNUSED GtkWidget *widget,
   GtkWidget *dialog;
   gint response = GTK_RESPONSE_REJECT;
 
-  if (gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+  if (gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
     if (!gtk_ltr_families_get_projectfile(
-                                        GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+                                      GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
       dialog = unsaved_changes_dialog(ltrgui, NO_PROJECT_DIALOG);
       response = gtk_dialog_run(GTK_DIALOG(dialog));
       gtk_widget_destroy(dialog);
-    } else if (gtk_ltr_families_get_modified(GTK_LTR_FAMILIES(ltrgui->ltr_families))) {
+    } else if (gtk_ltr_families_get_modified(GTK_LTR_FAMILIES(
+                                                       ltrgui->ltrfams))) {
       dialog = unsaved_changes_dialog(ltrgui, UNSAVED_CHANGES_DIALOG);
       response = gtk_dialog_run(GTK_DIALOG(dialog));
       gtk_widget_destroy(dialog);
@@ -92,11 +93,11 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(progressbar);
 #undef GW
   sb_main_init(ltrgui);
-  mb_main_init(ltrgui); 
+  mb_main_init(ltrgui);
 
   gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
-  ltrgui->ltr_families = gtk_ltr_families_new(ltrgui->sb_main);
-  gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltr_families,
+  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main);
+  gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
   ltrgui->ltr_filter = gtk_ltr_filter_new();
   ltrgui->projset = gtk_project_settings_new();
@@ -120,7 +121,7 @@ gint main(gint argc, gchar *argv[])
   ltrgui = g_slice_new(GUIData);
   ltrgui->err = NULL;
   /* initialize libraries */
-  if(!g_thread_supported())
+  if (!g_thread_supported())
     g_thread_init(NULL);
   gdk_threads_init();
   gtk_init(&argc, &argv);

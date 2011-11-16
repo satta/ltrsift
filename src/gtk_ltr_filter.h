@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GTK_LTR_FILTER_H__
-#define __GTK_LTR_FILTER_H__
+#ifndef GTK_LTR_FILTER_H
+#define GTK_LTR_FILTER_H
 
 #include <glib.h>
 #include <glib-object.h>
@@ -56,4 +56,4 @@ GType gtk_ltr_filter_get_type(void);
 
 GtkWidget* gtk_ltr_filter_new();
 
-#endif /* __GTK_LTR_FILTER_H__ */
+#endif

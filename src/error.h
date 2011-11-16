@@ -22,4 +22,4 @@
 
 void error_handle(GUIData *ltrgui);
 
-#endif /* ERROR_H */
+#endif

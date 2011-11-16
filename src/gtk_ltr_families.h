@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef __GTK_LTR_FAMILIES_H__
-#define __GTK_LTR_FAMILIES_H__
+#ifndef GTK_LTR_FAMILIES_H
+#define GTK_LTR_FAMILIES_H
 
 #include <glib.h>
 #include <glib-object.h>
@@ -36,12 +36,12 @@
 #define IS_GTK_LTR_FAMILIES_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FAMILIES_TYPE)
 
-#define LTRFAMS_LV_CAPTION_SEQID "SeqID"
-#define LTRFAMS_LV_CAPTION_TYPE  "S"
-#define LTRFAMS_LV_CAPTION_START "Start"
-#define LTRFAMS_LV_CAPTION_END   "End"
-#define LTRFAMS_TV_CAPTION_INFO  "Attributes"
-#define LTRFAMS_TV_CAPTION_TYPE  "Feature name"
+#define LTRFAMS_LV_CAPTION_SEQID   "SeqID"
+#define LTRFAMS_LV_CAPTION_STRAND  "S"
+#define LTRFAMS_LV_CAPTION_START   "Start"
+#define LTRFAMS_LV_CAPTION_END     "End"
+#define LTRFAMS_TV_CAPTION_INFO    "Attributes"
+#define LTRFAMS_TV_CAPTION_TYPE    "Feature name"
 
 #define ATTR_RID       "ID"
 #define ATTR_CLUSTID   "clid"
@@ -51,6 +51,7 @@
 #define FNT_REPEATR    "repeat_region"
 #define FNT_LLTR       "lLTR"
 #define FNT_RLTR       "rLTR"
+#define FNT_LTRRETRO   "LTR_retrotransposon"
 #define LTRFAM_DETINFO "Detailed Information"
 
 #define TB_FAMS_ADD    "Add new family"
@@ -72,6 +73,8 @@
                        "operation and added to the 'General' tab.\n"\
                        "Are you sure?"
 
+#define ONE_FILE_DIALOG  "_One file..."
+#define SEP_FILES_DIALOG "_Separate files..."
 
 #define REMOVE_SELECTED  "Remove selected"
 #define UNCLASS_SELECTED "Unclassify selected"
@@ -221,4 +224,4 @@ void         gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
                                              GtArray *nodes,
                                              gboolean load,
                                              GtkLTRFamilies *ltrfams);
-#endif /* GTK_LTR_FAMILIES_H */
+#endif

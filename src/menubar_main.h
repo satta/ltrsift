@@ -57,6 +57,4 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
                                       GtError *err, gboolean sqlt);
 void mb_main_activate_menuitems(GUIData *ltrgui);
 
-GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
-
-#endif /* MENUBAR_MAIN_H */
+#endif
