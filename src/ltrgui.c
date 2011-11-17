@@ -96,11 +96,11 @@ static gboolean init_gui(GUIData *ltrgui)
   mb_main_init(ltrgui);
 
   gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
-  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main);
+  ltrgui->projset = gtk_project_settings_new();
+  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->progressbar, ltrgui->projset);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
   ltrgui->ltr_filter = gtk_ltr_filter_new();
-  ltrgui->projset = gtk_project_settings_new();
   ltrgui->assistant = NULL;
 
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->ltr_filter),

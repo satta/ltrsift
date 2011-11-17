@@ -27,15 +27,74 @@
 #define GUI_NAME       "LTRGui"
 #define FAS_PATTERN    ".fas"
 #define GFF3_PATTERN   ".gff3"
-#define ESQ_PATTERN    ".esq"
 #define SQLITE_PATTERN ".sqlite"
 
-void       free_gt_hash_elem(void *elem);
+#define GFF3_FILTER_PATTERN "*.gff3"
+#define ESQ_FILTER_PATTERN  "*.esq"
 
-void       create_recently_used_resource(const gchar *filename);
+#define NO_INDEX_DIALOG    "No indexname found. Do you want to select the "\
+                           "indename?"
+#define SELECT_INDEX       "Select indexname..."
+#define EXPORT_ANNO_TEXT   "Export annotation..."
+#define EXPORT_SEQS_TEXT   "Export sequences..."
+#define CHOOSE_FILEN_ANNO  "Choose filename for annotation file..."
+#define CHOOSE_FILEN_SEQS  "Choose filename for sequence file..."
+#define CHOOSE_PREFIX_ANNO "Choose prefix for annotation files..."
+#define CHOOSE_PREFIX_SEQS "Choose prefix for sequence files..."
 
-void       reset_progressbar(GtkWidget *progressbar);
+typedef struct _ThreadData ThreadData;
 
-GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
+struct _ThreadData {
+  GUIData *ltrgui;
+  GtkLTRFamilies *ltrfams;
+  GtkWidget *window,
+            *progressbar;
+  GtkTreeView *list_view;
+  GList *references;
+  GtArray *nodes,
+          *old_nodes,
+          *new_nodes;
+  GtError *err;
+  GtHashmap *sel_features,
+            *features;
+  gboolean classification,
+           projectw,
+           save,
+           save_as,
+           open,
+           bakfile;
+  gchar *current_state,
+        *filename,
+        *tmp_filename,
+        *projectfile,
+        *projectdir;
+  const gchar *fullname;
+  int had_err;
+  unsigned long progress,
+                n_features;
+};
+
+void        free_gt_hash_elem(void *elem);
+
+void        create_recently_used_resource(const gchar *filename);
+
+void        reset_progressbar(GtkWidget *progressbar);
+
+GtkWidget*  unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
+
+void        progress_dialog_init(ThreadData *threaddata);
+
+void        threaddata_delete(ThreadData *threaddata);
+
+ThreadData* threaddata_new();
+
+void        extract_project_settings(GUIData *ltrgui);
+
+GtArray*    create_region_nodes_from_node_array(GtArray *nodes);
+
+void        export_annotation(GtArray *nodes, gchar *filen, GError *err);
+
+void        export_sequences(GtArray *nodes, gchar *filen,
+                             const gchar *indexname, GError *err);
 
 #endif

@@ -343,56 +343,15 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
 /* "support" functions end */
 
 /* thread related functions start */
-gboolean gtk_ltr_families_update_progress_dialog(gpointer data)
-{
-  FamilyThreadData *threaddata = (FamilyThreadData*) data;
-  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->ltrfams->progressbar),
-                            threaddata->current_state);
-  gtk_progress_bar_set_fraction(
-                             GTK_PROGRESS_BAR(threaddata->ltrfams->progressbar),
-                                              (gdouble) threaddata->progress /
-                                    (2 * gt_array_size(threaddata->old_nodes)));
-  return TRUE;
-}
-
-static void gtk_ltr_families_progress_dialog_init(FamilyThreadData *threaddata)
-{
-  GtkWidget *label,
-            *vbox;
-  guint sid;
-
-  /* create the modal window which warns the user to wait */
-  threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
-  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
-  gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
-  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
-  g_signal_connect(threaddata->window, "delete_event",
-                   G_CALLBACK(gtk_true), NULL);
-  vbox = gtk_vbox_new(FALSE, 12);
-  /* create label */
-  label = gtk_label_new("Please wait...");
-  gtk_container_add(GTK_CONTAINER(vbox), label);
-  /* add vbox to dialog */
-  gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
-  gtk_widget_show_all(threaddata->window);
-  /* refresh the progress dialog */
-  sid = g_timeout_add(100, gtk_ltr_families_update_progress_dialog,
-                      (gpointer) threaddata);
-  g_object_set_data(G_OBJECT(threaddata->window),
-                    "source_id", GINT_TO_POINTER(sid));
-  gtk_widget_show(threaddata->ltrfams->progressbar);
-}
-
 static gboolean classify_nodes_finished(gpointer data)
 {
-    FamilyThreadData *threaddata = (FamilyThreadData*) data;
+    ThreadData *threaddata = (ThreadData*) data;
 
     g_source_remove(GPOINTER_TO_INT(
                                  g_object_get_data(G_OBJECT(threaddata->window),
                                                    "source_id")));
     gtk_widget_destroy(threaddata->window);
-    reset_progressbar(threaddata->ltrfams->progressbar);
+    reset_progressbar(threaddata->progressbar);
 
     if (!threaddata->had_err) {
       g_list_foreach(threaddata->references,
@@ -411,44 +370,36 @@ static gboolean classify_nodes_finished(gpointer data)
                   gt_error_get(threaddata->err));
       /*error_handle(threaddata->ltrfams);*/
     }
-
-    g_list_foreach(threaddata->references,
-                   (GFunc) gtk_tree_row_reference_free,
-                   NULL);
-    g_list_free(threaddata->references);
-    gt_array_delete(threaddata->old_nodes);
-    gt_error_delete(threaddata->err);
-    gt_free(threaddata->current_state);
-    gt_hashmap_delete(threaddata->sel_features);
-    g_slice_free(FamilyThreadData, threaddata);
-
+    threaddata_delete(threaddata);
     return FALSE;
 }
 
 static gpointer classify_nodes_start(gpointer data)
 {
-  FamilyThreadData *threaddata = (FamilyThreadData*) data;
-  GtNodeStream *last_stream = NULL,
-               *classify_stream = NULL,
+  ThreadData *threaddata = (ThreadData*) data;
+  GtNodeStream *classify_stream = NULL,
                *array_in_stream = NULL,
                *array_out_stream = NULL;
-  last_stream = array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
-                                                         NULL,
-                                                         threaddata->err);
-  last_stream = classify_stream = gt_ltr_classify_stream_new(last_stream,
-                                                       threaddata->sel_features,
-                                                             NULL,
-                                                     &threaddata->current_state,
-                                                          &threaddata->progress,
-                                                             threaddata->err);
-  last_stream = array_out_stream = gt_array_out_stream_new(last_stream,
-                                                          threaddata->new_nodes,
-                                                           threaddata->err);
-  threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
+
+  array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
+                                           NULL,
+                                           threaddata->err);
+  classify_stream = gt_ltr_classify_stream_new(array_in_stream,
+                                               threaddata->sel_features,
+                                               NULL,
+                                               &threaddata->current_state,
+                                               &threaddata->progress,
+                                               threaddata->err);
+  array_out_stream = gt_array_out_stream_new(classify_stream,
+                                             threaddata->new_nodes,
+                                             threaddata->err);
+  threaddata->had_err = gt_node_stream_pull(array_out_stream, threaddata->err);
+
   gt_node_stream_delete(classify_stream);
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(array_out_stream);
   g_idle_add(classify_nodes_finished, data);
+
   return NULL;
 }
 /* thread related functions end */
@@ -958,189 +909,252 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
   gtk_widget_destroy(dialog);
 }
 
-/* TODO: implement general export as gff3 function */
 static void
-gtk_ltr_families_lv_fams_pmenu_exp_fasta_clicked(GT_UNUSED GtkWidget *menuitem,
-                                              GT_UNUSED GtkLTRFamilies *ltrfams)
+gtk_ltr_families_lv_fams_pmenu_export_anno_or_seqs(GtkWidget *menuitem,
+                                                   GtkLTRFamilies *ltrfams)
 {
   GtkWidget *dialog,
             *label,
             *image,
             *hbox,
-            *toplevel;
-  gint response;
-
-  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
-  dialog = gtk_dialog_new_with_buttons("Export sequences...",
-                                       GTK_WINDOW(toplevel),
-                                       GTK_DIALOG_MODAL |
-                                       GTK_DIALOG_DESTROY_WITH_PARENT,
-                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                       ONE_FILE_DIALOG, GTK_RESPONSE_OK,
-                                       SEP_FILES_DIALOG, GTK_RESPONSE_ACCEPT,
-                                       NULL);
-  label = gtk_label_new("text");
-  image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_INFO,
-                                   GTK_ICON_SIZE_DIALOG);
-  hbox = gtk_hbox_new(FALSE, 5);
-  gtk_container_set_border_width(GTK_CONTAINER(hbox), 10);
-  gtk_box_pack_start_defaults(GTK_BOX(hbox), image);
-  gtk_box_pack_start_defaults(GTK_BOX (hbox), label);
-  gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), hbox);
-
-  response = gtk_dialog_run(GTK_DIALOG(dialog));
-  if (response == GTK_RESPONSE_OK) {
-    gtk_widget_destroy(dialog);
-  } else if (response == GTK_RESPONSE_ACCEPT) {
-    gtk_widget_destroy(dialog);
-  } else {
-    gtk_widget_destroy(dialog);
-    return;
-  }
-
-  g_warning("layb");
-}
-
-static void
-gtk_ltr_families_lv_fams_pmenu_exp_gff3_clicked(GT_UNUSED GtkWidget *menuitem,
-                                              GT_UNUSED GtkLTRFamilies *ltrfams)
-{
-  GtkWidget *dialog,
-            *label,
-            *image,
-            *hbox,
-            *toplevel;
-  gint response;
-
-  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
-  dialog = gtk_dialog_new_with_buttons("Export annotation...",
-                                       GTK_WINDOW(toplevel),
-                                       GTK_DIALOG_MODAL |
-                                       GTK_DIALOG_DESTROY_WITH_PARENT,
-                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                       ONE_FILE_DIALOG, GTK_RESPONSE_OK,
-                                       SEP_FILES_DIALOG, GTK_RESPONSE_ACCEPT,
-                                       NULL);
-  label = gtk_label_new("text");
-  image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_INFO,
-                                   GTK_ICON_SIZE_DIALOG);
-  hbox = gtk_hbox_new(FALSE, 5);
-  gtk_container_set_border_width(GTK_CONTAINER(hbox), 10);
-  gtk_box_pack_start_defaults(GTK_BOX(hbox), image);
-  gtk_box_pack_start_defaults(GTK_BOX (hbox), label);
-  gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), hbox);
-
-  response = gtk_dialog_run(GTK_DIALOG(dialog));
-  if (response == GTK_RESPONSE_OK) {
-    gtk_widget_destroy(dialog);
-  } else if (response == GTK_RESPONSE_ACCEPT) {
-    gtk_widget_destroy(dialog);
-  } else {
-    gtk_widget_destroy(dialog);
-    return;
-  }
-
-  g_warning("layb");
-
-/*GtkWidget *dialog;
+            *toplevel,
+            *projset;
   GtkTreeView *tree_view;
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtkTreeSelection *sel;
-  gchar *filename,
-        tmp_filename[BUFSIZ];
-  GList *rows,
-        *tmp;
   GtArray *nodes,
           *tmpnodes;
-  gboolean bakfile = FALSE;
+  GList *rows,
+        *tmp;
+  gchar *filename;
+  const gchar *projectfile,
+              *menu_label,
+              *indexname;
+  gint response,
+       type;
 
+  menu_label = gtk_menu_item_get_label(GTK_MENU_ITEM(menuitem));
+
+  if (g_strcmp0(menu_label, FAMS_EXPORT_ANNO) == 0)
+    type = EXPORT_ANNOTATION;
+  else if (g_strcmp0(menu_label, FAMS_EXPORT_SEQS) == 0)
+    type = EXPORT_SEQUENCES;
+
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+  projectfile = gtk_ltr_families_get_projectfile(ltrfams);
   tree_view = GTK_TREE_VIEW(ltrfams->lv_families);
   model = gtk_tree_view_get_model(tree_view);
   sel = gtk_tree_view_get_selection(tree_view);
-  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+  if (gtk_tree_selection_count_selected_rows(sel) == 0) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                    GTK_DIALOG_MODAL,
+                                    GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    "%s",
+                                    NO_DATA_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
     return;
-  nodes = gt_array_new(sizeof(GtGenomeNode*));
-  rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  tmp = rows;
-  while (tmp != NULL) {
-    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
-    gtk_tree_model_get(model, &iter,
-                       LTRFAMS_FAM_LV_NODE_ARRAY, &tmpnodes,
-                       -1);
-    gt_array_add_array(nodes, tmpnodes);
-    tmp = tmp->next;
+  } else if (gtk_tree_selection_count_selected_rows(sel) == 1)
+    response = GTK_RESPONSE_OK;
+  else {
+    if (type == EXPORT_ANNOTATION) {
+      dialog = gtk_dialog_new_with_buttons(EXPORT_ANNO_TEXT,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_DIALOG_MODAL |
+                                           GTK_DIALOG_DESTROY_WITH_PARENT,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL,
+                                           ONE_FILE_DIALOG, GTK_RESPONSE_OK,
+                                           SEP_FILES_DIALOG,
+                                           GTK_RESPONSE_ACCEPT,
+                                           NULL);
+      label = gtk_label_new("PLACEHOLDER");
+    } else if (type == EXPORT_SEQUENCES) {
+      projset = ltrfams->projset;
+      indexname =
+              gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(projset));
+      if ((g_strcmp0(indexname, "") == 0) ||
+          !g_file_test(indexname, G_FILE_TEST_EXISTS)) {
+        dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                        GTK_DIALOG_MODAL ||
+                                        GTK_DIALOG_DESTROY_WITH_PARENT,
+                                        GTK_MESSAGE_QUESTION,
+                                        GTK_BUTTONS_YES_NO,
+                                        "%s",
+                                        NO_INDEX_DIALOG);
+        gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+        gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+        if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
+          gtk_widget_destroy(dialog);
+          return;
+        } else {
+          gtk_widget_destroy(dialog);
+
+          dialog = gtk_file_chooser_dialog_new(SELECT_INDEX,
+                                               GTK_WINDOW(toplevel),
+                                               GTK_FILE_CHOOSER_ACTION_SAVE,
+                                               GTK_STOCK_CANCEL,
+                                               GTK_RESPONSE_CANCEL, "Sele_ct",
+                                               GTK_RESPONSE_ACCEPT, NULL);
+          if (projectfile != NULL)
+            gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                               g_path_get_dirname(projectfile));
+          else
+            gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                                g_get_home_dir());
+          GtkFileFilter *esq_file_filter;
+          esq_file_filter = gtk_file_filter_new();
+          gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
+          gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
+          gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog),
+                                      esq_file_filter);
+          if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+            gchar *tmpname, *tmp;
+            tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+            tmp = g_strndup(tmpname, strlen(tmpname) - 4);
+
+            gtk_widget_destroy(dialog);
+            gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(projset),
+                                                  tmp);
+            g_free(tmp);
+            g_free(tmpname);
+            indexname =
+              gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(projset));
+          } else {
+            gtk_widget_destroy(dialog);
+            return;
+          }
+        }
+      }
+      dialog = gtk_dialog_new_with_buttons(EXPORT_SEQS_TEXT,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_DIALOG_MODAL |
+                                           GTK_DIALOG_DESTROY_WITH_PARENT,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL,
+                                           ONE_FILE_DIALOG, GTK_RESPONSE_OK,
+                                           SEP_FILES_DIALOG,
+                                           GTK_RESPONSE_ACCEPT,
+                                           NULL);
+      label = gtk_label_new("PLACEHOLDER");
+    }
+
+    image = gtk_image_new_from_stock(GTK_STOCK_DIALOG_INFO,
+                                     GTK_ICON_SIZE_DIALOG);
+    hbox = gtk_hbox_new(FALSE, 5);
+    gtk_container_set_border_width(GTK_CONTAINER(hbox), 10);
+    gtk_box_pack_start_defaults(GTK_BOX(hbox), image);
+    gtk_box_pack_start_defaults(GTK_BOX (hbox), label);
+    gtk_box_pack_start_defaults(GTK_BOX(GTK_DIALOG (dialog)->vbox), hbox);
+    gtk_widget_show_all(dialog);
+
+    response = gtk_dialog_run(GTK_DIALOG(dialog));
   }
-  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-  gt_genome_nodes_sort_stable(nodes);
+  if (response == GTK_RESPONSE_OK) {
+    gtk_widget_destroy(dialog);
+    /* GTK_RESPONSE_OK == Export to one file */
+    if (type == EXPORT_ANNOTATION)
+      dialog = gtk_file_chooser_dialog_new(CHOOSE_FILEN_ANNO,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_FILE_CHOOSER_ACTION_SAVE,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL, "Export",
+                                           GTK_RESPONSE_ACCEPT, NULL);
+    else if (type == EXPORT_SEQUENCES)
+      dialog = gtk_file_chooser_dialog_new(CHOOSE_FILEN_SEQS,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_FILE_CHOOSER_ACTION_SAVE,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL, "Export",
+                                           GTK_RESPONSE_ACCEPT, NULL);
+  } else if (response == GTK_RESPONSE_ACCEPT) {
+    gtk_widget_destroy(dialog);
+    /* GTK_RESPONSE_ACCEPT == Export to separate files */
+    if (type == EXPORT_ANNOTATION)
+      dialog = gtk_file_chooser_dialog_new(CHOOSE_PREFIX_ANNO,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_FILE_CHOOSER_ACTION_SAVE,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL, "Export",
+                                           GTK_RESPONSE_ACCEPT, NULL);
+    else if (type == EXPORT_SEQUENCES)
+      dialog = gtk_file_chooser_dialog_new(CHOOSE_PREFIX_SEQS,
+                                           GTK_WINDOW(toplevel),
+                                           GTK_FILE_CHOOSER_ACTION_SAVE,
+                                           GTK_STOCK_CANCEL,
+                                           GTK_RESPONSE_CANCEL, "Export",
+                                           GTK_RESPONSE_ACCEPT, NULL);
+  } else {
+    gtk_widget_destroy(dialog);
+    return;
+  }
 
-  dialog = gtk_file_chooser_dialog_new("Export as GFF3...",
-                                       NULL,
-                                       GTK_FILE_CHOOSER_ACTION_SAVE,
-                                       GTK_STOCK_CANCEL,
-                                       GTK_RESPONSE_CANCEL, "Export",
-                                       GTK_RESPONSE_ACCEPT, NULL);
-
+  if (projectfile != NULL)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                        g_path_get_dirname(projectfile));
+  else
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
+                                        g_get_home_dir());
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
+  } else {
+    gtk_widget_destroy(dialog);
+    return;
+  }
 
-    if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
-      gchar buffer[BUFSIZ];
-      g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG, filename);
-      dialog = gtk_message_dialog_new(NULL,
-                                      GTK_DIALOG_MODAL |
-                                      GTK_DIALOG_DESTROY_WITH_PARENT,
-                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                      "%s",
-                                      buffer);
-      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
-      gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-      if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_NO) {
-        gtk_widget_destroy(dialog);
-        return;
-      } else {
-        g_snprintf(tmp_filename, BUFSIZ, "%s.bak", filename);
-        g_rename(filename, tmp_filename);
-        bakfile = TRUE;
+  switch (response) {
+    case GTK_RESPONSE_OK:
+      nodes = gt_array_new(sizeof(GtGenomeNode*));
+      rows = gtk_tree_selection_get_selected_rows(sel, &model);
+      tmp = rows;
+      while (tmp != NULL) {
+        gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+        gtk_tree_model_get(model, &iter,
+                           LTRFAMS_FAM_LV_NODE_ARRAY, &tmpnodes,
+                           -1);
+        gt_array_add_array(nodes, tmpnodes);
+        tmp = tmp->next;
       }
-      gtk_widget_destroy(dialog);
-    }
-    GtNodeStream *last_stream = NULL,
-                 *array_in_stream = NULL,
-                 *gff3_out_stream = NULL;
-    GtFile *outfp;
-    int had_err;
-    unsigned long i;
+      g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+      gt_genome_nodes_sort_stable(nodes);
+      if (type == EXPORT_ANNOTATION)
+        export_annotation(nodes, filename, ltrfams->gerr);
+      else if (type == EXPORT_SEQUENCES)
+        export_sequences(nodes, filename, indexname, ltrfams->gerr);
+      gt_array_delete(nodes);
+      g_free(filename);
+      break;
+    case GTK_RESPONSE_ACCEPT:
+      rows = gtk_tree_selection_get_selected_rows(sel, &model);
+      tmp = rows;
+      while (tmp != NULL) {
+        gchar *famname,
+              *filen;
 
-    outfp = gt_file_new(filename, "w", ltrfams->err);
-
-    for (i = 0; i < gt_array_size(nodes); i++) {
-      GtGenomeNode *gn;
-      gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
-    }
-
-    last_stream = array_in_stream = gt_array_in_stream_new(nodes, NULL,
-                                                           ltrfams->err);
-    last_stream = gff3_out_stream = gt_gff3_out_stream_new(last_stream, outfp);
-
-    had_err = gt_node_stream_pull(last_stream, ltrfams->err);
-    gt_file_delete(outfp);
-
-    if (had_err) {
-      if (bakfile) {
-        g_rename(tmp_filename, filename);
+        gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+        gtk_tree_model_get(model, &iter,
+                           LTRFAMS_FAM_LV_OLDNAME, &famname,
+                           LTRFAMS_FAM_LV_NODE_ARRAY, &nodes,
+                           -1);
+        gt_genome_nodes_sort_stable(nodes);
+        filen = g_strdup_printf("%s_%s", filename, famname);
+        if (type == EXPORT_ANNOTATION)
+          export_annotation(nodes, filen, ltrfams->gerr);
+        else if (type == EXPORT_SEQUENCES)
+          export_sequences(nodes, filen, indexname, ltrfams->gerr);
+        g_free(famname);
+        g_free(filen);
+        tmp = tmp->next;
       }
-      g_set_error(&ltrfams->gerr,
-                  G_FILE_ERROR,
-                  0,
-                  "Error while exporting data: %s",
-                  gt_error_get(ltrfams->err));*/
-      /*error_handle(ltrfams->gerr);*/
-    /*}
-    gt_node_stream_delete(array_in_stream);
-    gt_node_stream_delete(gff3_out_stream);
-  }*/
+      g_free(filename);
+      g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+    default:
+      return;
+  }
 }
 
 static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
@@ -1150,27 +1164,27 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
   GtkWidget *menu, *menuitem;
 
   menu = gtk_menu_new();
-  menuitem = gtk_menu_item_new_with_label("Edit name");
+  menuitem = gtk_menu_item_new_with_label(FAMS_EDIT_NAME);
   g_signal_connect(menuitem, "activate",
                    G_CALLBACK(gtk_ltr_families_tv_fams_pmenu_edit_clicked),
                    tree_view);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
-  menuitem = gtk_menu_item_new_with_label("Remove selected");
+  menuitem = gtk_menu_item_new_with_label(FAMS_REMOVE_SEL);
   g_signal_connect(menuitem, "activate",
                    G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_remove_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
-  menuitem = gtk_menu_item_new_with_label("Export sequences for selected...");
+  menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_SEQS);
   g_signal_connect(menuitem, "activate",
-                   (GCallback) gtk_ltr_families_lv_fams_pmenu_exp_fasta_clicked,
+                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_anno_or_seqs),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
-  menuitem = gtk_menu_item_new_with_label("Export annotation for selected...");
+  menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_ANNO);
   g_signal_connect(menuitem, "activate",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_exp_gff3_clicked),
+                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_anno_or_seqs),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
@@ -1374,7 +1388,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   GtGenomeNode *gn;
   GtArray *nodes;
   GtHashmap *sel_features = NULL;
-  FamilyThreadData *threaddata;
+  ThreadData *threaddata;
   GList *rows,
         *tmp,
         *references = NULL,
@@ -1422,19 +1436,19 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   }
   gt_genome_nodes_sort_stable(nodes);
 
-  threaddata = g_slice_new(FamilyThreadData);
+  threaddata = threaddata_new();
   threaddata->ltrfams = ltrfams;
+  threaddata->progressbar = ltrfams->progressbar;
   threaddata->old_nodes = nodes;
   threaddata->new_nodes = gt_array_new(sizeof(GtGenomeNode*));
   threaddata->err = gt_error_new();
+  threaddata->classification = TRUE;
   threaddata->current_state = gt_cstr_dup("Starting classification");
   threaddata->references = references;
   threaddata->list_view = list_view;
   threaddata->sel_features = sel_features;
-  threaddata->progress = 0;
-  threaddata->had_err = 0;
 
-  gtk_ltr_families_progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata);
 
   g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE, NULL);
 
@@ -2814,7 +2828,7 @@ GType gtk_ltr_families_get_type(void)
   return ltrfams_type;
 }
 
-GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar)
+GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar, GtkWidget *projset)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
@@ -2827,5 +2841,6 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar)
   ltrfams->projectfile = NULL;
   ltrfams->modified = FALSE;
   ltrfams->progressbar = progressbar;
+  ltrfams->projset = projset;
   return GTK_WIDGET(ltrfams);
 }

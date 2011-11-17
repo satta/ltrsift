@@ -242,9 +242,8 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   GtkTreeSelection *sel;
   GtkTreeModel *model;
   GList *rows, *tmp;
-  GtNodeStream *last_stream = NULL,
-               *gff3_in_stream = NULL,
-               *ltrgui_preprocess_stream = NULL;
+  GtNodeStream *gff3_in_stream = NULL,
+               *preprocess_stream = NULL;
   GtHashmap *features;
   GtError *err;
   const char **gff3_files;
@@ -275,16 +274,14 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
 
-  last_stream = gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files,
-                                                                gff3_files);
+  gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files, gff3_files);
   features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-  last_stream = ltrgui_preprocess_stream =
-                                  gt_ltrgui_preprocess_stream_new(last_stream,
-                                                                  features,
-                                                                  &n,
-                                                                  TRUE,
-                                                                  err);
-  had_err = gt_node_stream_pull(last_stream, err);
+  preprocess_stream = gt_preprocess_stream_new(gff3_in_stream,
+                                                             features,
+                                                             &n,
+                                                             TRUE,
+                                                             err);
+  had_err = gt_node_stream_pull(preprocess_stream, err);
 
   gtk_list_store_clear(GTK_LIST_STORE(
                          gtk_tree_view_get_model(
@@ -296,7 +293,7 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   gt_error_delete(err);
   gt_hashmap_delete(features);
   gt_node_stream_delete(gff3_in_stream);
-  gt_node_stream_delete(ltrgui_preprocess_stream);
+  gt_node_stream_delete(preprocess_stream);
   for (i = 0; i < num_of_files; i++)
     g_free((gpointer) gff3_files[i]);
   g_free(gff3_files);
@@ -611,8 +608,8 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
                                         ltrassi->last_dir);
   gff3_file_filter = gtk_file_filter_new();
-  gtk_file_filter_set_name(gff3_file_filter, GFF3_PATTERN);
-  gtk_file_filter_add_pattern(gff3_file_filter, GFF3_PATTERN);
+  gtk_file_filter_set_name(gff3_file_filter, GFF3_FILTER_PATTERN);
+  gtk_file_filter_add_pattern(gff3_file_filter, GFF3_FILTER_PATTERN);
   gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), gff3_file_filter);
   gint result = gtk_dialog_run(GTK_DIALOG(filechooser));
 
@@ -662,8 +659,8 @@ static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
   if (g_strcmp0(gtk_button_get_label(button), BROWSE_PROJECT) != 0) {
     GtkFileFilter *esq_file_filter;
     esq_file_filter = gtk_file_filter_new();
-    gtk_file_filter_set_name(esq_file_filter, ESQ_PATTERN);
-    gtk_file_filter_add_pattern(esq_file_filter, ESQ_PATTERN);
+    gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
+    gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
     gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), esq_file_filter);
     gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(filechooser), FALSE);
   }
@@ -827,7 +824,7 @@ gchar* gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi)
        reward,
        num_threads;
   gchar blast_call[BUFSIZ];
-  gchar *moreblast;
+  gchar *moreblast = NULL;
   gboolean dust,
            first = TRUE;
   gdouble evalue,
@@ -880,8 +877,9 @@ gchar* gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi)
       moreblast = g_strjoin(" ", moreblast, (gchar*) key, (gchar*) value, NULL);
     keys = keys->next;
   }
+  if (moreblast)
+    sprintf(blast_call, "%s %s", blast_call, moreblast);
 
-  sprintf(blast_call, "%s %s", blast_call, moreblast);
   /*g_free(moreblast);*/
 
   return g_strdup(blast_call);

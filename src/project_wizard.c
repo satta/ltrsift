@@ -20,165 +20,19 @@
 #include "project_wizard.h"
 #include "support.h"
 
-void extract_project_settings(GUIData *ltrgui)
+static gboolean project_wizard_finished(gpointer data)
 {
-  GtkLTRAssistant *ltrassi = GTK_LTR_ASSISTANT(ltrgui->assistant);
-  gint psmall,
-       plarge,
-       gapopen,
-       gapextend,
-       wordsize,
-       penalty,
-       reward,
-       num_threads,
-       num_of_gff3files,
-       num_of_features;
-  const gchar *projectfile,
-              *indexname,
-              *moreblast;
-  gchar **gff3files,
-        **features;
-  GtkTreeView *list_view;
-  GtkTreeSelection *sel;
-  GtkTreeIter iter;
-  GtkTreeModel *model;
-  gboolean dust, clustering, classification;
-  gdouble evalue,
-          seqid,
-          xdrop,
-          ltrtol,
-          candtol;
-  GList *rows,
-        *tmp;
-  gint i = 0;
-
-  projectfile = gtk_ltr_assistant_get_projectfile(ltrassi);
-  if (!g_str_has_suffix(projectfile, SQLITE_PATTERN)) {
-    projectfile = g_strconcat(projectfile, SQLITE_PATTERN, NULL);
-  }
-  list_view = gtk_ltr_assistant_get_list_view_gff3files(ltrassi);
-  sel = gtk_tree_view_get_selection(list_view);
-  gtk_tree_selection_select_all(sel);
-  num_of_gff3files = gtk_tree_selection_count_selected_rows(sel);
-  rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  gff3files = g_malloc((size_t) (num_of_gff3files + 1) * sizeof (gchar*));
-  tmp = rows;
-  while (tmp != NULL) {
-    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
-    gtk_tree_model_get(model, &iter,
-                       0, &gff3files[i],
-                       -1);
-    i++;
-    tmp = tmp->next;
-  }
-  gff3files[i] = NULL;
-  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-  g_list_free(rows);
-  i = 0;
-  indexname = gtk_ltr_assistant_get_indexname(ltrassi);
-  clustering = gtk_ltr_assistant_get_clustering(ltrassi);
-
-  evalue = gtk_ltr_assistant_get_evalue(ltrassi);
-  dust =  gtk_ltr_assistant_get_dust(ltrassi);
-  gapopen = gtk_ltr_assistant_get_gapopen(ltrassi);
-  gapextend = gtk_ltr_assistant_get_gapextend(ltrassi);
-  xdrop = gtk_ltr_assistant_get_xdrop(ltrassi);
-  penalty = gtk_ltr_assistant_get_penalty(ltrassi);
-  reward = gtk_ltr_assistant_get_reward(ltrassi);
-  num_threads = gtk_ltr_assistant_get_threads(ltrassi);
-  wordsize = gtk_ltr_assistant_get_wordsize(ltrassi);
-  seqid = gtk_ltr_assistant_get_seqid(ltrassi);
-  moreblast = gtk_ltr_assistant_get_moreblast(ltrassi);
-  psmall = gtk_ltr_assistant_get_psmall(ltrassi);
-  plarge = gtk_ltr_assistant_get_plarge(ltrassi);
-  classification = gtk_ltr_assistant_get_classification(ltrassi);
-
-  ltrtol = gtk_ltr_assistant_get_ltrtol(ltrassi);
-  candtol = gtk_ltr_assistant_get_candtol(ltrassi);
-  list_view = gtk_ltr_assistant_get_list_view_features(ltrassi);
-  sel = gtk_tree_view_get_selection(list_view);
-  num_of_features = gtk_tree_selection_count_selected_rows(sel);
-  rows = gtk_tree_selection_get_selected_rows(sel, &model);
-  features = g_malloc((size_t) (num_of_features + 1) * sizeof (gchar*));
-  tmp = rows;
-  while (tmp != NULL) {
-    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
-    gtk_tree_model_get(model, &iter,
-                       0, &features[i],
-                       -1);
-    i++;
-    tmp = tmp->next;
-  }
-  features[i] = NULL;
-  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
-  g_list_free(rows);
-
-  gtk_project_settings_set_data(GTK_PROJECT_SETTINGS(ltrgui->projset),
-                                projectfile, gff3files, indexname, clustering,
-                                evalue, dust, gapopen, gapextend, xdrop,
-                                penalty, reward, num_threads, wordsize,
-                                seqid, moreblast, psmall, plarge,
-                                classification, ltrtol, candtol, features);
-
-  for (i = 0; i < num_of_gff3files; i++)
-    g_free(gff3files[i]);
-  g_free(gff3files);
-  for (i = 0; i < num_of_features; i++)
-    g_free(features[i]);
-  g_free(features);
-}
-
-gboolean pw_update_progress_dialog(gpointer data)
-{
-  PWThreadData *threaddata = (PWThreadData*) data;
-  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->ltrgui->progressbar),
-                            threaddata->current_state);
-  gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->ltrgui->progressbar));
-  return TRUE;
-}
-
-static void pw_progress_dialog_init(PWThreadData *threaddata)
-{
-  GtkWidget *label,
-            *vbox;
-  guint sid;
-
-  /* create the modal window which warns the user to wait */
-  threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
-  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
-  gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
-  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
-  g_signal_connect(threaddata->window, "delete_event",
-                   G_CALLBACK(gtk_true), NULL);
-  vbox = gtk_vbox_new(FALSE, 12);
-  /* create label */
-  label = gtk_label_new("Please wait...");
-  gtk_container_add(GTK_CONTAINER(vbox), label);
-  /* add vbox to dialog */
-  gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
-  gtk_widget_show_all(threaddata->window);
-  /* refresh the progress dialog */
-  sid = g_timeout_add(100, pw_update_progress_dialog,
-                      (gpointer) threaddata);
-  g_object_set_data(G_OBJECT(threaddata->window),
-                    "source_id", GINT_TO_POINTER(sid));
-  gtk_widget_show(threaddata->ltrgui->progressbar);
-}
-
-static gboolean assistant_finish(gpointer data)
-{
-  PWThreadData *threaddata = (PWThreadData*) data;
+  ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
   gtk_widget_destroy(threaddata->window);
-  reset_progressbar(threaddata->ltrgui->progressbar);
+  reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltrfams =
-                          gtk_ltr_families_new(threaddata->ltrgui->progressbar);
+    threaddata->ltrgui->ltrfams = gtk_ltr_families_new(threaddata->progressbar,
+                                                   threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
                        TRUE, TRUE, 0);
@@ -193,20 +47,26 @@ static gboolean assistant_finish(gpointer data)
                                      g_strdup(threaddata->fullname));
     extract_project_settings(threaddata->ltrgui);
     mb_main_file_save_activate(NULL, threaddata->ltrgui);
+    create_recently_used_resource(threaddata->fullname);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
+  } else {
+    g_set_error(&threaddata->ltrgui->err,
+                G_FILE_ERROR,
+                0,
+                "Error: %s",
+                gt_error_get(threaddata->err));
+    gdk_threads_enter();
+    error_handle(threaddata->ltrgui);
+    gdk_threads_leave();
   }
-  g_free(threaddata->projectfile);
-  g_free(threaddata->projectdir);
-  gt_free(threaddata->current_state);
-  gt_error_delete(threaddata->err);
-  g_slice_free(PWThreadData, threaddata);
+  threaddata_delete(threaddata);
 
   return FALSE;
 }
 
-static gpointer assistant_start(gpointer data)
+static gpointer project_wizard_start(gpointer data)
 {
-  PWThreadData *threaddata = (PWThreadData*) data;
+  ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrassi = threaddata->ltrgui->assistant;
   GtkTreeSelection *sel;
   GtkTreeView *list_view;
@@ -219,7 +79,7 @@ static gpointer assistant_start(gpointer data)
                *gff3_in_stream = NULL,
                *ltr_cluster_stream = NULL,
                *ltr_classify_stream = NULL,
-               *ltrgui_preprocess_stream = NULL,
+               *preprocess_stream = NULL,
                *ltrgui_array_out_stream = NULL;
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
@@ -403,12 +263,11 @@ static gpointer assistant_start(gpointer data)
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-    last_stream = ltrgui_preprocess_stream =
-                                    gt_ltrgui_preprocess_stream_new(last_stream,
-                                                                    features,
-                                                       &threaddata->n_features,
-                                                                    FALSE,
-                                                              threaddata->err);
+    last_stream = preprocess_stream = gt_preprocess_stream_new(last_stream,
+                                                               features,
+                                                        &threaddata->n_features,
+                                                               FALSE,
+                                                               threaddata->err);
     last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
                                                                     nodes,
                                                                threaddata->err);
@@ -426,7 +285,7 @@ static gpointer assistant_start(gpointer data)
   gt_node_stream_delete(ltr_cluster_stream);
   gt_node_stream_delete(gff3_in_stream);
   gt_node_stream_delete(ltrgui_array_out_stream);
-  gt_node_stream_delete(ltrgui_preprocess_stream);
+  gt_node_stream_delete(preprocess_stream);
   gt_encseq_loader_delete(el);
   gt_encseq_delete(encseq);
   gt_hashmap_delete(sel_features);
@@ -437,14 +296,14 @@ static gpointer assistant_start(gpointer data)
   g_free(tmp_gff3);
   gt_str_delete(tmpdirprefix);
 
-  g_idle_add(assistant_finish, data);
+  g_idle_add(project_wizard_finished, data);
   return NULL;
 }
 
-void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
+void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
 {
+  ThreadData *threaddata;
   GtkWidget *dialog;
-
   const gchar *fullname;
   gchar *projectdir,
         *projectfile,
@@ -497,17 +356,17 @@ void pw_apply(GtkAssistant *assistant, GUIData *ltrgui)
     return;
   }
 
-  PWThreadData *threaddata;
-  threaddata = g_slice_new(PWThreadData);
+  threaddata = threaddata_new();
   threaddata->ltrgui = ltrgui;
-  threaddata->had_err = 0;
   threaddata->fullname = fullname;
+  threaddata->progressbar = ltrgui->progressbar;
   threaddata->projectfile = projectfile;
   threaddata->projectdir = projectdir;
+  threaddata->projectw = TRUE;
   threaddata->n_features = LTRFAMS_LV_N_COLUMS;
   threaddata->current_state = gt_cstr_dup("Starting...");
   threaddata->err = gt_error_new();
-  pw_progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata);
 
-  g_thread_create(assistant_start, (gpointer) threaddata, FALSE, NULL);
+  g_thread_create(project_wizard_start, (gpointer) threaddata, FALSE, NULL);
 }

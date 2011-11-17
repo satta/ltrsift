@@ -1,6 +1,6 @@
 /*
-  Copyright (c) 2011-2012 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
-  Copyright (c) 2011-2012 Center for Bioinformatics, University of Hamburg
+  Copyright (c) 2011 Sascha Kastens <sascha.kastens@studium.uni-hamburg.de>
+  Copyright (c) 2011 Center for Bioinformatics, University of Hamburg
 
   Permission to use, copy, modify, and distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -15,11 +15,19 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "ltrgui.h"
+#ifndef PREPROCESS_STREAM_H
+#define PREPROCESS_STREAM_H
 
-#ifndef PROJECT_WIZARD_H
-#define PROJECT_WIZARD_H
+#include "genometools.h"
 
-void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui);
+typedef struct GtPreprocessStream GtPreprocessStream;
+
+const GtNodeStreamClass* gt_preprocess_stream_class(void);
+
+GtNodeStream* gt_preprocess_stream_new(GtNodeStream *in_stream,
+                                       GtHashmap *features,
+                                       unsigned long *num,
+                                       bool all_features,
+                                       GtError *err);
 
 #endif

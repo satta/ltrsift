@@ -79,10 +79,19 @@
 #define REMOVE_SELECTED  "Remove selected"
 #define UNCLASS_SELECTED "Unclassify selected"
 
+#define FAMS_EXPORT_SEQS "Export sequences for selected..."
+#define FAMS_EXPORT_ANNO "Export annotation for selected..."
+#define FAMS_EDIT_NAME   "Edit name"
+#define FAMS_REMOVE_SEL  "Remove selected"
+
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
-typedef struct _FamilyThreadData FamilyThreadData;
+
+enum {
+ EXPORT_ANNOTATION = 0,
+ EXPORT_SEQUENCES
+};
 
 enum {
   LTRFAMS_LV_NODE = 0,
@@ -155,6 +164,8 @@ struct _GtkLTRFamilies
   gboolean modified;
   gchar *projectfile;
   GtkWidget *progressbar;
+  GtkWidget *projset;
+
 };
 
 struct _GtkLTRFamiliesClass
@@ -163,31 +174,16 @@ struct _GtkLTRFamiliesClass
   void (* gtk_ltr_families) (GtkLTRFamilies *ltrfams);
 };
 
-struct _FamilyThreadData
-{
-  GtkLTRFamilies *ltrfams;
-  GtkWidget *window;
-  GtArray *old_nodes,
-          *new_nodes;
-  GtHashmap *sel_features;
-  GtError *err;
-  GList *references;
-  GtkTreeView *list_view;
-  gchar *current_state;
-  unsigned long progress;
-  int had_err;
-};
-
 GType        gtk_ltr_families_get_type(void);
 
-GtkWidget*   gtk_ltr_families_new(GtkWidget *progressbar);
+GtkWidget*   gtk_ltr_families_new(GtkWidget *progressbar, GtkWidget *projset);
 
 char*        double_underscores(const char *str);
 
 void         gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
-                                           GtArray *nodes,
-                                           GtHashmap *features,
-                                           unsigned long noc);
+                                             GtArray *nodes,
+                                             GtHashmap *features,
+                                             unsigned long noc);
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 

@@ -28,6 +28,7 @@
 #include "gtk_ltr_families.h"
 #include "gtk_ltr_filter.h"
 #include "gtk_project_settings.h"
+#include "preprocess_stream.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
@@ -50,14 +51,12 @@
 
 #define UNTITLED_PROJECT "Untitled project"
 
-#define NO_DATA_DIALOG          "No data for export!"
+#define NO_DATA_DIALOG          "No data for export selected!"
 #define UNSAVED_CHANGES_DIALOG  "The project data has been modified.\nDo you "\
                                 "want to save your changes or discard them?"
 #define NO_PROJECT_DIALOG       "The data has not been saved as a project yet."\
                                 "\n Do you want to save the data as a project "\
                                 "or discard them?"
-#define NO_INDEX_DIALOG         "No indexname found. Do you want to select "\
-                                "the indename?"
 
 typedef struct _GUIData GUIData;
 

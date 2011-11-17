@@ -166,7 +166,7 @@
                                 <property name="sensitive">False</property>
                                 <property name="can_focus">False</property>
                                 <property name="use_action_appearance">False</property>
-                                <property name="label" translatable="yes">Fas_ta...</property>
+                                <property name="label" translatable="yes">Sequences as FAS_TA...</property>
                                 <property name="use_underline">True</property>
                                 <signal name="activate" handler="mb_main_file_export_fasta_activate" swapped="no"/>
                                 <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>
@@ -179,7 +179,7 @@
                                 <property name="sensitive">False</property>
                                 <property name="can_focus">False</property>
                                 <property name="use_action_appearance">False</property>
-                                <property name="label" translatable="yes">GFF_3...</property>
+                                <property name="label" translatable="yes">Annotation as GFF_3...</property>
                                 <property name="use_underline">True</property>
                                 <signal name="activate" handler="mb_main_file_export_gff3_activate" swapped="no"/>
                                 <signal name="enter-notify-event" handler="sb_main_menuhints" swapped="no"/>

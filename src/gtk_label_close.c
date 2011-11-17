@@ -69,21 +69,6 @@ static void gtk_label_close_init(GtkLabelClose *labelclose)
   gtk_widget_show_all(GTK_WIDGET(labelclose));
 }
 
-/*static void gtk_label_close_class_init (GtkLabelCloseClass *klass)
-{
-
-  labelclose_signals[LABELCLOSE_CLICKED] =
-             g_signal_new("labelclose_clicked",
-                          G_TYPE_FROM_CLASS (klass),
-                          G_SIGNAL_RUN_FIRST | G_SIGNAL_ACTION,
-                          G_STRUCT_OFFSET (GtkLabelCloseClass, gtk_label_close),
-                          NULL,
-                          NULL,
-                          g_cclosure_marshal_VOID__VOID,
-                          G_TYPE_NONE,
-                          0);
-}*/
-
 GType gtk_label_close_get_type(void)
 {
   static GType labelclose_type = 0;
