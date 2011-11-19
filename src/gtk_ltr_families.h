@@ -43,20 +43,12 @@
 #define LTRFAMS_TV_CAPTION_INFO    "Attributes"
 #define LTRFAMS_TV_CAPTION_TYPE    "Feature name"
 
-#define ATTR_RID       "ID"
-#define ATTR_CLUSTID   "clid"
-#define ATTR_PFAMN     "name"
-#define FNT_PROTEINM   "protein_match"
-#define FNT_LTR        "long_terminal_repeat"
-#define FNT_REPEATR    "repeat_region"
-#define FNT_LLTR       "lLTR"
-#define FNT_RLTR       "rLTR"
-#define FNT_LTRRETRO   "LTR_retrotransposon"
 #define LTRFAM_DETINFO "Detailed Information"
 
 #define TB_FAMS_ADD    "Add new family"
 #define TB_FAMS_REMOVE "Remove families with less than three members"
-#define TB_NB_NEW_FAM  "Check for new family with selected candidates"
+#define TB_NB_NEW_FAM  "Search new families for selected candidates"
+#define TB_NB_FL_CANDS "Determine full length candidates for current family"
 
 #define FAMS_RM_DIALOG    "You're about to remove %d family/families. All "\
                           "members (if any) will be unclassified after this "\
@@ -96,6 +88,7 @@ enum {
 enum {
   LTRFAMS_LV_NODE = 0,
   LTRFAMS_LV_ROWREF,
+  LTRFAMS_LV_FLCAND,
   LTRFAMS_LV_SEQID,
   LTRFAMS_LV_STRAND,
   LTRFAMS_LV_START,
@@ -149,6 +142,7 @@ struct _GtkLTRFamilies
   GtkWidget *nb_family;
   GtkWidget *tb_nb_family;
   GtkToolItem *new_fam;
+  GtkToolItem *fl_cands;
   GtkWidget *tv_details;
   GtkWidget *image_area;
   GtkWidget *hpaned;

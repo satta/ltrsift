@@ -42,6 +42,17 @@
 #define CHOOSE_PREFIX_ANNO "Choose prefix for annotation files..."
 #define CHOOSE_PREFIX_SEQS "Choose prefix for sequence files..."
 
+#define ATTR_RID       "ID"
+#define ATTR_CLUSTID   "clid"
+#define ATTR_PFAMN     "name"
+#define ATTR_FULLLEN   "flcand"
+#define FNT_PROTEINM   "protein_match"
+#define FNT_LTR        "long_terminal_repeat"
+#define FNT_REPEATR    "repeat_region"
+#define FNT_LLTR       "lLTR"
+#define FNT_RLTR       "rLTR"
+#define FNT_LTRRETRO   "LTR_retrotransposon"
+
 typedef struct _ThreadData ThreadData;
 
 struct _ThreadData {
@@ -67,7 +78,8 @@ struct _ThreadData {
         *filename,
         *tmp_filename,
         *projectfile,
-        *projectdir;
+        *projectdir,
+        *fam_prefix;
   const gchar *fullname;
   int had_err;
   unsigned long progress,
@@ -75,6 +87,9 @@ struct _ThreadData {
 };
 
 void        free_gt_hash_elem(void *elem);
+
+gboolean    entry_in_list_view(GtkTreeModel *model, const gchar *entry,
+                               gint column_no);
 
 void        create_recently_used_resource(const gchar *filename);
 
@@ -96,5 +111,9 @@ void        export_annotation(GtArray *nodes, gchar *filen, GError *err);
 
 void        export_sequences(GtArray *nodes, gchar *filen,
                              const gchar *indexname, GError *err);
+
+void        determine_full_length_candidates(GtArray *nodes,
+                                             gfloat ltrtolerance,
+                                             gfloat lentolerance);
 
 #endif

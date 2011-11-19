@@ -300,35 +300,6 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   ltrassi->added_features = TRUE;
 }
 
-static gboolean file_in_list_view(GtkTreeModel *model, const gchar *file)
-{
-  GtkTreeIter iter;
-  gchar *name;
-  gboolean valid;
-
-  valid = gtk_tree_model_get_iter_first(model, &iter);
-  if (valid) {
-    gtk_tree_model_get(model, &iter,
-                       0, &name,
-                       -1);
-    if (g_strcmp0(name, file) == 0) {
-      g_free(name);
-      return TRUE;
-    }
-    while (gtk_tree_model_iter_next(model, &iter)) {
-      gtk_tree_model_get(model, &iter,
-                         0, &name,
-                         -1);
-      if (g_strcmp0(name, file) == 0) {
-        g_free(name);
-        return TRUE;
-      }
-      g_free(name);
-    }
-  }
-  return FALSE;
-}
-
 static void remove_list_view_row(GtkTreeRowReference *rowref,
                                  GtkTreeModel *model)
 {
@@ -339,6 +310,7 @@ static void remove_list_view_row(GtkTreeRowReference *rowref,
   gtk_tree_model_get_iter(model, &iter, path);
 
   gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+  gtk_tree_path_free(path);
 }
 
 static void update_cluster_overview(GtkLTRAssistant *ltrassi)
@@ -620,7 +592,7 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
     while (filenames != NULL) {
       gchar *file = (gchar*) filenames->data;
 
-      if (!file_in_list_view(model, file)) {
+      if (!entry_in_list_view(model, file, 0)) {
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            0, file,
@@ -1449,7 +1421,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
        gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrassi->list_view_features));
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
   g_signal_connect(G_OBJECT(sel), "changed",
-                   (GCallback) list_view_features_selection_changed, ltrassi);
+                   G_CALLBACK(list_view_features_selection_changed), ltrassi);
   gtk_container_add(GTK_CONTAINER(sw), ltrassi->list_view_features);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget), sw,
                      TRUE, TRUE, 1);
