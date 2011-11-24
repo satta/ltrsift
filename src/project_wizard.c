@@ -40,6 +40,9 @@ static gboolean project_wizard_finished(gpointer data)
                                     threaddata->nodes,
                                     threaddata->features,
                                     threaddata->n_features);
+    gtk_ltr_families_determine_fl_cands(GTK_LTR_FAMILIES(ltrfams),
+                                        threaddata->ltrtolerance,
+                                        threaddata->lentolerance);
     mb_main_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
                                      threaddata->err, FALSE);
     mb_main_activate_menuitems(threaddata->ltrgui);
@@ -220,6 +223,7 @@ static gpointer project_wizard_start(gpointer data)
                                                                    num_threads,
                                                                    xdrop,
                                                                    seqid,
+                                                                   from_file,
                                                      &threaddata->current_state,
                                                                threaddata->err);
   }
@@ -252,6 +256,11 @@ static gpointer project_wizard_start(gpointer data)
     }
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free(rows);
+
+    threaddata->ltrtolerance = (gfloat)
+                       gtk_ltr_assistant_get_ltrtol(GTK_LTR_ASSISTANT(ltrassi));
+    threaddata->lentolerance = (gfloat)
+                       gtk_ltr_assistant_get_lentol(GTK_LTR_ASSISTANT(ltrassi));
 
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
                                                                    sel_features,

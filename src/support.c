@@ -215,6 +215,8 @@ ThreadData* threaddata_new()
   threaddata->projectfile = NULL;
   threaddata->projectdir = NULL;
   threaddata->fullname = NULL;
+  threaddata->ltrtolerance = 0.0;
+  threaddata->lentolerance = 0.0;
   threaddata->fam_prefix = NULL;
   threaddata->had_err = 0;
   threaddata->progress = 0;
@@ -297,7 +299,7 @@ void extract_project_settings(GUIData *ltrgui)
   classification = gtk_ltr_assistant_get_classification(ltrassi);
 
   ltrtol = gtk_ltr_assistant_get_ltrtol(ltrassi);
-  candtol = gtk_ltr_assistant_get_candtol(ltrassi);
+  candtol = gtk_ltr_assistant_get_lentol(ltrassi);
   list_view = gtk_ltr_assistant_get_list_view_features(ltrassi);
   sel = gtk_tree_view_get_selection(list_view);
   num_of_features = gtk_tree_selection_count_selected_rows(sel);
@@ -452,7 +454,7 @@ void export_annotation(GtArray *nodes, gchar *filen, GError *gerr)
 }
 
 void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
-                      GError *gerr)
+                      gboolean flcands, GError *gerr)
 {
   GtkWidget *dialog;
   GtStr *seqid;
@@ -464,6 +466,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
   GtError *err;
+  gboolean no_flcand;
   gchar *filename,
         tmp_filename[BUFSIZ];
   char *buffer, header[BUFSIZ];
@@ -516,12 +519,27 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
 
   if (!had_err) {
     for (i = 0; i < gt_array_size(nodes); i++) {
+      no_flcand = FALSE;
       gn = *(GtGenomeNode**) gt_array_get(nodes, i);
       fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
       curnode = gt_feature_node_iterator_next(fni);
       seqid = gt_genome_node_get_seqid((GtGenomeNode*) curnode);
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
       attr = gt_feature_node_get_attribute(curnode, "ltrfam");
+      if (flcands) {
+        while ((curnode = gt_feature_node_iterator_next(fni))) {
+          const char *fnt = gt_feature_node_get_type(curnode);
+          if (g_strcmp0(fnt, FNT_LTRRETRO)) {
+            fnt = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+            g_warning("fnt %s", fnt);
+            if (!fnt)
+              no_flcand = TRUE;
+            break;
+          }
+        }
+        if (no_flcand)
+          continue;
+      }
       if (attr)
         g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", gt_str_get(seqid), attr,
                    range.start, range.end);
@@ -625,16 +643,10 @@ void mark_genomenode_as_flcand(GtGenomeNode *gn)
 {
   GtFeatureNode *curnode;
   GtFeatureNodeIterator *fni;
-  const char *fnt;
 
   fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
-  while ((curnode = gt_feature_node_iterator_next(fni))) {
-    fnt = gt_feature_node_get_type(curnode);
-    if (g_strcmp0(fnt, FNT_LTRRETRO) == 0) {
-      gt_feature_node_set_attribute(curnode, ATTR_FULLLEN, "yes");
-      break;
-    }
-  }
+  curnode = gt_feature_node_iterator_next(fni);
+  gt_feature_node_set_attribute(curnode, ATTR_FULLLEN, "yes");
   gt_feature_node_iterator_delete(fni);
 }
 

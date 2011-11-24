@@ -151,7 +151,7 @@ gdouble gtk_ltr_assistant_get_ltrtol(GtkLTRAssistant *ltrassi)
   return gtk_spin_button_get_value(GTK_SPIN_BUTTON(ltrassi->spinb_ltrtol));
 }
 
-gdouble gtk_ltr_assistant_get_candtol(GtkLTRAssistant *ltrassi)
+gdouble gtk_ltr_assistant_get_lentol(GtkLTRAssistant *ltrassi)
 {
   return gtk_spin_button_get_value(GTK_SPIN_BUTTON(ltrassi->spinb_candtol));
 }
@@ -410,10 +410,10 @@ static void update_classification_overview(GtkLTRAssistant *ltrassi)
   gchar buffer[BUFSIZ];
 
   ltrtol = gtk_ltr_assistant_get_ltrtol(ltrassi);
-  candtol = gtk_ltr_assistant_get_candtol(ltrassi);
-  g_snprintf(buffer, BUFSIZ, "%.2f", ltrtol);
+  candtol = gtk_ltr_assistant_get_lentol(ltrassi);
+  g_snprintf(buffer, BUFSIZ, "%.1f", ltrtol);
   gtk_label_set_text(GTK_LABEL(ltrassi->label_ltrtolerance), buffer);
-  g_snprintf(buffer, BUFSIZ, "%.2f", candtol);
+  g_snprintf(buffer, BUFSIZ, "%.1f", candtol);
   gtk_label_set_text(GTK_LABEL(ltrassi->label_candtolerance), buffer);
 }
 
@@ -607,11 +607,11 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
     }
     update_gff3_label(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
                       GTK_LABEL(ltrassi->label_gff3files));
+    g_slist_foreach(filenames, (GFunc) g_free, NULL);
+    g_slist_free(filenames);
   }
   gtk_widget_destroy(filechooser);
   check_complete_page_general(ltrassi);
-  g_slist_foreach(filenames, (GFunc) g_free, NULL);
-  g_slist_free(filenames);
 }
 
 static void browse_button_clicked(GtkButton *button, GtkLTRAssistant *ltrassi)
@@ -1360,13 +1360,12 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                      label, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 5);
   vbox = gtk_vbox_new(TRUE, 1);
-  label = gtk_label_new("Allowed LTR length deviation from group median:");
+  label = gtk_label_new(LTR_TOLERANCE);
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Allowed candidate length deviation "
-                        "from group median:");
+  label = gtk_label_new(LEN_TOLERANCE);
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1379,10 +1378,10 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
   vbox = gtk_vbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 0.01, 1.0, 0.0);
-  ltrassi->spinb_ltrtol = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.01, 2);
-  adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 0.01, 1.0, 0.0);
-  ltrassi->spinb_candtol = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.01, 2);
+  adjust = gtk_adjustment_new(0.0, 0.0, 1000.0, 1.0, 10.0, 0.0);
+  ltrassi->spinb_ltrtol = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.01, 1);
+  adjust = gtk_adjustment_new(0.0, 0.0, 1000.0, 1.0, 10.0, 0.0);
+  ltrassi->spinb_candtol = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.01, 1);
   gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_ltrtol, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_candtol, FALSE, FALSE, 1);
   ltrassi->entry_famprefix = gtk_entry_new();

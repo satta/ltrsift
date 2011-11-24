@@ -100,11 +100,8 @@ static gboolean init_gui(GUIData *ltrgui)
   ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->progressbar, ltrgui->projset);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
-  ltrgui->ltr_filter = gtk_ltr_filter_new();
+  ltrgui->ltr_filter = NULL; /*gtk_ltr_filter_new();*/
   ltrgui->assistant = NULL;
-
-  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->ltr_filter),
-                               GTK_WINDOW(ltrgui->main_window));
 
   gtk_builder_connect_signals(builder, ltrgui);
 

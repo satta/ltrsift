@@ -46,12 +46,16 @@
 #define ATTR_CLUSTID   "clid"
 #define ATTR_PFAMN     "name"
 #define ATTR_FULLLEN   "flcand"
+#define ATTR_LTRFAM   "ltrfam"
 #define FNT_PROTEINM   "protein_match"
 #define FNT_LTR        "long_terminal_repeat"
 #define FNT_REPEATR    "repeat_region"
 #define FNT_LLTR       "lLTR"
 #define FNT_RLTR       "rLTR"
 #define FNT_LTRRETRO   "LTR_retrotransposon"
+
+#define LTR_TOLERANCE  "Allowed LTR length deviation from group median:"
+#define LEN_TOLERANCE  "Allowed candidate length deviation from group median:"
 
 typedef struct _ThreadData ThreadData;
 
@@ -81,6 +85,8 @@ struct _ThreadData {
         *projectdir,
         *fam_prefix;
   const gchar *fullname;
+  gfloat ltrtolerance,
+         lentolerance;
   int had_err;
   unsigned long progress,
                 n_features;
@@ -110,10 +116,13 @@ GtArray*    create_region_nodes_from_node_array(GtArray *nodes);
 void        export_annotation(GtArray *nodes, gchar *filen, GError *err);
 
 void        export_sequences(GtArray *nodes, gchar *filen,
-                             const gchar *indexname, GError *err);
+                             const gchar *indexname, gboolean flcands,
+                             GError *err);
 
 void        determine_full_length_candidates(GtArray *nodes,
                                              gfloat ltrtolerance,
                                              gfloat lentolerance);
+
+void sort_gff3(const char *input, const char *output);
 
 #endif

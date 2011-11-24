@@ -350,7 +350,7 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   gt_rdb_delete(rdb);
   gt_error_delete(err);
 
-  return had_err;
+  return 0;
 }
 
 static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
@@ -627,7 +627,8 @@ gboolean mb_save_as_project_data_finished(gpointer data)
                                             threaddata->filename);
     gtk_project_settings_update_projectfile(GTK_PROJECT_SETTINGS(projset),
                                             threaddata->filename);
-    threaddata->had_err =
+    if (!threaddata->had_err)
+      threaddata->had_err =
                   gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(projset));
   }
   if (!threaddata->had_err) {
@@ -1295,6 +1296,8 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   ltrgui->assistant = gtk_ltr_assistant_new();
   g_signal_connect(G_OBJECT(ltrgui->assistant), "apply",
                    G_CALLBACK(project_wizard_apply), (gpointer) ltrgui);
+  gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant),
+                               GTK_WINDOW(ltrgui->main_window));
   gtk_widget_show(ltrgui->assistant);
 }
 
@@ -1545,7 +1548,7 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
-    export_sequences(nodes, filename, indexname, ltrgui->err);
+    export_sequences(nodes, filename, indexname, FALSE, ltrgui->err);
     g_free(filename);
   } else
     gtk_widget_destroy(dialog);

@@ -40,6 +40,8 @@
 #define LTRFAMS_LV_CAPTION_STRAND  "S"
 #define LTRFAMS_LV_CAPTION_START   "Start"
 #define LTRFAMS_LV_CAPTION_END     "End"
+#define LTRFAMS_LV_CAPTION_LLTRLEN "lLTR length"
+#define LTRFAMS_LV_CAPTION_ELEMLEN "Element length"
 #define LTRFAMS_TV_CAPTION_INFO    "Attributes"
 #define LTRFAMS_TV_CAPTION_TYPE    "Feature name"
 
@@ -71,10 +73,10 @@
 #define REMOVE_SELECTED  "Remove selected"
 #define UNCLASS_SELECTED "Unclassify selected"
 
-#define FAMS_EXPORT_SEQS "Export sequences for selected..."
-#define FAMS_EXPORT_ANNO "Export annotation for selected..."
+#define FAMS_EXPORT_SEQS "Export sequences for selection..."
+#define FAMS_EXPORT_ANNO "Export annotation for selection..."
 #define FAMS_EDIT_NAME   "Edit name"
-#define FAMS_REMOVE_SEL  "Remove selected"
+#define FAMS_REMOVE_SEL  "Remove selection"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
@@ -93,6 +95,8 @@ enum {
   LTRFAMS_LV_STRAND,
   LTRFAMS_LV_START,
   LTRFAMS_LV_END,
+  LTRFAMS_LV_LLTRLEN,
+  LTRFAMS_LV_ELEMLEN,
   LTRFAMS_LV_N_COLUMS
 };
 
@@ -178,6 +182,10 @@ void         gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                              GtArray *nodes,
                                              GtHashmap *features,
                                              unsigned long noc);
+
+void         gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
+                                                 gfloat ltrtolerance,
+                                                 gfloat lentolerance);
 
 GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
 

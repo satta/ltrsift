@@ -128,9 +128,9 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
   gtk_label_set_text(GTK_LABEL(projset->label_plarge), buffer);
   gtk_label_set_text(GTK_LABEL(projset->label_didclassification),
                                classification ? "yes" : "no");
-  g_snprintf(buffer, BUFSIZ, "%.2f", ltrtol);
+  g_snprintf(buffer, BUFSIZ, "%.1f", ltrtol);
   gtk_label_set_text(GTK_LABEL(projset->label_ltrtolerance), buffer);
-  g_snprintf(buffer, BUFSIZ, "%.2f", candtol);
+  g_snprintf(buffer, BUFSIZ, "%.1f", candtol);
   gtk_label_set_text(GTK_LABEL(projset->label_candtolerance), buffer);
   tmp = g_strjoinv("\n", features);
   gtk_label_set_text(GTK_LABEL(projset->label_usedfeatures), tmp);

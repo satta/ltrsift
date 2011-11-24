@@ -21,6 +21,7 @@
 #include <gtk/gtk.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <gdk/gdkkeysyms.h>
 #include <string.h>
 #include "genometools.h"
 #include "gtk_label_close.h"

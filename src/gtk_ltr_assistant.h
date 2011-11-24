@@ -189,7 +189,7 @@ gboolean     gtk_ltr_assistant_get_classification(GtkLTRAssistant *ltrassi);
 
 gdouble      gtk_ltr_assistant_get_ltrtol(GtkLTRAssistant *ltrassi);
 
-gdouble      gtk_ltr_assistant_get_candtol(GtkLTRAssistant *ltrassi);
+gdouble      gtk_ltr_assistant_get_lentol(GtkLTRAssistant *ltrassi);
 
 const gchar* gtk_ltr_assistant_get_fam_prefix(GtkLTRAssistant *ltrassi);
 
