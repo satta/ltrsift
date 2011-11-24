@@ -31,7 +31,9 @@ static gboolean project_wizard_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltrfams = gtk_ltr_families_new(threaddata->progressbar,
+    threaddata->ltrgui->ltrfams =
+                              gtk_ltr_families_new(threaddata->ltrgui->sb_main,
+                                                   threaddata->progressbar,
                                                    threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
@@ -109,10 +111,6 @@ static gpointer project_wizard_start(gpointer data)
   gdouble evalue,
           seqid,
           xdrop;
-
-  g_snprintf(buf, BUFSIZ, "%s/tmp/%s", threaddata->projectdir,
-             threaddata->projectfile);
-  tmpdirprefix = gt_str_new_cstr(buf);
 
   evalue = gtk_ltr_assistant_get_evalue(GTK_LTR_ASSISTANT(ltrassi));
   dust = gtk_ltr_assistant_get_dust(GTK_LTR_ASSISTANT(ltrassi));
@@ -199,7 +197,6 @@ static gpointer project_wizard_start(gpointer data)
         fclose(fp);
     }
     g_free(match_params);
-    g_free(md5);
     g_free(md5_file);
     g_free(tmp);
 
@@ -207,7 +204,10 @@ static gpointer project_wizard_start(gpointer data)
     encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
     if (!encseq)
       threaddata->had_err = -1;
-    if (!threaddata->had_err)
+    if (!threaddata->had_err) {
+      g_snprintf(buf, BUFSIZ, "%s/tmp/%s", threaddata->projectdir, md5);
+      tmpdirprefix = gt_str_new_cstr(buf);
+      g_free(md5);
       last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
                                                                    encseq,
                                                                    tmpdirprefix,
@@ -226,6 +226,7 @@ static gpointer project_wizard_start(gpointer data)
                                                                    from_file,
                                                      &threaddata->current_state,
                                                                threaddata->err);
+    }
   }
   if (!threaddata->had_err &&
       gtk_ltr_assistant_get_classification(GTK_LTR_ASSISTANT(ltrassi))) {

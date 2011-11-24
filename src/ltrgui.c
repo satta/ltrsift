@@ -97,7 +97,9 @@ static gboolean init_gui(GUIData *ltrgui)
 
   gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
   ltrgui->projset = gtk_project_settings_new();
-  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->progressbar, ltrgui->projset);
+  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main,
+                                         ltrgui->progressbar,
+                                         ltrgui->projset);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
   ltrgui->ltr_filter = NULL; /*gtk_ltr_filter_new();*/

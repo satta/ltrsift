@@ -18,6 +18,7 @@
 #include <string.h>
 #include "error.h"
 #include "gtk_ltr_families.h"
+#include "statusbar_main.h"
 #include "support.h"
 
 /* function prototypes start */
@@ -363,6 +364,7 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
   gtk_tree_model_get(model, &iter,
                      LTRFAMS_FAM_LV_NODE_ARRAY, &nodes,
                      -1);
+  ltrfams->unclassified_cands += gt_array_size(nodes);
   if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(ltrfams->nb_family)) != 0) {
 
     main_tab_no =
@@ -487,6 +489,29 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
     }
   }
 }
+
+void update_general_tab_label(GtkLTRFamilies *ltrfams)
+{
+  GtkWidget *tab_label, *child;
+  gfloat percent;
+  gchar text[BUFSIZ];
+  gint main_tab_no;
+  unsigned long size;
+
+  main_tab_no = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(ltrfams->nb_family),
+                                                  "main_tab"));
+  child = gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrfams->nb_family),
+                                    main_tab_no);
+  tab_label = gtk_notebook_get_tab_label(GTK_NOTEBOOK(ltrfams->nb_family),
+                                         child);
+  size = gt_array_size(ltrfams->nodes);
+  if (size == 0)
+    size = 1;
+  percent = ((gfloat) ltrfams->unclassified_cands /
+             (gfloat) size) * 100.0;
+  g_snprintf(text, BUFSIZ, "General (%.1f%%)", percent);
+  gtk_label_close_set_text(GTKLABELCLOSE(tab_label), text);
+}
 /* "support" functions end */
 
 /* thread related functions start */
@@ -504,11 +529,14 @@ static gboolean classify_nodes_finished(gpointer data)
       g_list_foreach(threaddata->references,
                      (GFunc) remove_row,
                      threaddata->list_view);
+      threaddata->ltrfams->unclassified_cands -=
+                                           gt_array_size(threaddata->new_nodes);
       gtk_ltr_families_nb_fam_lv_append_array(threaddata->ltrfams,
                                               threaddata->list_view,
                                               threaddata->new_nodes,
                                               NULL);
       gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
+      update_general_tab_label(threaddata->ltrfams);
     } else {
       g_set_error(&threaddata->ltrfams->gerr,
                   G_FILE_ERROR,
@@ -717,7 +745,7 @@ static void on_drag_data_received(GtkWidget *widget,
   unsigned long i;
 
   /* add <gn> to selected family, do nothing if no family is selected
-     <widget> == <tv_families> */
+     <widget> == <lv_families> */
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_SINGLE);
   if (!gtk_tree_selection_get_selected(sel, &model, &iter)) {
@@ -766,6 +794,9 @@ static void on_drag_data_received(GtkWidget *widget,
                        -1);
     gtk_tree_path_free(tv_path);
     g_free(tmp_oldname);
+  } else {
+    ltrfams->unclassified_cands -= gt_array_size(tdata->nodes);
+    update_general_tab_label(ltrfams);
   }
 
   /* remove rows from drag source */
@@ -773,11 +804,15 @@ static void on_drag_data_received(GtkWidget *widget,
 
   /* clear detailed view if shown <gn> was drag'n'dropped to another family */
   for (i = 0; i < gt_array_size(tdata->nodes); i++) {
+    const char *attr;
     gn = *(GtGenomeNode**) gt_array_get(tdata->nodes, i);
     gtk_ltr_families_clear_lv_det_on_equal_nodes(ltrfams, gn);
     fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
     curnode = gt_feature_node_iterator_next(fni);
     gt_feature_node_set_attribute(curnode, "ltrfam", oldname);
+    attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+    if (attr)
+      gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
     gt_feature_node_iterator_delete(fni);
     gt_array_add(nodes, gn);
     if (tab_child) {
@@ -894,6 +929,8 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                          LTRFAMS_FAM_LV_OLDNAME, &tmp_oldname,
                          -1);
       remove_nodes_from_array(tmp_nodes, nodes, FALSE);
+      ltrfams->unclassified_cands += gt_array_size(nodes);
+      update_general_tab_label(ltrfams);
       g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                  tmp_oldname, gt_array_size(tmp_nodes));
       gtk_tree_store_set(GTK_TREE_STORE(model2), &tv_iter,
@@ -901,8 +938,16 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                          -1);
       gtk_tree_path_free(tv_path);
       g_free(tmp_oldname);
-    } else
+    } else {
+      gchar sb_text[BUFSIZ];
+
       remove_nodes_from_array(ltrfams->nodes, nodes, TRUE);
+      ltrfams->unclassified_cands -= gt_array_size(nodes);
+      update_general_tab_label(ltrfams);
+      g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
+                 gt_array_size(ltrfams->nodes));
+      sb_main_set_status(ltrfams->statusbar, sb_text);
+    }
     g_list_foreach(references, (GFunc) remove_row, list_view);
     g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
@@ -1052,6 +1097,7 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
     g_list_free(references);
     g_list_free(rows);
     gtk_ltr_families_set_modified(ltrfams, TRUE);
+    update_general_tab_label(ltrfams);
   }
   gtk_widget_destroy(dialog);
 }
@@ -1437,11 +1483,12 @@ static void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
     gn = *(GtGenomeNode**) gt_array_get(nodes, i);
     fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
     curnode = gt_feature_node_iterator_next(fni);
-    if ((fam = gt_feature_node_get_attribute(curnode, "ltrfam")) == NULL)
+    if ((fam = gt_feature_node_get_attribute(curnode, "ltrfam")) == NULL) {
       gtk_ltr_families_nb_fam_lv_append_gn(list_view, gn, ltrfams->features,
                                            NULL, store, ltrfams->style,
                                            ltrfams->colors);
-    else {
+      ltrfams->unclassified_cands++;
+    } else {
       char tmp_curname[BUFSIZ];
       model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
       tmp_iter = (GtkTreeIter*) gt_hashmap_get(iter_hash, (void*) fam);
@@ -2742,6 +2789,7 @@ static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
     g_list_free(references);
     g_list_free(rows);
     gtk_ltr_families_set_modified(ltrfams, TRUE);
+    update_general_tab_label(ltrfams);
   }
 }
 
@@ -2996,6 +3044,8 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                      GtHashmap *features,
                                      unsigned long noc)
 {
+  gchar sb_text[BUFSIZ];
+
   ltrfams->nodes = nodes;
   ltrfams->features = features;
   ltrfams->colors = gt_hashmap_new(GT_HASH_STRING,
@@ -3005,8 +3055,12 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->style = gt_style_new(ltrfams->err);
   gt_style_load_file(ltrfams->style, DEFAULT_STYLE, ltrfams->err);
   gtk_ltr_families_nb_fam_create(ltrfams);
+  update_general_tab_label(ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->tb_lv_families), TRUE);
+  g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
+             gt_array_size(ltrfams->nodes));
+  sb_main_set_status(ltrfams->statusbar, sb_text);
 }
 
 static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
@@ -3208,7 +3262,9 @@ GType gtk_ltr_families_get_type(void)
   return ltrfams_type;
 }
 
-GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar, GtkWidget *projset)
+GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
+                                GtkWidget *progressbar,
+                                GtkWidget *projset)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
@@ -3219,7 +3275,9 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *progressbar, GtkWidget *projset)
   g_signal_connect(G_OBJECT(ltrfams), "destroy",
                    G_CALLBACK(gtk_ltr_families_destroy), NULL);
   ltrfams->projectfile = NULL;
+  ltrfams->unclassified_cands = 0;
   ltrfams->modified = FALSE;
+  ltrfams->statusbar = statusbar;
   ltrfams->progressbar = progressbar;
   ltrfams->projset = projset;
   return GTK_WIDGET(ltrfams);

@@ -661,7 +661,9 @@ static gboolean mb_open_project_data_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
-    threaddata->ltrgui->ltrfams = gtk_ltr_families_new(threaddata->progressbar,
+    threaddata->ltrgui->ltrfams =
+                              gtk_ltr_families_new(threaddata->ltrgui->sb_main,
+                                                   threaddata->progressbar,
                                                    threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
@@ -1334,7 +1336,8 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
       gtk_widget_set_sensitive(ltrgui->mb_main_file_close, FALSE);
       gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
       gtk_widget_destroy(ltrgui->ltrfams);
-      ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->progressbar,
+      ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main,
+                                             ltrgui->progressbar,
                                              ltrgui->projset);
       gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                          TRUE, TRUE, 0);

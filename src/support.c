@@ -687,7 +687,12 @@ void determine_full_length_candidates(GtArray *nodes,
       fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
       while ((curnode = gt_feature_node_iterator_next(fni))) {
         fnt = gt_feature_node_get_type(curnode);
-        if (g_strcmp0(fnt, FNT_LTRRETRO) == 0) {
+        if (g_strcmp0(fnt, FNT_REPEATR) == 0) {
+          const char *attr = gt_feature_node_get_attribute(curnode,
+                                                           ATTR_FULLLEN);
+          if (attr)
+            gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
+        } else if (g_strcmp0(fnt, FNT_LTRRETRO) == 0) {
           num_domains_cand = gt_feature_node_number_of_children(curnode);
           if (num_domains_cand > max_num_domains)
             max_num_domains = num_domains_cand;

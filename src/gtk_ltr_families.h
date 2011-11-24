@@ -109,8 +109,7 @@ enum {
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
-enum
-{
+enum {
   LTRFAMS_FAM_LV_NODE_ARRAY = 0,
   LTRFAMS_FAM_LV_TAB_CHILD,
   LTRFAMS_FAM_LV_TAB_LABEL,
@@ -158,9 +157,11 @@ struct _GtkLTRFamilies
   GtHashmap *features;
   GtHashmap *colors;
   GtError *err;
-  unsigned long n_features;
+  unsigned long n_features,
+                unclassified_cands;
   gboolean modified;
   gchar *projectfile;
+  GtkWidget *statusbar;
   GtkWidget *progressbar;
   GtkWidget *projset;
 
@@ -174,7 +175,9 @@ struct _GtkLTRFamiliesClass
 
 GType        gtk_ltr_families_get_type(void);
 
-GtkWidget*   gtk_ltr_families_new(GtkWidget *progressbar, GtkWidget *projset);
+GtkWidget*   gtk_ltr_families_new(GtkWidget *statusbar,
+                                  GtkWidget *progressbar,
+                                  GtkWidget *projset);
 
 char*        double_underscores(const char *str);
 

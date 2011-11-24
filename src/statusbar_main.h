@@ -38,10 +38,11 @@
 #define SB_MAIN_MENU_HINT_QUIT     "Quit the program."
 #define SB_MAIN_MENU_HINT_SETTINGS "View settings for the current project."
 #define SB_MAIN_MENU_HINT_COLUMNS  "Show/Hide feature columns."
+#define SB_MAIN_NUM_OF_CANDS       "Total number of candidates: %lu"
 
 void sb_main_init(GUIData *ltrgui);
 
-void sb_main_set_status(GUIData *ltrgui, gchar *status_msg);
+void sb_main_set_status(GtkWidget *sb, gchar *status_msg);
 
 gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
                                GUIData *ltrgui);

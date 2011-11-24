@@ -29,12 +29,13 @@ void sb_main_init(GUIData *ltrgui)
                      SB_MAIN_MSG_WELCOME);
 }
 
-void sb_main_set_status(GUIData *ltrgui, gchar *status_msg)
+void sb_main_set_status(GtkWidget *sb, gchar *status_msg)
 {
-  gtk_statusbar_pop(GTK_STATUSBAR(ltrgui->sb_main),
-                    ltrgui->sb_main_context_id);
-  gtk_statusbar_push(GTK_STATUSBAR(ltrgui->sb_main),
-                     ltrgui->sb_main_context_id, status_msg);
+  gint id;
+
+  id = gtk_statusbar_get_context_id(GTK_STATUSBAR(sb), SB_MAIN_CONTEXT);
+  gtk_statusbar_pop(GTK_STATUSBAR(sb), id);
+  gtk_statusbar_push(GTK_STATUSBAR(sb), id, status_msg);
 }
 
 gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
@@ -51,6 +52,5 @@ gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
     gtk_statusbar_pop(GTK_STATUSBAR(ltrgui->sb_main),
                       ltrgui->sb_main_context_id);
   }
-
   return FALSE;
 }
