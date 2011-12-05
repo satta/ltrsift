@@ -1078,7 +1078,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      hsep, FALSE, FALSE, 1);
   ltrassi->checkb_clustering =
-                              gtk_check_button_new_with_label("Do clustering?");
+                         gtk_check_button_new_with_label("Perform clustering?");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      ltrassi->checkb_clustering, FALSE, FALSE, 1);
 
@@ -1347,7 +1347,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), ltrassi->spinb_plarge, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
   ltrassi->checkb_classification =
-                          gtk_check_button_new_with_label("Do classification?");
+                     gtk_check_button_new_with_label("Perform classification?");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      hbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),

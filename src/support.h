@@ -103,7 +103,7 @@ void        reset_progressbar(GtkWidget *progressbar);
 
 GtkWidget*  unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
 
-void        progress_dialog_init(ThreadData *threaddata);
+void        progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel);
 
 void        threaddata_delete(ThreadData *threaddata);
 
@@ -113,7 +113,8 @@ void        extract_project_settings(GUIData *ltrgui);
 
 GtArray*    create_region_nodes_from_node_array(GtArray *nodes);
 
-void        export_annotation(GtArray *nodes, gchar *filen, GError *err);
+void        export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
+                              GError *err);
 
 void        export_sequences(GtArray *nodes, gchar *filen,
                              const gchar *indexname, gboolean flcands,
@@ -122,7 +123,5 @@ void        export_sequences(GtArray *nodes, gchar *filen,
 void        determine_full_length_candidates(GtArray *nodes,
                                              gfloat ltrtolerance,
                                              gfloat lentolerance);
-
-void sort_gff3(const char *input, const char *output);
 
 #endif

@@ -595,7 +595,7 @@ static gboolean mb_save_project_data_finished(gpointer data)
     g_rename(threaddata->tmp_filename, threaddata->filename);
   if (threaddata->had_err) {
     gdk_threads_enter();
-    error_handle(threaddata->ltrgui);
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
     gdk_threads_leave();
   }
 
@@ -640,7 +640,7 @@ gboolean mb_save_as_project_data_finished(gpointer data)
     if (threaddata->bakfile)
       g_rename(threaddata->tmp_filename, threaddata->filename);
     gdk_threads_enter();
-    error_handle(threaddata->ltrgui);
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
     gdk_threads_leave();
   }
 
@@ -695,7 +695,7 @@ static gboolean mb_open_project_data_finished(gpointer data)
                                              threaddata->filename);
   if (threaddata->had_err) {
     gdk_threads_enter();
-    error_handle(threaddata->ltrgui);
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
     gdk_threads_leave();
   }
 
@@ -879,7 +879,7 @@ void mb_main_file_save_activate(GT_UNUSED GtkMenuItem *menuitem,
     threaddata->progress = 0;
     threaddata->had_err = 0;
     g_rename(projectfile, threaddata->tmp_filename);
-    progress_dialog_init(threaddata);
+    progress_dialog_init(threaddata, ltrgui->main_window);
 
     g_thread_create(mb_main_save_project_data_start,
                     (gpointer) threaddata, FALSE, NULL);
@@ -961,7 +961,7 @@ void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->save_as = TRUE;
   threaddata->bakfile = bakfile;
   threaddata->had_err = 0;
-  progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata, ltrgui->main_window);
 
   g_thread_create(mb_main_save_project_data_start,
                   (gpointer) threaddata, FALSE, NULL);
@@ -983,6 +983,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
                                        GTK_STOCK_CANCEL,
                                        GTK_RESPONSE_CANCEL, "E_xport",
                                        GTK_RESPONSE_ACCEPT, NULL);
+
   projectfile =
             gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   if (projectfile != NULL)
@@ -995,7 +996,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
-    export_annotation(nodes, filename, ltrgui->err);
+    export_annotation(nodes, filename, FALSE, ltrgui->err);
     g_free(filename);
   } else
     gtk_widget_destroy(dialog);
@@ -1189,7 +1190,7 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
                 0,
                 "Could not import data: %s",
                 gt_error_get(err));
-    error_handle(ltrgui);
+    error_handle(ltrgui->main_window, ltrgui->err);
   }
   gt_node_stream_delete(gff3_in_stream);
   gt_node_stream_delete(preprocess_stream);
@@ -1236,7 +1237,7 @@ void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   }
 
   filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_OPEN,
-                                            GTK_WINDOW (ltrgui->main_window),
+                                            GTK_WINDOW(ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_OPEN,
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL,
@@ -1257,7 +1258,7 @@ void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->filename = filename;
   threaddata->err = gt_error_new();
   threaddata->open = TRUE;
-  progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata, ltrgui->main_window);
   g_thread_create(mb_main_open_project_data_start,
                   (gpointer) threaddata, FALSE, NULL);
 }
@@ -1427,7 +1428,7 @@ static void mb_main_file_open_recent_activated(GtkRecentChooser *rc,
   threaddata->filename = filename;
   threaddata->err = gt_error_new();
   threaddata->open = TRUE;
-  progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata, ltrgui->main_window);
 
   g_thread_create(mb_main_open_project_data_start,
                   (gpointer) threaddata, FALSE, NULL);
@@ -1541,6 +1542,7 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
                                        GTK_STOCK_CANCEL,
                                        GTK_RESPONSE_CANCEL, "E_xport",
                                        GTK_RESPONSE_ACCEPT, NULL);
+
   if (projectfile != NULL)
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog),
                                         g_path_get_dirname(projectfile));

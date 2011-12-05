@@ -61,7 +61,7 @@ static gboolean project_wizard_finished(gpointer data)
                 "Error: %s",
                 gt_error_get(threaddata->err));
     gdk_threads_enter();
-    error_handle(threaddata->ltrgui);
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
     gdk_threads_leave();
   }
   threaddata_delete(threaddata);
@@ -192,7 +192,7 @@ static gpointer project_wizard_start(gpointer data)
                     0,
                     "Could not create checksum file for matching: %s",
                     md5_file);
-        error_handle(threaddata->ltrgui);
+        error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
       } else
         fclose(fp);
     }
@@ -362,7 +362,7 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
                 0,
                 "Could not make dir: %s",
                 projecttmpdir);
-    error_handle(ltrgui);
+    error_handle(ltrgui->main_window, ltrgui->err);
     return;
   }
 
@@ -376,7 +376,7 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
   threaddata->n_features = LTRFAMS_LV_N_COLUMS;
   threaddata->current_state = gt_cstr_dup("Starting...");
   threaddata->err = gt_error_new();
-  progress_dialog_init(threaddata);
+  progress_dialog_init(threaddata, ltrgui->main_window);
 
   g_thread_create(project_wizard_start, (gpointer) threaddata, FALSE, NULL);
 }

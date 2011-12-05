@@ -73,8 +73,11 @@
 #define REMOVE_SELECTED  "Remove selected"
 #define UNCLASS_SELECTED "Unclassify selected"
 
-#define FAMS_EXPORT_SEQS "Export sequences for selection..."
-#define FAMS_EXPORT_ANNO "Export annotation for selection..."
+#define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
+#define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
+#define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
+#define FAMS_EXPORT_ANNO_MULT "Export annotation (multiple files)..."
+#define FAMS_EXPORT_FLCANDS   "Export _full length candidates only."
 #define FAMS_EDIT_NAME   "Edit name"
 #define FAMS_REMOVE_SEL  "Remove selection"
 

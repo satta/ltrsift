@@ -132,21 +132,23 @@ static gboolean update_progress_dialog(gpointer data)
   return TRUE;
 }
 
-void progress_dialog_init(ThreadData *threaddata)
+void progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel)
 {
   GtkWidget *label,
             *vbox;
   guint sid;
 
   /* create the modal window which warns the user to wait */
-  threaddata->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  threaddata->window = gtk_window_new(GTK_WINDOW_POPUP);
+  gtk_window_set_transient_for(GTK_WINDOW(threaddata->window),
+                               GTK_WINDOW(toplevel));
   gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
   gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
   gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
-  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 12);
+  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 5);
   g_signal_connect(threaddata->window, "delete_event",
                    G_CALLBACK(gtk_true), NULL);
-  vbox = gtk_vbox_new(FALSE, 12);
+  vbox = gtk_vbox_new(FALSE, 5);
   /* create label */
   label = gtk_label_new("Please wait...");
   gtk_container_add(GTK_CONTAINER(vbox), label);
@@ -371,17 +373,22 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
   return region_nodes;
 }
 
-void export_annotation(GtArray *nodes, gchar *filen, GError *gerr)
+void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands ,
+                       GError *gerr)
 {
   GtkWidget *dialog;
   GtArray *region_nodes,
           *export_nodes;
+  GtGenomeNode *gn;
+  GtFeatureNode *curnode;
+  GtFeatureNodeIterator *fni;
   GtNodeStream *array_in_stream = NULL,
                *gff3_out_stream = NULL;
   GtFile *outfp;
   GtError *err;
   gchar *filename,
         tmp_filename[BUFSIZ];
+  const char *attr;
   int had_err = 0;
   unsigned long i;
   gboolean bakfile = FALSE;
@@ -417,11 +424,28 @@ void export_annotation(GtArray *nodes, gchar *filen, GError *gerr)
   err = gt_error_new();
   outfp = gt_file_new(filename, "w", err);
 
-  region_nodes = create_region_nodes_from_node_array(nodes);
-  export_nodes = gt_array_new(sizeof (GtGenomeNode*));
-
-  gt_array_add_array(export_nodes, region_nodes);
-  gt_array_add_array(export_nodes, nodes);
+  if (flcands) {
+    GtArray *tmp = gt_array_new(sizeof (GtGenomeNode*));
+    for (i = 0; i < gt_array_size(nodes); i++) {
+      gn = *(GtGenomeNode**) gt_array_get(nodes, i);
+      fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+      curnode = gt_feature_node_iterator_next(fni);
+      attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+      if (attr)
+        gt_array_add(tmp, gn);
+      gt_feature_node_iterator_delete(fni);
+    }
+    region_nodes = create_region_nodes_from_node_array(tmp);
+    export_nodes = gt_array_new(sizeof (GtGenomeNode*));
+    gt_array_add_array(export_nodes, region_nodes);
+    gt_array_add_array(export_nodes, tmp);
+    gt_array_delete(tmp);
+  } else {
+    region_nodes = create_region_nodes_from_node_array(nodes);
+    export_nodes = gt_array_new(sizeof (GtGenomeNode*));
+    gt_array_add_array(export_nodes, region_nodes);
+    gt_array_add_array(export_nodes, nodes);
+  }
 
   for (i = 0; i < gt_array_size(export_nodes); i++) {
     GtGenomeNode *gn;
@@ -466,7 +490,6 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
   GtError *err;
-  gboolean no_flcand;
   gchar *filename,
         tmp_filename[BUFSIZ];
   char *buffer, header[BUFSIZ];
@@ -519,27 +542,19 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
 
   if (!had_err) {
     for (i = 0; i < gt_array_size(nodes); i++) {
-      no_flcand = FALSE;
       gn = *(GtGenomeNode**) gt_array_get(nodes, i);
       fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
       curnode = gt_feature_node_iterator_next(fni);
       seqid = gt_genome_node_get_seqid((GtGenomeNode*) curnode);
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
-      attr = gt_feature_node_get_attribute(curnode, "ltrfam");
       if (flcands) {
-        while ((curnode = gt_feature_node_iterator_next(fni))) {
-          const char *fnt = gt_feature_node_get_type(curnode);
-          if (g_strcmp0(fnt, FNT_LTRRETRO)) {
-            fnt = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
-            g_warning("fnt %s", fnt);
-            if (!fnt)
-              no_flcand = TRUE;
-            break;
-          }
-        }
-        if (no_flcand)
+        attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+        if (!attr) {
+          gt_feature_node_iterator_delete(fni);
           continue;
+        }
       }
+      attr = gt_feature_node_get_attribute(curnode, "ltrfam");
       if (attr)
         g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", gt_str_get(seqid), attr,
                    range.start, range.end);

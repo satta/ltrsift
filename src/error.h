@@ -20,6 +20,6 @@
 
 #include "ltrgui.h"
 
-void error_handle(GUIData *ltrgui);
+void error_handle(GtkWidget *toplevel, GError *err);
 
 #endif
