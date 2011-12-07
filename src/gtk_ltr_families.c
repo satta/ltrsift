@@ -1567,9 +1567,11 @@ static void gtk_ltr_families_nb_fam_tb_fl_clicked(GT_UNUSED GtkWidget *button,
   GtGenomeNode *gn;
   GList *children;
   gboolean valid;
+  gchar buffer[BUFSIZ];
   gint curtab_no;
   gfloat ltrtolerance,
          lentolerance;
+  unsigned long flcands;
 
   notebook = GTK_NOTEBOOK(ltrfams->nb_family);
   curtab_no = gtk_notebook_get_current_page(notebook);
@@ -1631,23 +1633,35 @@ static void gtk_ltr_families_nb_fam_tb_fl_clicked(GT_UNUSED GtkWidget *button,
   ltrtolerance = (gfloat) gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinb1));
   lentolerance = (gfloat) gtk_spin_button_get_value(GTK_SPIN_BUTTON(spinb2));
   gtk_widget_destroy(dialog);
-  determine_full_length_candidates(nodes, ltrtolerance, lentolerance);
+  flcands = determine_full_length_candidates(nodes, ltrtolerance, lentolerance);
 
-  valid = gtk_tree_model_get_iter_first(model1, &iter1);
-  if (!valid) {
-    /* report programming error */
-    return;
-  }
-  gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
-  update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
+  g_snprintf(buffer, BUFSIZ, FLCAND_RESULT, flcands);
+  dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                  GTK_DIALOG_MODAL |
+                                  GTK_DIALOG_DESTROY_WITH_PARENT,
+                                  GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                  "%s", buffer);
+  gtk_window_set_title(GTK_WINDOW(dialog), "Results");
+  gtk_dialog_run(GTK_DIALOG(dialog));
+  gtk_widget_destroy(dialog);
 
-  while (gtk_tree_model_iter_next(model1, &iter1)) {
+  if (flcands > 0) {
+    valid = gtk_tree_model_get_iter_first(model1, &iter1);
+    if (!valid) {
+      /* report programming error */
+      return;
+    }
     gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
     update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
-  }
-  g_list_free(children);
 
-  gtk_ltr_families_set_modified(ltrfams, TRUE);
+    while (gtk_tree_model_iter_next(model1, &iter1)) {
+      gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
+      update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
+    }
+    g_list_free(children);
+
+    gtk_ltr_families_set_modified(ltrfams, TRUE);
+  }
 }
 
 static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
@@ -3039,15 +3053,18 @@ void gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
   GtkTreeIter iter;
   GtArray *nodes;
   gboolean valid;
+  unsigned long flcands;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
   valid = gtk_tree_model_get_iter_first(model, &iter);
   if (valid) {
     gtk_tree_model_get(model, &iter, LTRFAMS_FAM_LV_NODE_ARRAY, &nodes, -1);
-    determine_full_length_candidates(nodes, ltrtolerance, lentolerance);
+    flcands = determine_full_length_candidates(nodes, ltrtolerance,
+                                               lentolerance);
     while (gtk_tree_model_iter_next(model, &iter)) {
       gtk_tree_model_get(model, &iter, LTRFAMS_FAM_LV_NODE_ARRAY, &nodes, -1);
-      determine_full_length_candidates(nodes, ltrtolerance, lentolerance);
+      flcands = determine_full_length_candidates(nodes, ltrtolerance,
+                                                 lentolerance);
     }
   }
 }

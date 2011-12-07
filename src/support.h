@@ -56,6 +56,7 @@
 
 #define LTR_TOLERANCE  "Allowed LTR length deviation from group median:"
 #define LEN_TOLERANCE  "Allowed candidate length deviation from group median:"
+#define FLCAND_RESULT  "Found %lu full length candidates (marked with *)"
 
 typedef struct _ThreadData ThreadData;
 
@@ -92,36 +93,36 @@ struct _ThreadData {
                 n_features;
 };
 
-void        free_gt_hash_elem(void *elem);
+void          free_gt_hash_elem(void *elem);
 
-gboolean    entry_in_list_view(GtkTreeModel *model, const gchar *entry,
-                               gint column_no);
+gboolean      entry_in_list_view(GtkTreeModel *model, const gchar *entry,
+                                 gint column_no);
 
-void        create_recently_used_resource(const gchar *filename);
+void          create_recently_used_resource(const gchar *filename);
 
-void        reset_progressbar(GtkWidget *progressbar);
+void          reset_progressbar(GtkWidget *progressbar);
 
-GtkWidget*  unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
+GtkWidget*    unsaved_changes_dialog(GUIData *ltrgui, const gchar *text);
 
-void        progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel);
+void          progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel);
 
-void        threaddata_delete(ThreadData *threaddata);
+void          threaddata_delete(ThreadData *threaddata);
 
-ThreadData* threaddata_new();
+ThreadData*   threaddata_new();
 
-void        extract_project_settings(GUIData *ltrgui);
+void          extract_project_settings(GUIData *ltrgui);
 
-GtArray*    create_region_nodes_from_node_array(GtArray *nodes);
+GtArray*      create_region_nodes_from_node_array(GtArray *nodes);
 
-void        export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
-                              GError *err);
+void          export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
+                                GError *err);
 
-void        export_sequences(GtArray *nodes, gchar *filen,
-                             const gchar *indexname, gboolean flcands,
-                             GError *err);
+void          export_sequences(GtArray *nodes, gchar *filen,
+                               const gchar *indexname, gboolean flcands,
+                               GError *err);
 
-void        determine_full_length_candidates(GtArray *nodes,
-                                             gfloat ltrtolerance,
-                                             gfloat lentolerance);
+unsigned long determine_full_length_candidates(GtArray *nodes,
+                                               gfloat ltrtolerance,
+                                               gfloat lentolerance);
 
 #endif

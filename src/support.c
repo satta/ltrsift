@@ -665,9 +665,9 @@ void mark_genomenode_as_flcand(GtGenomeNode *gn)
   gt_feature_node_iterator_delete(fni);
 }
 
-void determine_full_length_candidates(GtArray *nodes,
-                                      gfloat ltrtolerance,
-                                      gfloat lentolerance)
+unsigned long determine_full_length_candidates(GtArray *nodes,
+                                               gfloat ltrtolerance,
+                                               gfloat lentolerance)
 {
   GtGenomeNode *gn;
   GtFeatureNode *curnode;
@@ -689,93 +689,81 @@ void determine_full_length_candidates(GtArray *nodes,
                 old_num_domains = 0,
                 flcands = 0;
 
-  if (gt_array_size(nodes) <= 2) {
-    for (i = 0; i < gt_array_size(nodes); i++) {
-      gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-      mark_genomenode_as_flcand(gn);
-    }
-  } else {
-    num_domains_fam = gt_array_new(sizeof (unsigned long));
+  num_domains_fam = gt_array_new(sizeof (unsigned long));
 
-    for (i = 0; i < gt_array_size(nodes); i++) {
-      gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-      fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
-      while ((curnode = gt_feature_node_iterator_next(fni))) {
-        fnt = gt_feature_node_get_type(curnode);
-        if (g_strcmp0(fnt, FNT_REPEATR) == 0) {
-          const char *attr = gt_feature_node_get_attribute(curnode,
-                                                           ATTR_FULLLEN);
-          if (attr)
-            gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
-        } else if (g_strcmp0(fnt, FNT_LTRRETRO) == 0) {
-          num_domains_cand = gt_feature_node_number_of_children(curnode);
-          if (num_domains_cand > max_num_domains)
-            max_num_domains = num_domains_cand;
-          break;
-        }
-      }
-      gt_feature_node_iterator_delete(fni);
-      gt_array_add(num_domains_fam, num_domains_cand);
-    }
-
-    unsigned long num_domains_freq[max_num_domains];
-
-    for (i = 0; i < max_num_domains; i++) {
-      num_domains_freq[i] = 0;
-    }
-
-    for (i = 0; i < gt_array_size(num_domains_fam); i++) {
-      num_domains_cand = *(unsigned long*) gt_array_get(num_domains_fam, i);
-      num_domains_freq[num_domains_cand - 1]++;
-    }
-
-    for (i = 0; i < max_num_domains; i++) {
-      cur_num_domains = num_domains_freq[i];
-      if (cur_num_domains >= old_num_domains) {
-        most_freq_num_domains = i + 1;
-        old_num_domains = num_domains_freq[i];
+  for (i = 0; i < gt_array_size(nodes); i++) {
+    gn = *(GtGenomeNode**) gt_array_get(nodes, i);
+    fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+    while ((curnode = gt_feature_node_iterator_next(fni))) {
+      fnt = gt_feature_node_get_type(curnode);
+      if (g_strcmp0(fnt, FNT_REPEATR) == 0) {
+        const char *attr = gt_feature_node_get_attribute(curnode,
+                                                         ATTR_FULLLEN);
+        if (attr)
+          gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
+      } else if (g_strcmp0(fnt, FNT_LTRRETRO) == 0) {
+        num_domains_cand = gt_feature_node_number_of_children(curnode);
+        if (num_domains_cand > max_num_domains)
+          max_num_domains = num_domains_cand;
+        break;
       }
     }
-
-    fl_cands = gt_array_new(sizeof (GtGenomeNode*));
-    for (i = 0; i < gt_array_size(num_domains_fam); i++) {
-      num_domains_cand = *(unsigned long*) gt_array_get(num_domains_fam, i);
-      if (num_domains_cand == most_freq_num_domains) {
-        gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-        gt_array_add(fl_cands, gn);
-      }
-    }
-    gt_array_delete(num_domains_fam);
-
-    fl_cands_ltr_length = gt_array_new(sizeof (gfloat));
-    fl_cands_elem_length = gt_array_new(sizeof (gfloat));
-    fl_cands_ltr_and_elem_length_median(fl_cands,
-                                        fl_cands_ltr_length,
-                                        fl_cands_elem_length,
-                                        &fl_cands_ltrlen_median,
-                                        &fl_cands_elemlen_median);
-
-    for (i = 0; i < gt_array_size(fl_cands); i++) {
-      fl_cand_ltr_length = *(gfloat*) gt_array_get(fl_cands_ltr_length, i);
-      fl_cand_elem_length = *(gfloat*) gt_array_get(fl_cands_elem_length, i);
-      if ((fabsf(fl_cand_ltr_length - fl_cands_ltrlen_median) <= ltrtolerance)
-          && (fabsf(fl_cand_elem_length - fl_cands_elemlen_median) <=
-              lentolerance)) {
-        gn = *(GtGenomeNode**) gt_array_get(fl_cands, i);
-        mark_genomenode_as_flcand(gn);
-        flcands++;
-      }
-    }
-
-    if (flcands < 2) {
-      for (i = 0; i < gt_array_size(nodes); i++) {
-        gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-        mark_genomenode_as_flcand(gn);
-      }
-    }
-
-    gt_array_delete(fl_cands_elem_length);
-    gt_array_delete(fl_cands_ltr_length);
-    gt_array_delete(fl_cands);
+    gt_feature_node_iterator_delete(fni);
+    gt_array_add(num_domains_fam, num_domains_cand);
   }
+
+  unsigned long num_domains_freq[max_num_domains];
+
+  for (i = 0; i < max_num_domains; i++) {
+    num_domains_freq[i] = 0;
+  }
+
+  for (i = 0; i < gt_array_size(num_domains_fam); i++) {
+    num_domains_cand = *(unsigned long*) gt_array_get(num_domains_fam, i);
+    num_domains_freq[num_domains_cand - 1]++;
+  }
+
+  for (i = 0; i < max_num_domains; i++) {
+    cur_num_domains = num_domains_freq[i];
+    if (cur_num_domains >= old_num_domains) {
+      most_freq_num_domains = i + 1;
+      old_num_domains = num_domains_freq[i];
+    }
+  }
+
+  fl_cands = gt_array_new(sizeof (GtGenomeNode*));
+  for (i = 0; i < gt_array_size(num_domains_fam); i++) {
+    num_domains_cand = *(unsigned long*) gt_array_get(num_domains_fam, i);
+    if (num_domains_cand == most_freq_num_domains) {
+      gn = *(GtGenomeNode**) gt_array_get(nodes, i);
+      gt_array_add(fl_cands, gn);
+    }
+  }
+  gt_array_delete(num_domains_fam);
+
+  fl_cands_ltr_length = gt_array_new(sizeof (gfloat));
+  fl_cands_elem_length = gt_array_new(sizeof (gfloat));
+  fl_cands_ltr_and_elem_length_median(fl_cands,
+                                      fl_cands_ltr_length,
+                                      fl_cands_elem_length,
+                                      &fl_cands_ltrlen_median,
+                                      &fl_cands_elemlen_median);
+
+  for (i = 0; i < gt_array_size(fl_cands); i++) {
+    fl_cand_ltr_length = *(gfloat*) gt_array_get(fl_cands_ltr_length, i);
+    fl_cand_elem_length = *(gfloat*) gt_array_get(fl_cands_elem_length, i);
+    if ((fabsf(fl_cand_ltr_length - fl_cands_ltrlen_median) <= ltrtolerance)
+        && (fabsf(fl_cand_elem_length - fl_cands_elemlen_median) <=
+            lentolerance)) {
+      gn = *(GtGenomeNode**) gt_array_get(fl_cands, i);
+      mark_genomenode_as_flcand(gn);
+      flcands++;
+    }
+  }
+
+  gt_array_delete(fl_cands_elem_length);
+  gt_array_delete(fl_cands_ltr_length);
+  gt_array_delete(fl_cands);
+
+  return flcands;
 }
