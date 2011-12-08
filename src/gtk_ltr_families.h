@@ -64,7 +64,7 @@
 #define CAND_RM_DIALOG "All selected candidates will be deleted from the "\
                        "project. This action cannot be undone!\nAre you sure?"
 #define CAND_UC_DIALOG "All selected members will be unclassified after this "\
-                       "operation and added to the 'General' tab.\n"\
+                       "operation and added to the 'Unclassified' tab.\n"\
                        "Are you sure?"
 
 #define ONE_FILE_DIALOG  "_One file..."
@@ -80,6 +80,8 @@
 #define FAMS_EXPORT_FLCANDS   "Export _full length candidates only."
 #define FAMS_EDIT_NAME   "Edit name"
 #define FAMS_REMOVE_SEL  "Remove selection"
+
+#define MAIN_TAB_LABEL "Unclassified"
 
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;

@@ -490,7 +490,7 @@ gtk_ltr_families_clear_lv_det_on_equal_nodes(GtkLTRFamilies *ltrfams,
   }
 }
 
-void update_general_tab_label(GtkLTRFamilies *ltrfams)
+void update_main_tab_label(GtkLTRFamilies *ltrfams)
 {
   GtkWidget *tab_label, *child;
   gfloat percent;
@@ -509,7 +509,7 @@ void update_general_tab_label(GtkLTRFamilies *ltrfams)
     size = 1;
   percent = ((gfloat) ltrfams->unclassified_cands /
              (gfloat) size) * 100.0;
-  g_snprintf(text, BUFSIZ, "General (%.1f%%)", percent);
+  g_snprintf(text, BUFSIZ, "%s (%.1f%%)", MAIN_TAB_LABEL, percent);
   gtk_label_close_set_text(GTKLABELCLOSE(tab_label), text);
 }
 /* "support" functions end */
@@ -536,7 +536,7 @@ static gboolean classify_nodes_finished(gpointer data)
                                               threaddata->new_nodes,
                                               NULL);
       gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
-      update_general_tab_label(threaddata->ltrfams);
+      update_main_tab_label(threaddata->ltrfams);
     } else {
       g_set_error(&threaddata->ltrfams->gerr,
                   G_FILE_ERROR,
@@ -797,7 +797,7 @@ static void on_drag_data_received(GtkWidget *widget,
     g_free(tmp_oldname);
   } else {
     ltrfams->unclassified_cands -= gt_array_size(tdata->nodes);
-    update_general_tab_label(ltrfams);
+    update_main_tab_label(ltrfams);
   }
 
   /* remove rows from drag source */
@@ -935,7 +935,7 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                          -1);
       remove_nodes_from_array(tmp_nodes, nodes, FALSE);
       ltrfams->unclassified_cands += gt_array_size(nodes);
-      update_general_tab_label(ltrfams);
+      update_main_tab_label(ltrfams);
       g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                  tmp_oldname, gt_array_size(tmp_nodes));
       gtk_list_store_set(GTK_LIST_STORE(model2), &tv_iter,
@@ -948,7 +948,7 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
 
       remove_nodes_from_array(ltrfams->nodes, nodes, TRUE);
       ltrfams->unclassified_cands -= gt_array_size(nodes);
-      update_general_tab_label(ltrfams);
+      update_main_tab_label(ltrfams);
       g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
                  gt_array_size(ltrfams->nodes));
       sb_main_set_status(ltrfams->statusbar, sb_text);
@@ -1098,7 +1098,7 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
     g_list_free(references);
     g_list_free(rows);
     gtk_ltr_families_set_modified(ltrfams, TRUE);
-    update_general_tab_label(ltrfams);
+    update_main_tab_label(ltrfams);
   }
   gtk_widget_destroy(dialog);
 }
@@ -2307,7 +2307,7 @@ static void gtk_ltr_families_nb_fam_refresh_nums(gpointer user_data)
                                       "nbpage",
                                       GINT_TO_POINTER(i));
       if (g_strcmp0(gtk_label_close_get_text(GTKLABELCLOSE(tab_label)),
-                    "General") == 0) {
+                    MAIN_TAB_LABEL) == 0) {
         g_object_set_data(G_OBJECT(notebook),
                           "main_tab",
                           GINT_TO_POINTER(i));
@@ -2582,7 +2582,7 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
   gtk_container_add(GTK_CONTAINER(child), list_view);
   gtk_widget_show_all(child);
 
-  label = gtk_label_close_new("General", NULL, NULL);
+  label = gtk_label_close_new(MAIN_TAB_LABEL, NULL, NULL);
   gtk_label_close_hide_close(GTKLABELCLOSE(label));
   gtk_widget_show(label);
 
@@ -2820,7 +2820,7 @@ static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
     g_list_free(references);
     g_list_free(rows);
     gtk_ltr_families_set_modified(ltrfams, TRUE);
-    update_general_tab_label(ltrfams);
+    update_main_tab_label(ltrfams);
   }
 }
 
@@ -3087,7 +3087,7 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->style = gt_style_new(ltrfams->err);
   gt_style_load_file(ltrfams->style, DEFAULT_STYLE, ltrfams->err);
   gtk_ltr_families_nb_fam_create(ltrfams);
-  update_general_tab_label(ltrfams);
+  update_main_tab_label(ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->tb_lv_families), TRUE);
   g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
