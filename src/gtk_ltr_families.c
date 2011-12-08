@@ -1170,7 +1170,9 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
     }
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     gt_genome_nodes_sort_stable(nodes);
-    export_annotation(nodes, filename, flcands, ltrfams->gerr);
+    export_annotation(nodes, filename, flcands,
+                      gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                      ltrfams->gerr);
     gt_array_delete(nodes);
     g_free(filename);
   } else {
@@ -1187,7 +1189,9 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
                          -1);
       gt_genome_nodes_sort_stable(nodes);
       filen = g_strdup_printf("%s_%s", filename, famname);
-      export_annotation(nodes, filename, flcands, ltrfams->gerr);
+      export_annotation(nodes, filename, flcands,
+                        gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                        ltrfams->gerr);
       g_free(famname);
       g_free(filen);
       tmp = tmp->next;
@@ -1325,7 +1329,9 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
     }
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     gt_genome_nodes_sort_stable(nodes);
-    export_sequences(nodes, filename, indexname, flcands, ltrfams->gerr);
+    export_sequences(nodes, filename, indexname, flcands,
+                     gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                     ltrfams->gerr);
     gt_array_delete(nodes);
     g_free(filename);
   } else {
@@ -1342,7 +1348,9 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
                          -1);
       gt_genome_nodes_sort_stable(nodes);
       filen = g_strdup_printf("%s_%s", filename, famname);
-      export_sequences(nodes, filen, indexname, flcands, ltrfams->gerr);
+      export_sequences(nodes, filen, indexname, flcands,
+                       gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                       ltrfams->gerr);
       g_free(famname);
       g_free(filen);
       tmp = tmp->next;

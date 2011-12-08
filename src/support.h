@@ -115,11 +115,11 @@ void          extract_project_settings(GUIData *ltrgui);
 GtArray*      create_region_nodes_from_node_array(GtArray *nodes);
 
 void          export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
-                                GError *err);
+                                GtkWidget *toplevel, GError *err);
 
 void          export_sequences(GtArray *nodes, gchar *filen,
                                const gchar *indexname, gboolean flcands,
-                               GError *err);
+                               GtkWidget *toplevel, GError *err);
 
 unsigned long determine_full_length_candidates(GtArray *nodes,
                                                gfloat ltrtolerance,

@@ -16,6 +16,7 @@
 */
 
 #include <math.h>
+#include "error.h"
 #include "support.h"
 
 gboolean entry_in_list_view(GtkTreeModel *model, const gchar *entry,
@@ -373,8 +374,8 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
   return region_nodes;
 }
 
-void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands ,
-                       GError *gerr)
+void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
+                       GtkWidget *toplevel, GError *gerr)
 {
   GtkWidget *dialog;
   GtArray *region_nodes,
@@ -466,7 +467,7 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands ,
                 0,
                 "Error while exporting data: %s",
                 gt_error_get(err));
-   /*error_handle(ltrgui);*/
+   error_handle(toplevel, gerr);
   }
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(gff3_out_stream);
@@ -478,7 +479,7 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands ,
 }
 
 void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
-                      gboolean flcands, GError *gerr)
+                      gboolean flcands, GtkWidget *toplevel, GError *gerr)
 {
   GtkWidget *dialog;
   GtStr *seqid;
@@ -582,7 +583,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
                 0,
                 "Error while exporting data: %s",
                 gt_error_get(err));
-    /*error_handle(ltrgui);*/
+    error_handle(toplevel, gerr);
   }
   gt_error_delete(err);
 }

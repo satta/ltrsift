@@ -996,7 +996,7 @@ void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
-    export_annotation(nodes, filename, FALSE, ltrgui->err);
+    export_annotation(nodes, filename, FALSE, ltrgui->main_window, ltrgui->err);
     g_free(filename);
   } else
     gtk_widget_destroy(dialog);
@@ -1553,7 +1553,8 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
-    export_sequences(nodes, filename, indexname, FALSE, ltrgui->err);
+    export_sequences(nodes, filename, indexname, FALSE, ltrgui->main_window,
+                     ltrgui->err);
     g_free(filename);
   } else
     gtk_widget_destroy(dialog);
