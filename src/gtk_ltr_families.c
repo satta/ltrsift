@@ -402,7 +402,7 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
     }
     g_list_free(children);
   }
-  gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+  gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
   gtk_tree_path_free(path);
 }
 
@@ -790,7 +790,7 @@ static void on_drag_data_received(GtkWidget *widget,
     remove_nodes_from_array(tmp_nodes, tdata->nodes, FALSE);
     g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                tmp_oldname, gt_array_size(tmp_nodes));
-    gtk_tree_store_set(GTK_TREE_STORE(model), &tv_iter,
+    gtk_list_store_set(GTK_LIST_STORE(model), &tv_iter,
                        LTRFAMS_FAM_LV_CURNAME, tmp_curname,
                        -1);
     gtk_tree_path_free(tv_path);
@@ -829,7 +829,7 @@ static void on_drag_data_received(GtkWidget *widget,
   }
 
   g_snprintf(curname, BUFSIZ, "%s (%lu)", oldname, gt_array_size(nodes));
-  gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+  gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                      LTRFAMS_FAM_LV_CURNAME, curname,
                      -1);
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
@@ -904,9 +904,13 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
       if (tab_no != main_tab_no) {
         GtFeatureNode *curnode;
         GtFeatureNodeIterator *fni;
+        const char *attr;
+
         fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
         curnode = gt_feature_node_iterator_next(fni);
-        gt_feature_node_remove_attribute(curnode, "ltrfam");
+        gt_feature_node_remove_attribute(curnode, ATTR_LTRFAM);
+        if ((attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN)))
+          gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
         gtk_ltr_families_nb_fam_lv_append_gn(tmp_view, gn, ltrfams->features,
                                           NULL, NULL, NULL, NULL);
         gt_feature_node_iterator_delete(fni);
@@ -934,7 +938,7 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
       update_general_tab_label(ltrfams);
       g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                  tmp_oldname, gt_array_size(tmp_nodes));
-      gtk_tree_store_set(GTK_TREE_STORE(model2), &tv_iter,
+      gtk_list_store_set(GTK_LIST_STORE(model2), &tv_iter,
                          LTRFAMS_FAM_LV_CURNAME, tmp_curname,
                          -1);
       gtk_tree_path_free(tv_path);
@@ -1514,7 +1518,7 @@ static void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
         gt_array_add(nodes, gn);
         g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                    tmp_oldname, gt_array_size(nodes));
-        gtk_tree_store_set(GTK_TREE_STORE(model), tmp_iter,
+        gtk_list_store_set(GTK_LIST_STORE(model), tmp_iter,
                            LTRFAMS_FAM_LV_CURNAME, tmp_curname,
                            -1);
         g_free(tmp_oldname);
@@ -1524,8 +1528,8 @@ static void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
         gt_array_add(nodes, gn);
         g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                    fam, gt_array_size(nodes));
-        gtk_tree_store_append(GTK_TREE_STORE(model), &iter, NULL);
-        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+        gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            LTRFAMS_FAM_LV_NODE_ARRAY, nodes,
                            LTRFAMS_FAM_LV_TAB_CHILD, NULL,
                            LTRFAMS_FAM_LV_TAB_LABEL, NULL,
@@ -2342,7 +2346,7 @@ static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
     tmp = GPOINTER_TO_INT(
            gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
   if (nbpage == tmp) {
-    gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                        LTRFAMS_FAM_LV_TAB_CHILD, NULL,
                        LTRFAMS_FAM_LV_TAB_LABEL, NULL,
                        -1);
@@ -2356,7 +2360,7 @@ static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
                gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
                                                "nbpage"));
       if (nbpage == tmp) {
-        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            LTRFAMS_FAM_LV_TAB_CHILD, NULL,
                            LTRFAMS_FAM_LV_TAB_LABEL, NULL,
                            -1);
@@ -2478,7 +2482,7 @@ void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
   gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(ltrfams->nb_family),
                                    child,
                                    TRUE);
-  gtk_tree_store_set(GTK_TREE_STORE(model), iter,
+  gtk_list_store_set(GTK_LIST_STORE(model), iter,
                      LTRFAMS_FAM_LV_TAB_CHILD, list_view,
                      LTRFAMS_FAM_LV_TAB_LABEL, label,
                      -1);
@@ -2720,7 +2724,7 @@ gtk_ltr_families_lv_fams_tb_add_clicked(GT_UNUSED GtkWidget *button,
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
-  GtkTreeStore *store;
+  GtkListStore *store;
   GtkTreeViewColumn *column;
   GtkTreePath *path;
   GtkTreeSelection *selection;
@@ -2729,11 +2733,11 @@ gtk_ltr_families_lv_fams_tb_add_clicked(GT_UNUSED GtkWidget *button,
   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
   column = gtk_tree_view_get_column(GTK_TREE_VIEW(ltrfams->lv_families), 0);
   gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
-  store = GTK_TREE_STORE(model);
+  store = GTK_LIST_STORE(model);
   g_object_set(ltrfams->lv_fams_renderer, "editable", TRUE, NULL);
 
-  gtk_tree_store_append(store, &iter, NULL);
-  gtk_tree_store_set(store, &iter,
+  gtk_list_store_append(store, &iter);
+  gtk_list_store_set(store, &iter,
                      LTRFAMS_FAM_LV_NODE_ARRAY, NULL,
                      LTRFAMS_FAM_LV_TAB_CHILD, NULL,
                      LTRFAMS_FAM_LV_TAB_LABEL, NULL,
@@ -2840,7 +2844,7 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                      -1);
 
   if (!old_name && (g_strcmp0(new_name, "") == 0))
-    gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
   else if (g_strcmp0(new_name, "") == 0) {
     GtkWidget *dialog;
     dialog = gtk_message_dialog_new(NULL,
@@ -2882,16 +2886,14 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                          -1);
       if (!nodes) {
         nodes = gt_array_new(sizeof(GtGenomeNode*));
-        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+        gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            LTRFAMS_FAM_LV_NODE_ARRAY, nodes,
                            -1);
       } else
         update_genomenode_famname(nodes, new_name);
       g_snprintf(tmp_name, BUFSIZ, "%s (%lu)", new_name, gt_array_size(nodes));
-      gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
+      gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                          LTRFAMS_FAM_LV_CURNAME, tmp_name,
-                         -1);
-      gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
                          LTRFAMS_FAM_LV_OLDNAME, new_name,
                          -1);
       gtk_tree_model_get(model, &iter,
@@ -2928,7 +2930,7 @@ gtk_ltr_families_lv_fams_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
                      -1);
 
   if (!name)
-    gtk_tree_store_remove(GTK_TREE_STORE(model), &iter);
+    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
   g_free(name);
   g_object_set(ltrfams->lv_fams_renderer, "editable", FALSE, NULL);
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
@@ -2997,7 +2999,7 @@ gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
 static void gtk_ltr_families_lv_fams_create(GtkLTRFamilies *ltrfams)
 {
   GtkTreeViewColumn *column;
-  GtkTreeStore *store;
+  GtkListStore *store;
 
   ltrfams->lv_fams_renderer = gtk_cell_renderer_text_new();
   g_signal_connect(G_OBJECT(ltrfams->lv_fams_renderer), "edited",
@@ -3023,7 +3025,7 @@ static void gtk_ltr_families_lv_fams_create(GtkLTRFamilies *ltrfams)
                                                      NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfams->lv_families), column);
 
-  store = gtk_tree_store_new(LTRFAMS_FAM_LV_N_COLUMS,
+  store = gtk_list_store_new(LTRFAMS_FAM_LV_N_COLUMS,
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
                              G_TYPE_POINTER,
