@@ -3031,6 +3031,7 @@ static void gtk_ltr_families_lv_fams_create(GtkLTRFamilies *ltrfams)
                                                      "text",
                                                      LTRFAMS_FAM_LV_CURNAME,
                                                      NULL);
+  gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_FAM_LV_CURNAME);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfams->lv_families), column);
 
   store = gtk_list_store_new(LTRFAMS_FAM_LV_N_COLUMS,

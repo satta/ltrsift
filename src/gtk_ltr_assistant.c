@@ -1038,6 +1038,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                                                     "text",
                                                     0,
                                                     NULL);
+  gtk_tree_view_column_set_sort_column_id(column, 0);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
                               column);
   store = gtk_list_store_new(1, G_TYPE_STRING);
@@ -1410,6 +1411,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                                                     "text",
                                                     0,
                                                     NULL);
+  gtk_tree_view_column_set_sort_column_id(column, 0);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrassi->list_view_features),
                               column);
   store = gtk_list_store_new(1, G_TYPE_STRING);
