@@ -35,7 +35,8 @@ static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   GtFeatureNodeIterator *fni;
   unsigned long num;
   int had_err = 0;
-  bool first_ltr = true;
+  bool first_ltr = true,
+       in_ltrretro = false;
 
   pv = gt_preprocess_visitor_cast(gv);
   gt_assert(pv);
@@ -43,9 +44,14 @@ static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   fni = gt_feature_node_iterator_new(fn);
 
   while (!had_err && (curnode = gt_feature_node_iterator_next(fni))) {
-    if (pv->all_features ||
-                (clid = gt_feature_node_get_attribute(curnode, ATTR_CLUSTID))) {
-      fnt = gt_feature_node_get_type(curnode);
+    fnt = gt_feature_node_get_type(curnode);
+    if (strcmp(fnt, FNT_LTRRETRO) == 0) {
+      in_ltrretro = true;
+      continue;
+    }
+    if (in_ltrretro && (pv->all_features ||
+                        (clid = gt_feature_node_get_attribute(curnode,
+                                                              ATTR_CLUSTID)))) {
       num = *pv->num;
       if (strcmp(fnt, FNT_PROTEINM) == 0) {
         attr = gt_feature_node_get_attribute(curnode, ATTR_PFAMN);
@@ -60,8 +66,10 @@ static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
         if (first_ltr) {
           tmp = gt_cstr_dup("lLTR");
           first_ltr = false;
-        } else
+        } else {
           tmp = gt_cstr_dup("rLTR");
+          in_ltrretro = false;
+        }
         if (!gt_hashmap_get(pv->features, (void*) tmp)) {
           gt_hashmap_add(pv->features, (void*) gt_cstr_dup(tmp), (void*) num);
           *pv->num = *pv->num + 1;

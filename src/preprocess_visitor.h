@@ -23,6 +23,7 @@
 #define ATTR_CLUSTID "clid"
 #define ATTR_PFAMN   "name"
 #define FNT_PROTEINM "protein_match"
+#define FNT_LTRRETRO "LTR_retrotransposon"
 #define FNT_LTR      "long_terminal_repeat"
 #define FNT_LLTR     "lLTR"
 #define FNT_RLTR     "rLTR"
