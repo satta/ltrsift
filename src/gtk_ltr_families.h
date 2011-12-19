@@ -88,11 +88,6 @@ typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
 
 enum {
- EXPORT_ANNOTATION = 0,
- EXPORT_SEQUENCES
-};
-
-enum {
   LTRFAMS_LV_NODE = 0,
   LTRFAMS_LV_ROWREF,
   LTRFAMS_LV_FLCAND,

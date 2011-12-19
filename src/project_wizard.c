@@ -20,7 +20,7 @@
 #include "project_wizard.h"
 #include "support.h"
 
-static gboolean project_wizard_finished(gpointer data)
+static gboolean project_wizard_finished_job(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
@@ -42,9 +42,12 @@ static gboolean project_wizard_finished(gpointer data)
                                     threaddata->nodes,
                                     threaddata->features,
                                     threaddata->n_features);
-    gtk_ltr_families_determine_fl_cands(GTK_LTR_FAMILIES(ltrfams),
-                                        threaddata->ltrtolerance,
-                                        threaddata->lentolerance);
+    if (gtk_ltr_assistant_get_classification(
+                            GTK_LTR_ASSISTANT(threaddata->ltrgui->assistant))) {
+      gtk_ltr_families_determine_fl_cands(GTK_LTR_FAMILIES(ltrfams),
+                                          threaddata->ltrtolerance,
+                                          threaddata->lentolerance);
+    }
     mb_main_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
                                      threaddata->err, FALSE);
     mb_main_activate_menuitems(threaddata->ltrgui);
@@ -69,7 +72,7 @@ static gboolean project_wizard_finished(gpointer data)
   return FALSE;
 }
 
-static gpointer project_wizard_start(gpointer data)
+static gpointer project_wizard_start_job(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrassi = threaddata->ltrgui->assistant;
@@ -101,6 +104,7 @@ static gpointer project_wizard_start(gpointer data)
        num_threads,
        i = 0,
        num_of_files;
+  const gchar *moreblast;
   char buf[BUFSIZ],
        *tmp_gff3,
        *old_gff3;
@@ -111,31 +115,6 @@ static gpointer project_wizard_start(gpointer data)
   gdouble evalue,
           seqid,
           xdrop;
-
-  evalue = gtk_ltr_assistant_get_evalue(GTK_LTR_ASSISTANT(ltrassi));
-  dust = gtk_ltr_assistant_get_dust(GTK_LTR_ASSISTANT(ltrassi));
-  gapopen = gtk_ltr_assistant_get_gapopen(GTK_LTR_ASSISTANT(ltrassi));
-  if (gapopen == 0)
-    gapopen = GT_UNDEF_INT;
-  gapextend = gtk_ltr_assistant_get_gapextend(GTK_LTR_ASSISTANT(ltrassi));
-  if (gapextend == 0)
-    gapextend = GT_UNDEF_INT;
-  xdrop = gtk_ltr_assistant_get_xdrop(GTK_LTR_ASSISTANT(ltrassi));
-  penalty = gtk_ltr_assistant_get_penalty(GTK_LTR_ASSISTANT(ltrassi));
-  /* according to BLASTN help -penalty must be <=0 but BLASTN shows an error:
-     BLASTN penalty must be negative. Therefore -penalty will be omitted when
-     the value is zero */
-  if (penalty == 0)
-    penalty = GT_UNDEF_INT;
-  reward = gtk_ltr_assistant_get_reward(GTK_LTR_ASSISTANT(ltrassi));
-  if (reward == 0)
-    reward = GT_UNDEF_INT;
-  num_threads = gtk_ltr_assistant_get_threads(GTK_LTR_ASSISTANT(ltrassi));
-  wordsize = gtk_ltr_assistant_get_wordsize(GTK_LTR_ASSISTANT(ltrassi));
-  seqid = gtk_ltr_assistant_get_seqid(GTK_LTR_ASSISTANT(ltrassi));
-
-  psmall = gtk_ltr_assistant_get_psmall(GTK_LTR_ASSISTANT(ltrassi));
-  plarge = gtk_ltr_assistant_get_plarge(GTK_LTR_ASSISTANT(ltrassi));
 
   list_view =
           gtk_ltr_assistant_get_list_view_gff3files(GTK_LTR_ASSISTANT(ltrassi));
@@ -195,6 +174,31 @@ static gpointer project_wizard_start(gpointer data)
         error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
       } else
         fclose(fp);
+      evalue = gtk_ltr_assistant_get_evalue(GTK_LTR_ASSISTANT(ltrassi));
+      dust = gtk_ltr_assistant_get_dust(GTK_LTR_ASSISTANT(ltrassi));
+      gapopen = gtk_ltr_assistant_get_gapopen(GTK_LTR_ASSISTANT(ltrassi));
+      if (gapopen == 0)
+        gapopen = GT_UNDEF_INT;
+      gapextend = gtk_ltr_assistant_get_gapextend(GTK_LTR_ASSISTANT(ltrassi));
+      if (gapextend == 0)
+        gapextend = GT_UNDEF_INT;
+      xdrop = gtk_ltr_assistant_get_xdrop(GTK_LTR_ASSISTANT(ltrassi));
+      penalty = gtk_ltr_assistant_get_penalty(GTK_LTR_ASSISTANT(ltrassi));
+      /* according to BLASTN help -penalty must be <=0 but BLASTN shows an
+         error: BLASTN penalty must be negative. Therefore -penalty will be
+         omitted when the value is zero */
+      if (penalty == 0)
+        penalty = GT_UNDEF_INT;
+      reward = gtk_ltr_assistant_get_reward(GTK_LTR_ASSISTANT(ltrassi));
+      if (reward == 0)
+        reward = GT_UNDEF_INT;
+      num_threads = gtk_ltr_assistant_get_threads(GTK_LTR_ASSISTANT(ltrassi));
+      wordsize = gtk_ltr_assistant_get_wordsize(GTK_LTR_ASSISTANT(ltrassi));
+      seqid = gtk_ltr_assistant_get_seqid(GTK_LTR_ASSISTANT(ltrassi));
+      moreblast = gtk_ltr_assistant_get_moreblast(GTK_LTR_ASSISTANT(ltrassi));
+
+      psmall = gtk_ltr_assistant_get_psmall(GTK_LTR_ASSISTANT(ltrassi));
+      plarge = gtk_ltr_assistant_get_plarge(GTK_LTR_ASSISTANT(ltrassi));
     }
     g_free(match_params);
     g_free(md5_file);
@@ -223,6 +227,7 @@ static gpointer project_wizard_start(gpointer data)
                                                                    num_threads,
                                                                    xdrop,
                                                                    seqid,
+                                                                   moreblast,
                                                                    from_file,
                                                      &threaddata->current_state,
                                                                threaddata->err);
@@ -306,7 +311,7 @@ static gpointer project_wizard_start(gpointer data)
   g_free(tmp_gff3);
   gt_str_delete(tmpdirprefix);
 
-  g_idle_add(project_wizard_finished, data);
+  g_idle_add(project_wizard_finished_job, data);
   return NULL;
 }
 
@@ -378,5 +383,8 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
   threaddata->err = gt_error_new();
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  g_thread_create(project_wizard_start, (gpointer) threaddata, FALSE, NULL);
+  if (!g_thread_create(project_wizard_start_job, (gpointer) threaddata, FALSE,
+                       &ltrgui->err)) {
+    error_handle(ltrgui->main_window, ltrgui->err);
+  }
 }

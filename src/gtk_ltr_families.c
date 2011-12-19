@@ -1787,7 +1787,10 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   progress_dialog_init(threaddata,
                        gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
 
-  g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE, NULL);
+  if (!g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE,
+                       &ltrfams->gerr)) {
+    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->gerr);
+  }
 
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
@@ -2677,12 +2680,13 @@ static void gtk_ltr_families_tv_det_create(GtkTreeView *tree_view)
                                                     NULL);
   gtk_tree_view_append_column(tree_view, column);
 
-  renderer = gtk_cell_renderer_text_new();
+  /* LTRFAMS_DETAIL_TV_INFO is not needed atm */
+  /* renderer = gtk_cell_renderer_text_new();
   column = gtk_tree_view_column_new_with_attributes(LTRFAMS_TV_CAPTION_INFO,
                                                     renderer, "text",
                                                     LTRFAMS_DETAIL_TV_INFO,
                                                     NULL);
-  gtk_tree_view_append_column(tree_view, column);
+  gtk_tree_view_append_column(tree_view, column); */
   gtk_widget_show_all(GTK_WIDGET(tree_view));
 }
 /* <tv_details> related functions end */

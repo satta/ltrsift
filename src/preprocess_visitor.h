@@ -32,6 +32,12 @@ typedef struct LTRGuiPreprocessVisitor LTRGuiPreprocessVisitor;
 
 const GtNodeVisitorClass* ltrgui_preprocess_visitor_class(void);
 
+/* Implements the <GtNodeVisitor> interface. <LTRGuiPreprocessVisitor>
+   traverses each <GtFeatureNode> and looks for features with given cluster id
+   (if <all_features> is set to false). Features will be stored in <features>
+   which will be used by LTRGui. If <all_features> is set to true, features
+   without cluster id will be stored in <features>. <num> will be the total
+   amount of unique features found. */
 GtNodeVisitor* ltrgui_preprocess_visitor_new(GtHashmap *features,
                                              unsigned long *num,
                                              bool all_features,

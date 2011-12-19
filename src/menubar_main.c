@@ -881,8 +881,10 @@ void mb_main_file_save_activate(GT_UNUSED GtkMenuItem *menuitem,
     g_rename(projectfile, threaddata->tmp_filename);
     progress_dialog_init(threaddata, ltrgui->main_window);
 
-    g_thread_create(mb_main_save_project_data_start,
-                    (gpointer) threaddata, FALSE, NULL);
+    if (!g_thread_create(mb_main_save_project_data_start, (gpointer) threaddata,
+                         FALSE, &ltrgui->err)) {
+      error_handle(ltrgui->main_window, ltrgui->err);
+    }
   }
 }
 
@@ -963,8 +965,10 @@ void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->had_err = 0;
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  g_thread_create(mb_main_save_project_data_start,
-                  (gpointer) threaddata, FALSE, NULL);
+  if (!g_thread_create(mb_main_save_project_data_start, (gpointer) threaddata,
+                       FALSE, &ltrgui->err)) {
+    error_handle(ltrgui->main_window, ltrgui->err);
+  }
 }
 
 void mb_main_file_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
@@ -1259,8 +1263,10 @@ void mb_main_file_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->err = gt_error_new();
   threaddata->open = TRUE;
   progress_dialog_init(threaddata, ltrgui->main_window);
-  g_thread_create(mb_main_open_project_data_start,
-                  (gpointer) threaddata, FALSE, NULL);
+  if (!g_thread_create(mb_main_open_project_data_start, (gpointer) threaddata,
+                       FALSE, &ltrgui->err)) {
+    error_handle(ltrgui->main_window, ltrgui->err);
+  }
 }
 
 void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
@@ -1430,8 +1436,10 @@ static void mb_main_file_open_recent_activated(GtkRecentChooser *rc,
   threaddata->open = TRUE;
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  g_thread_create(mb_main_open_project_data_start,
-                  (gpointer) threaddata, FALSE, NULL);
+  if (!g_thread_create(mb_main_open_project_data_start, (gpointer) threaddata,
+                       FALSE, &ltrgui->err)) {
+    error_handle(ltrgui->main_window, ltrgui->err);
+  }
 }
 
 void mb_main_file_quit_activate(GT_UNUSED GtkMenuItem *menuitem,

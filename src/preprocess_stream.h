@@ -24,6 +24,8 @@ typedef struct LTRGuiPreprocessStream LTRGuiPreprocessStream;
 
 const GtNodeStreamClass* ltrgui_preprocess_stream_class(void);
 
+/* Implements the <GtNodeStream> interface. <LTRGuiPreprocessStream> processes
+   each <GtGenomeNode> via <LTRGuiPreprocessVisitor> */
 GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
                                            GtHashmap *features,
                                            unsigned long *num,

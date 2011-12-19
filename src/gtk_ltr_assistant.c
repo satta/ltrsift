@@ -684,6 +684,9 @@ static void checkb_clustering_toggled(GtkToggleButton *togglebutton,
   gtk_label_set_label(GTK_LABEL(ltrassi->label_doclustering),
                       active ? "Yes" : "No");
   show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 1, active);
+  if (!active)
+    gtk_toggle_button_set_active(
+                      GTK_TOGGLE_BUTTON(ltrassi->checkb_classification), FALSE);
   update_cluster_overview(ltrassi);
 }
 
@@ -851,8 +854,6 @@ gchar* gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi)
   }
   if (moreblast)
     sprintf(blast_call, "%s %s", blast_call, moreblast);
-
-  /*g_free(moreblast);*/
 
   return g_strdup(blast_call);
 }
