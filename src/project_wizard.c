@@ -273,10 +273,10 @@ static gpointer project_wizard_start(gpointer data)
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-    last_stream = preprocess_stream = gt_preprocess_stream_new(last_stream,
-                                                               features,
+    last_stream = preprocess_stream = ltrgui_preprocess_stream_new(last_stream,
+                                                                   features,
                                                         &threaddata->n_features,
-                                                               FALSE,
+                                                                   FALSE,
                                                                threaddata->err);
     last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
                                                                     nodes,

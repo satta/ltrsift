@@ -817,9 +817,9 @@ static gpointer mb_main_open_project_data_start(gpointer data)
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
     array_in_stream = gt_array_in_stream_new(nodes, NULL, threaddata->err);
-    preprocess_stream = gt_preprocess_stream_new(array_in_stream, features,
-                                                 &n_features, FALSE,
-                                                 threaddata->err);
+    preprocess_stream = ltrgui_preprocess_stream_new(array_in_stream, features,
+                                                     &n_features, FALSE,
+                                                     threaddata->err);
     threaddata->had_err = gt_node_stream_pull(preprocess_stream,
                                               threaddata->err);
   }
@@ -1173,8 +1173,8 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
   n_features = LTRFAMS_LV_N_COLUMS;
   gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
-  preprocess_stream = gt_preprocess_stream_new(gff3_in_stream, features,
-                                               &n_features, FALSE, err);
+  preprocess_stream = ltrgui_preprocess_stream_new(gff3_in_stream, features,
+                                                   &n_features, FALSE, err);
   array_out_stream = gt_array_out_stream_new(preprocess_stream, nodes, err);
   had_err = gt_node_stream_pull(array_out_stream, err);
   if (!had_err) {

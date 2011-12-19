@@ -20,14 +20,14 @@
 
 #include "genometools.h"
 
-typedef struct GtPreprocessStream GtPreprocessStream;
+typedef struct LTRGuiPreprocessStream LTRGuiPreprocessStream;
 
-const GtNodeStreamClass* gt_preprocess_stream_class(void);
+const GtNodeStreamClass* ltrgui_preprocess_stream_class(void);
 
-GtNodeStream* gt_preprocess_stream_new(GtNodeStream *in_stream,
-                                       GtHashmap *features,
-                                       unsigned long *num,
-                                       bool all_features,
-                                       GtError *err);
+GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
+                                           GtHashmap *features,
+                                           unsigned long *num,
+                                           bool all_features,
+                                           GtError *err);
 
 #endif

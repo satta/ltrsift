@@ -18,24 +18,24 @@
 #include "preprocess_stream.h"
 #include "preprocess_visitor.h"
 
-struct GtPreprocessStream {
+struct LTRGuiPreprocessStream {
   const GtNodeStream parent_instance;
   GtNodeStream *in_stream;
-  GtPreprocessVisitor *pv;
+  LTRGuiPreprocessVisitor *pv;
 };
 
-#define gt_preprocess_stream_cast(GS)\
-        gt_node_stream_cast(gt_preprocess_stream_class(), GS);
+#define ltrgui_preprocess_stream_cast(GS)\
+        gt_node_stream_cast(ltrgui_preprocess_stream_class(), GS);
 
-static int gt_preprocess_stream_next(GtNodeStream *gs, GtGenomeNode **gn,
-                                     GtError *err)
+static int ltrgui_preprocess_stream_next(GtNodeStream *gs, GtGenomeNode **gn,
+                                         GtError *err)
 {
-  GtPreprocessStream *ps;
+  LTRGuiPreprocessStream *ps;
 
   int had_err = 0;
 
   gt_error_check(err);
-  ps = gt_preprocess_stream_cast(gs);
+  ps = ltrgui_preprocess_stream_cast(gs);
 
   had_err = gt_node_stream_next(ps->in_stream, gn, err);
 
@@ -50,35 +50,37 @@ static int gt_preprocess_stream_next(GtNodeStream *gs, GtGenomeNode **gn,
   return had_err;
 }
 
-static void gt_preprocess_stream_free(GtNodeStream *gs)
+static void ltrgui_preprocess_stream_free(GtNodeStream *gs)
 {
-  GtPreprocessStream *ps = gt_preprocess_stream_cast(gs);
+  LTRGuiPreprocessStream *ps = ltrgui_preprocess_stream_cast(gs);
   gt_node_visitor_delete((GtNodeVisitor*) ps->pv);
   gt_node_stream_delete(ps->in_stream);
 }
 
-const GtNodeStreamClass* gt_preprocess_stream_class(void)
+const GtNodeStreamClass* ltrgui_preprocess_stream_class(void)
 {
   static const GtNodeStreamClass *gsc = NULL;
   if (!gsc)
-    gsc = gt_node_stream_class_new(sizeof (GtPreprocessStream),
-                                   gt_preprocess_stream_free,
-                                   gt_preprocess_stream_next);
+    gsc = gt_node_stream_class_new(sizeof (LTRGuiPreprocessStream),
+                                   ltrgui_preprocess_stream_free,
+                                   ltrgui_preprocess_stream_next);
   return gsc;
 }
 
-GtNodeStream* gt_preprocess_stream_new(GtNodeStream *in_stream,
+GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
                                        GtHashmap *features,
                                        unsigned long *num,
                                        bool all_features,
                                        GtError *err)
 {
   GtNodeStream *gs;
-  GtPreprocessStream *ps;
-  gs = gt_node_stream_create(gt_preprocess_stream_class(), true);
-  ps = gt_preprocess_stream_cast(gs);
+  LTRGuiPreprocessStream *ps;
+  gs = gt_node_stream_create(ltrgui_preprocess_stream_class(), true);
+  ps = ltrgui_preprocess_stream_cast(gs);
   ps->in_stream = gt_node_stream_ref(in_stream);
-  ps->pv = (GtPreprocessVisitor*) gt_preprocess_visitor_new(features, num,
-                                                            all_features, err);
+  ps->pv = (LTRGuiPreprocessVisitor*) ltrgui_preprocess_visitor_new(features,
+                                                                    num,
+                                                                   all_features,
+                                                                    err);
   return gs;
 }

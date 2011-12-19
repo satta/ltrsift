@@ -28,19 +28,19 @@
 #define FNT_LLTR     "lLTR"
 #define FNT_RLTR     "rLTR"
 
-typedef struct GtPreprocessVisitor GtPreprocessVisitor;
+typedef struct LTRGuiPreprocessVisitor LTRGuiPreprocessVisitor;
 
-const GtNodeVisitorClass* gt_preprocess_visitor_class(void);
+const GtNodeVisitorClass* ltrgui_preprocess_visitor_class(void);
 
-GtNodeVisitor* gt_preprocess_visitor_new(GtHashmap *features,
-                                         unsigned long *num,
-                                         bool all_features,
-                                         GtError *err);
+GtNodeVisitor* ltrgui_preprocess_visitor_new(GtHashmap *features,
+                                             unsigned long *num,
+                                             bool all_features,
+                                             GtError *err);
 
-#define gt_preprocess_visitor_cast(GV)\
-        gt_node_visitor_cast(gt_preprocess_visitor_class(), GV)
+#define ltrgui_preprocess_visitor_cast(GV)\
+        gt_node_visitor_cast(ltrgui_preprocess_visitor_class(), GV)
 
-#define gt_preprocess_visitor_try_cast(GV)\
-        gt_node_visitor_try_cast(gt_preprocess_visitor_class(), GV)
+#define ltrgui_preprocess_visitor_try_cast(GV)\
+        gt_node_visitor_try_cast(ltrgui_preprocess_visitor_class(), GV)
 
 #endif

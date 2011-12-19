@@ -276,11 +276,11 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
 
   gff3_in_stream = gt_gff3_in_stream_new_unsorted(num_of_files, gff3_files);
   features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-  preprocess_stream = gt_preprocess_stream_new(gff3_in_stream,
-                                                             features,
-                                                             &n,
-                                                             TRUE,
-                                                             err);
+  preprocess_stream = ltrgui_preprocess_stream_new(gff3_in_stream,
+                                                   features,
+                                                   &n,
+                                                   TRUE,
+                                                   err);
   had_err = gt_node_stream_pull(preprocess_stream, err);
 
   gtk_list_store_clear(GTK_LIST_STORE(

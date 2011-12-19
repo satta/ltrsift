@@ -18,18 +18,18 @@
 #include <string.h>
 #include "preprocess_visitor.h"
 
-struct GtPreprocessVisitor {
+struct LTRGuiPreprocessVisitor {
   const GtNodeVisitor parent_instance;
   GtHashmap *features;
   unsigned long *num;
   bool all_features;
 };
 
-static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
-                                              GtFeatureNode *fn,
-                                              GtError *err)
+static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
+                                                  GtFeatureNode *fn,
+                                                  GtError *err)
 {
-  GtPreprocessVisitor *pv;
+  LTRGuiPreprocessVisitor *pv;
   const char *fnt = NULL, *clid = NULL, *attr = NULL;
   GtFeatureNode *curnode = NULL;
   GtFeatureNodeIterator *fni;
@@ -38,7 +38,7 @@ static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   bool first_ltr = true,
        in_ltrretro = false;
 
-  pv = gt_preprocess_visitor_cast(gv);
+  pv = ltrgui_preprocess_visitor_cast(gv);
   gt_assert(pv);
   gt_error_check(err);
   fni = gt_feature_node_iterator_new(fn);
@@ -89,14 +89,14 @@ static int gt_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   return had_err;
 }
 
-const GtNodeVisitorClass* gt_preprocess_visitor_class(void)
+const GtNodeVisitorClass* ltrgui_preprocess_visitor_class(void)
 {
   static const GtNodeVisitorClass *gvc = NULL;
   if (!gvc) {
-    gvc = gt_node_visitor_class_new(sizeof (GtPreprocessVisitor),
+    gvc = gt_node_visitor_class_new(sizeof (LTRGuiPreprocessVisitor),
                                     NULL,
                                     NULL,
-                                    gt_preprocess_visitor_feature_node,
+                                    ltrgui_preprocess_visitor_feature_node,
                                     NULL,
                                     NULL,
                                     NULL);
@@ -104,15 +104,15 @@ const GtNodeVisitorClass* gt_preprocess_visitor_class(void)
   return gvc;
 }
 
-GtNodeVisitor* gt_preprocess_visitor_new(GtHashmap *features,
-                                                unsigned long *num,
-                                                bool all_features,
-                                                GT_UNUSED GtError *err)
+GtNodeVisitor* ltrgui_preprocess_visitor_new(GtHashmap *features,
+                                             unsigned long *num,
+                                             bool all_features,
+                                             GT_UNUSED GtError *err)
 {
   GtNodeVisitor *nv;
-  GtPreprocessVisitor *pv;
-  nv = gt_node_visitor_create(gt_preprocess_visitor_class());
-  pv = gt_preprocess_visitor_cast(nv);
+  LTRGuiPreprocessVisitor *pv;
+  nv = gt_node_visitor_create(ltrgui_preprocess_visitor_class());
+  pv = ltrgui_preprocess_visitor_cast(nv);
   gt_assert(pv);
   pv->features = features;
   pv->num = num;
