@@ -977,7 +977,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
     {NULL, -1, "General settings", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
     {NULL, -1, "Matching/Clustering", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
     {NULL, -1, "Classification", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
-    {NULL, -1, "Overview", GTK_ASSISTANT_PAGE_CONFIRM, TRUE}};
+    {NULL, -1, "Summary", GTK_ASSISTANT_PAGE_CONFIRM, TRUE}};
 
   GtkWidget *label,
             *hsep,
