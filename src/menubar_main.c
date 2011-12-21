@@ -1355,13 +1355,15 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
 }
 
 void mb_main_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,
-                                 GT_UNUSED GUIData *ltrgui)
+                                 GUIData *ltrgui)
 {
   GtkWidget *dialog;
   GdkPixbuf *logo;
   GError *err = NULL;
 
   dialog = gtk_about_dialog_new();
+  gtk_window_set_transient_for(GTK_WINDOW(dialog),
+                               GTK_WINDOW(ltrgui->main_window));
 
   logo = gdk_pixbuf_new_from_file(GUI_LOGO, &err);
 

@@ -67,7 +67,7 @@ typedef enum {
   PAGE_CLASSIFICATION,
   PAGE_SUMMARY,
   N_PAGES
-} LTRAssistantPages;
+} GtkLTRAssistantPages;
 
 struct _GtkLTRAssistant
 {

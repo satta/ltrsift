@@ -54,8 +54,8 @@
 
 #define FAMS_RM_DIALOG    "You're about to remove %d family/families. All "\
                           "members (if any) will be unclassified after this "\
-                          "action and added to the 'General' tab.\n\nAre you "\
-                          "sure?"
+                          "action and added to the 'Unclassified' tab.\n\nAre "\
+                          "you sure?"
 #define FAMS_EMPTY_DIALOG "Family name must not be empty!"
 #define FAMS_EXIST_DIALOG "Family name already exists!"
 #define NEW_FAM_DIALOG    "Please select at least three candidates for "\
@@ -70,8 +70,8 @@
 #define ONE_FILE_DIALOG  "_One file..."
 #define SEP_FILES_DIALOG "_Separate files..."
 
-#define REMOVE_SELECTED  "Remove selected"
-#define UNCLASS_SELECTED "Unclassify selected"
+#define REMOVE_SELECTED  "Remove selection"
+#define UNCLASS_SELECTED "Unclassify selection"
 
 #define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
 #define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
