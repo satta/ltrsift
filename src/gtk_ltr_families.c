@@ -205,12 +205,11 @@ get_features_and_prefix_for_classification(GtkLTRFamilies *ltrfams,
   GList *rows, *tmp;
   gchar *feature_name;
 
-  dialog = gtk_dialog_new_with_buttons("Information",
-                   GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams))),
-                                       GTK_DIALOG_MODAL,
-                                       GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-                                       GTK_STOCK_OK, GTK_RESPONSE_OK,
-                                       NULL);
+  dialog = gtk_dialog_new_with_buttons("Information", NULL,
+                                        GTK_DIALOG_MODAL,
+                                        GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                        GTK_STOCK_OK, GTK_RESPONSE_OK,
+                                        NULL);
   gtk_dialog_set_has_separator(GTK_DIALOG(dialog), FALSE);
   gtk_dialog_set_response_sensitive(GTK_DIALOG(dialog), GTK_RESPONSE_OK, FALSE);
   label = gtk_label_new ("Select features for classification");
@@ -531,10 +530,10 @@ static gboolean classify_nodes_finished(gpointer data)
                      (GFunc) remove_row,
                      threaddata->list_view);
       threaddata->ltrfams->unclassified_cands -=
-                                           gt_array_size(threaddata->old_nodes);
+                                           gt_array_size(threaddata->new_nodes);
       gtk_ltr_families_nb_fam_lv_append_array(threaddata->ltrfams,
                                               threaddata->list_view,
-                                              threaddata->old_nodes,
+                                              threaddata->new_nodes,
                                               NULL);
       gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
       update_main_tab_label(threaddata->ltrfams);
@@ -555,7 +554,8 @@ static gpointer classify_nodes_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtNodeStream *classify_stream = NULL,
-               *array_in_stream = NULL;
+               *array_in_stream = NULL,
+               *array_out_stream = NULL;
 
   array_in_stream = gt_array_in_stream_new(threaddata->old_nodes,
                                            NULL,
@@ -566,10 +566,14 @@ static gpointer classify_nodes_start(gpointer data)
                                                &threaddata->current_state,
                                                &threaddata->progress,
                                                threaddata->err);
+  array_out_stream = gt_array_out_stream_new(classify_stream,
+                                             threaddata->new_nodes,
+                                             threaddata->err);
   threaddata->had_err = gt_node_stream_pull(array_out_stream, threaddata->err);
 
   gt_node_stream_delete(classify_stream);
   gt_node_stream_delete(array_in_stream);
+  gt_node_stream_delete(array_out_stream);
   g_idle_add(classify_nodes_finished, data);
 
   return NULL;
@@ -757,7 +761,6 @@ static void on_drag_data_received(GtkWidget *widget,
       (gtk_tree_path_compare(gtk_tree_row_reference_get_path(tdata->rowref),
                             path)) == 0) {
     gtk_tree_path_free(path);
-    free_tdata(tdata);
     return;
   }
   gtk_tree_path_free(path);
@@ -800,6 +803,7 @@ static void on_drag_data_received(GtkWidget *widget,
   /* remove rows from drag source */
   g_list_foreach(tdata->references, (GFunc) remove_row, tdata->list_view);
 
+  /* clear detailed view if shown <gn> was drag'n'dropped to another family */
   for (i = 0; i < gt_array_size(tdata->nodes); i++) {
     const char *attr;
     gn = *(GtGenomeNode**) gt_array_get(tdata->nodes, i);
@@ -1681,7 +1685,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   GtkTreeIter iter;
   GtkTreeSelection *sel;
   GtkTreeRowReference *rowref;
-  GtkWidget *tab, *dialog, *toplevel;
+  GtkWidget *tab, *dialog;
   GtGenomeNode *gn;
   GtArray *nodes;
   GtHashmap *sel_features = NULL;
@@ -1693,7 +1697,6 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   gchar *fam_prefix = NULL;
   gint curtab_no;
 
-  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
   notebook = GTK_NOTEBOOK(ltrfams->nb_family);
   curtab_no = gtk_notebook_get_current_page(notebook);
   tab = gtk_notebook_get_nth_page(notebook, curtab_no);
@@ -1701,7 +1704,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   list_view = GTK_TREE_VIEW(g_list_first(children)->data);
   sel = gtk_tree_view_get_selection(list_view);
   if (gtk_tree_selection_count_selected_rows(sel) < 3) {
-    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+    dialog = gtk_message_dialog_new(NULL,
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_OK,
@@ -1727,7 +1730,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
       GtkWidget *label,
                 *entry,
                 *vbox;
-      dialog = gtk_dialog_new_with_buttons("Information", GTK_WINDOW(toplevel),
+      dialog = gtk_dialog_new_with_buttons("Information", NULL,
                                            GTK_DIALOG_MODAL, GTK_STOCK_CANCEL,
                                            GTK_RESPONSE_CANCEL, GTK_STOCK_OK,
                                            GTK_RESPONSE_OK, NULL);
@@ -1772,6 +1775,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   threaddata->ltrfams = ltrfams;
   threaddata->progressbar = ltrfams->progressbar;
   threaddata->old_nodes = nodes;
+  threaddata->new_nodes = gt_array_new(sizeof(GtGenomeNode*));
   threaddata->err = gt_error_new();
   threaddata->classification = TRUE;
   threaddata->current_state = gt_cstr_dup("Starting classification");

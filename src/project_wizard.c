@@ -82,7 +82,7 @@ static gpointer project_wizard_start_job(gpointer data)
   GtkTreeIter iter;
   GList *rows,
         *tmp;
-  GtStr *tmpdirprefix = NULL;
+  GtStr *tmpdirprefix;
   GtNodeStream *last_stream = NULL,
                *gff3_in_stream = NULL,
                *ltr_cluster_stream = NULL,
