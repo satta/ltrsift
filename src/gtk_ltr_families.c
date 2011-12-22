@@ -195,7 +195,7 @@ get_features_and_prefix_for_classification(GtkLTRFamilies *ltrfams,
                                            GtHashmap *sel_features,
                                            gchar **prefix)
 {
-  GtkWidget *label, *list_view, *vbox, *sw, *dialog, *entry;
+  GtkWidget *label, *list_view, *vbox, *sw, *dialog, *entry, *toplevel;
   GtkTreeSelection *sel;
   GtkTreeViewColumn *column;
   GtkTreeModel *model;
@@ -205,7 +205,8 @@ get_features_and_prefix_for_classification(GtkLTRFamilies *ltrfams,
   GList *rows, *tmp;
   gchar *feature_name;
 
-  dialog = gtk_dialog_new_with_buttons("Information", NULL,
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+  dialog = gtk_dialog_new_with_buttons("Information", GTK_WINDOW(toplevel),
                                         GTK_DIALOG_MODAL,
                                         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
                                         GTK_STOCK_OK, GTK_RESPONSE_OK,
@@ -760,6 +761,7 @@ static void on_drag_data_received(GtkWidget *widget,
   if (tdata->rowref &&
       (gtk_tree_path_compare(gtk_tree_row_reference_get_path(tdata->rowref),
                             path)) == 0) {
+    free_tdata(tdata);
     gtk_tree_path_free(path);
     return;
   }
@@ -1685,7 +1687,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   GtkTreeIter iter;
   GtkTreeSelection *sel;
   GtkTreeRowReference *rowref;
-  GtkWidget *tab, *dialog;
+  GtkWidget *tab, *dialog, *toplevel;
   GtGenomeNode *gn;
   GtArray *nodes;
   GtHashmap *sel_features = NULL;
@@ -1697,6 +1699,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   gchar *fam_prefix = NULL;
   gint curtab_no;
 
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
   notebook = GTK_NOTEBOOK(ltrfams->nb_family);
   curtab_no = gtk_notebook_get_current_page(notebook);
   tab = gtk_notebook_get_nth_page(notebook, curtab_no);
@@ -1704,7 +1707,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
   list_view = GTK_TREE_VIEW(g_list_first(children)->data);
   sel = gtk_tree_view_get_selection(list_view);
   if (gtk_tree_selection_count_selected_rows(sel) < 3) {
-    dialog = gtk_message_dialog_new(NULL,
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_OK,
@@ -1730,7 +1733,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
       GtkWidget *label,
                 *entry,
                 *vbox;
-      dialog = gtk_dialog_new_with_buttons("Information", NULL,
+      dialog = gtk_dialog_new_with_buttons("Information", GTK_WINDOW(toplevel),
                                            GTK_DIALOG_MODAL, GTK_STOCK_CANCEL,
                                            GTK_RESPONSE_CANCEL, GTK_STOCK_OK,
                                            GTK_RESPONSE_OK, NULL);
