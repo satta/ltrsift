@@ -1107,7 +1107,7 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
 
 static void
 gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
-                                                   gboolean multi)
+                                           gboolean multi)
 {
   GtkWidget *filechooser = NULL,
             *toplevel,
@@ -1222,7 +1222,8 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
   GList *rows,
         *tmp;
   gboolean flcands;
-  gchar *filename;
+  gchar *filename,
+        tmp_index[BUFSIZ];
   const gchar *projectfile,
               *indexname;
 
@@ -1235,8 +1236,9 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
   projset = ltrfams->projset;
   indexname =
           gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(projset));
+  g_snprintf(tmp_index, BUFSIZ, "%s%s", indexname, ESQ_PATTERN);
   if ((g_strcmp0(indexname, "") == 0) ||
-      !g_file_test(indexname, G_FILE_TEST_EXISTS)) {
+      !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
     dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
                                     GTK_DIALOG_MODAL ||
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -1278,6 +1280,7 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
         gtk_widget_destroy(filechooser);
         gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(projset),
                                               tmp);
+        gtk_ltr_families_set_modified(ltrfams, TRUE);
         g_free(tmp);
         g_free(tmpname);
         indexname =
@@ -1659,23 +1662,21 @@ static void gtk_ltr_families_nb_fam_tb_fl_clicked(GT_UNUSED GtkWidget *button,
   gtk_dialog_run(GTK_DIALOG(dialog));
   gtk_widget_destroy(dialog);
 
-  if (flcands > 0) {
-    valid = gtk_tree_model_get_iter_first(model1, &iter1);
-    if (!valid) {
-      /* report programming error */
-      return;
-    }
+  valid = gtk_tree_model_get_iter_first(model1, &iter1);
+  if (!valid) {
+    /* report programming error */
+    return;
+  }
+  gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
+  update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
+
+  while (gtk_tree_model_iter_next(model1, &iter1)) {
     gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
     update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
-
-    while (gtk_tree_model_iter_next(model1, &iter1)) {
-      gtk_tree_model_get(model1, &iter1, LTRFAMS_LV_NODE, &gn, -1);
-      update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
-    }
-    g_list_free(children);
-
-    gtk_ltr_families_set_modified(ltrfams, TRUE);
   }
+  g_list_free(children);
+
+  gtk_ltr_families_set_modified(ltrfams, TRUE);
 }
 
 static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,

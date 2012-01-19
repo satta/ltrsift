@@ -1486,7 +1486,8 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
   GtkWidget *dialog,
             *projset = ltrgui->projset;
   GtArray *nodes;
-  gchar *filename;
+  gchar *filename,
+        tmp_index[BUFSIZ];
   const gchar *projectfile,
               *indexname;
 
@@ -1494,8 +1495,9 @@ void mb_main_file_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
   indexname = gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(projset));
   projectfile =
        gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  g_snprintf(tmp_index, BUFSIZ, "%s%s", indexname, ESQ_PATTERN);
   if ((g_strcmp0(indexname, "") == 0) ||
-      !g_file_test(indexname, G_FILE_TEST_EXISTS)) {
+      !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
     dialog = gtk_message_dialog_new(GTK_WINDOW(ltrgui->main_window),
                                     GTK_DIALOG_MODAL ||
                                     GTK_DIALOG_DESTROY_WITH_PARENT,

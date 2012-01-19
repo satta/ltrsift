@@ -52,7 +52,7 @@
 #define TB_NB_NEW_FAM  "Search new families for selected candidates"
 #define TB_NB_FL_CANDS "Determine full length candidates for current family"
 
-#define FAMS_RM_DIALOG    "You're about to remove %d family/families. All "\
+#define FAMS_RM_DIALOG    "You are about to remove %d family/families. All "\
                           "members (if any) will be unclassified after this "\
                           "action and added to the 'Unclassified' tab.\n\n "\
                           "Are you sure?"

@@ -974,7 +974,7 @@ static gboolean gtk_ltr_assistant_destroy(GtkWidget *widget,
 static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 {
   LTRAssistantPageInfo page_info[N_PAGES] = {
-    {NULL, -1, "Introduction", GTK_ASSISTANT_PAGE_INTRO, TRUE},
+    /*{NULL, -1, "Introduction", GTK_ASSISTANT_PAGE_INTRO, TRUE},*/
     {NULL, -1, "General settings", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
     {NULL, -1, "Matching/Clustering", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
     {NULL, -1, "Classification", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
@@ -1001,17 +1001,17 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gint i;
 
   /* Introduction page */
-  page_info[PAGE_INTRODUCTION].widget = gtk_label_new("PLACEHOLDER");
+  /*page_info[PAGE_INTRODUCTION].widget = gtk_label_new("PLACEHOLDER");*/
 
   /* General settings page */
   page_info[PAGE_GENERAL].widget = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("PLACEHOLDER");
-  hsep = gtk_hseparator_new();
+  label = gtk_label_new("This page let you select files");
+  /*hsep = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
-                     hsep, FALSE, FALSE, 1);
-  label = gtk_label_new("Please choose a directory and a name for the project");
+                     hsep, FALSE, FALSE, 1);*/
+  label = gtk_label_new("Choose a directory and a name for the project");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      label, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 5);
@@ -1027,7 +1027,9 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                      hbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      hsep, FALSE, FALSE, 1);
-  label = gtk_label_new("Please select GFF3 file(s)");
+  label = gtk_label_new("Select GFF3 annotation file(s)");
+  gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
+                     label, FALSE, FALSE, 1);
   sw = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
                                  GTK_POLICY_AUTOMATIC,
@@ -1063,7 +1065,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      hbox, FALSE, FALSE, 1);
-  label = gtk_label_new("Please select the associated indexname");
+  label = gtk_label_new("Select the associated indexname");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      label, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 5);
@@ -1086,8 +1088,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
   /* Matching/Clustering settings page */
   page_info[PAGE_CLUSTERING].widget = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("Matches will be generated with BLASTN. Please set "
-                        "the following parameters");
+  label = gtk_label_new("Set BLASTN parameter");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      label, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 5);
@@ -1323,17 +1324,17 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      hsep, FALSE, FALSE, 1);
 
-  label = gtk_label_new("Please set the following paramters for clustering");
+  label = gtk_label_new("Criteria for clustering");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      label, FALSE, FALSE, 1);
   hbox = gtk_hbox_new(FALSE, 5);
   vbox = gtk_vbox_new(TRUE, 1);
-  label = gtk_label_new("Value for psmall:");
+  label = gtk_label_new("% of the smaller seq. a match needs to cover:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for plarge:");
+  label = gtk_label_new("% of the larger seq. a match needs to cover:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1357,9 +1358,9 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
   /* Classification settings page */
   page_info[PAGE_CLASSIFICATION].widget = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("PLACEHOLDER");
+  /*label = gtk_label_new("PLACEHOLDER");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
-                     label, FALSE, FALSE, 1);
+                     label, FALSE, FALSE, 1);*/
   hbox = gtk_hbox_new(FALSE, 5);
   vbox = gtk_vbox_new(TRUE, 1);
   label = gtk_label_new(LTR_TOLERANCE);
@@ -1372,7 +1373,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Prefix for new LTR family:");
+  label = gtk_label_new("Prefix for new LTR candidate groups:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1396,7 +1397,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
                      hbox, FALSE, FALSE, 1);
   hsep = gtk_hseparator_new();
-  label = gtk_label_new("Select features for classification");
+  label = gtk_label_new("Select at least one feature for classification");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
                      hsep, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
@@ -1436,7 +1437,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Used GFF3 files:");
+  label = gtk_label_new("GFF3 files:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1542,17 +1543,17 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
 
-  label = gtk_label_new("Value for psmall:");
+  label = gtk_label_new("% of the smaller seq. a match needs to cover:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for plarge:");
+  label = gtk_label_new("% of the larger seq. a match needs to cover:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Classification?");
+  label = gtk_label_new("Perform classification?");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1652,12 +1653,12 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Prefix for new LTR family:");
+  label = gtk_label_new("Prefix for new LTR candidate groups:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Used features:");
+  label = gtk_label_new("Use features:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -1768,9 +1769,9 @@ gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
   gboolean active;
 
   switch (current_page) {
-    case PAGE_INTRODUCTION:
+    /*case PAGE_INTRODUCTION:
       next_page = PAGE_GENERAL;
-      break;
+      break;*/
     case PAGE_GENERAL:
       active =  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                                ltrassi->checkb_clustering));
@@ -1827,6 +1828,7 @@ GtkWidget* gtk_ltr_assistant_new()
 {
   GtkLTRAssistant *ltrassi;
   ltrassi = gtk_type_new(GTK_LTR_ASSISTANT_TYPE);
+  gtk_window_set_title(GTK_WINDOW(ltrassi), "LTRGui - Project Wizard");
   gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrassi),
                                       (GtkAssistantPageFunc) page_forward,
                                       ltrassi, NULL);

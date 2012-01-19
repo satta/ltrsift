@@ -27,6 +27,7 @@
 #define GUI_NAME       "LTRGui"
 #define FAS_PATTERN    ".fas"
 #define GFF3_PATTERN   ".gff3"
+#define ESQ_PATTERN   ".esq"
 #define SQLITE_PATTERN ".sqlite"
 
 #define GFF3_FILTER_PATTERN "*.gff3"

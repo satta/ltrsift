@@ -143,6 +143,8 @@ void progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel)
   threaddata->window = gtk_window_new(GTK_WINDOW_POPUP);
   gtk_window_set_transient_for(GTK_WINDOW(threaddata->window),
                                GTK_WINDOW(toplevel));
+  gtk_window_set_position(GTK_WINDOW(threaddata->window),
+                          GTK_WIN_POS_CENTER_ON_PARENT);
   gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
   gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
   gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
@@ -510,7 +512,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
     gchar buffer[BUFSIZ];
     g_snprintf(buffer, BUFSIZ, FILE_EXISTS_DIALOG,
                g_path_get_basename(filename));
-    dialog = gtk_message_dialog_new(NULL,
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
@@ -557,7 +559,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
       }
       attr = gt_feature_node_get_attribute(curnode, "ltrfam");
       if (attr)
-        g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", gt_str_get(seqid), attr,
+        g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", attr, gt_str_get(seqid),
                    range.start, range.end);
       else
         g_snprintf(header, BUFSIZ, "%s_%lu_%lu", gt_str_get(seqid),
@@ -567,8 +569,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
       startpos = gt_encseq_seqstartpos(encseq, seqnum);
       gt_encseq_extract_decoded(encseq, buffer, startpos + range.start - 1,
                                 startpos + range.end - 1);
-      gt_fasta_show_entry(header, buffer, gt_range_length(&range),
-                          50, outfp);
+      gt_fasta_show_entry(header, buffer, gt_range_length(&range), 50, outfp);
       gt_free(buffer);
       gt_feature_node_iterator_delete(fni);
     }
