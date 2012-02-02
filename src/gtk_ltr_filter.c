@@ -86,15 +86,66 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
             *vbox,
             *hbox,
             *sw1,
-            *sw2,
             *label1,
             *label2,
-            *hsep1,
             *hsep2,
-            *hsep3;
+            *button;
   GtkListStore *store;
   GtkTreeViewColumn *column;
   GtkCellRenderer *renderer;
+
+  /* select filter */
+  sw1 = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
+                                 GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+  ltrfilt->list_view_all = gtk_tree_view_new();
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("lua filter files",
+                                                    renderer,
+                                                    "text",
+                                                    0,
+                                                    NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_all), column);
+  store = gtk_list_store_new(1, G_TYPE_STRING);
+  gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view_all),
+                          GTK_TREE_MODEL(store));
+  g_object_unref(store);
+  gtk_container_add(GTK_CONTAINER(sw1), ltrfilt->list_view_all);
+
+  hbox = gtk_hbox_new(FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), sw1, TRUE, TRUE, 1);
+
+  /* add/remove filter buttons */
+  vbox = gtk_vbox_new(FALSE, 1);
+  button = gtk_button_new_from_stock(GTK_STOCK_ADD);
+  gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 1);
+  button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
+  gtk_box_pack_start(GTK_BOX(vbox), button, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
+
+  /* selected filter */
+  sw1 = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
+                                 GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+  ltrfilt->list_view_sel = gtk_tree_view_new();
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("Selected lua filter files",
+                                                    renderer,
+                                                    "text",
+                                                    0,
+                                                    NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_sel), column);
+  store = gtk_list_store_new(1, G_TYPE_STRING);
+  gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view_sel),
+                          GTK_TREE_MODEL(store));
+  g_object_unref(store);
+  gtk_container_add(GTK_CONTAINER(sw1), ltrfilt->list_view_sel);
+  gtk_box_pack_start(GTK_BOX(hbox), sw1, TRUE, TRUE, 1);
+
+  vbox = gtk_vbox_new(FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 1);
 
   label1 = gtk_label_new("Directory containing filter scripts (*.lua)");
   ltrfilt->dir_chooser =
@@ -102,65 +153,68 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
                                          GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER);
   gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(ltrfilt->dir_chooser),
                                       g_get_home_dir());
-  hsep1 = gtk_hseparator_new();
-
-  sw1 = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
-                                 GTK_POLICY_AUTOMATIC,
-                                 GTK_POLICY_AUTOMATIC);
-  ltrfilt->list_view = gtk_tree_view_new();
-  renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes("LUA files",
-                                                    renderer,
-                                                    "text",
-                                                    0,
-                                                    NULL);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view), column);
-  store = gtk_list_store_new(1, G_TYPE_STRING);
-  gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view),
-                          GTK_TREE_MODEL(store));
-  g_object_unref(store);
-  gtk_container_add(GTK_CONTAINER(sw1), ltrfilt->list_view);
-  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label1, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->dir_chooser, FALSE, FALSE, 1);
 
   label2 = gtk_label_new("Script information");
-  sw2 = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw2),
-                                 GTK_POLICY_AUTOMATIC,
-                                 GTK_POLICY_AUTOMATIC);
-  ltrfilt->text_buffer = gtk_text_buffer_new(NULL);
-  ltrfilt->text_view = gtk_text_view_new_with_buffer(ltrfilt->text_buffer);
-  gtk_text_view_set_editable(GTK_TEXT_VIEW(ltrfilt->text_view), FALSE);
-  gtk_container_add(GTK_CONTAINER(sw2), ltrfilt->text_view);
-  hsep3 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  ltrfilt->label_name = gtk_label_new("");
+  ltrfilt->label_descr = gtk_label_new("");
+  ltrfilt->label_author = gtk_label_new("");
+  ltrfilt->label_version = gtk_label_new("");
+  ltrfilt->label_email = gtk_label_new("");
+
+  label2 = gtk_label_new("Name:");
+  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_name, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
+
+  label2 = gtk_label_new("Author:");
+  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_author, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
+
+  label2 = gtk_label_new("Author email:");
+  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_email, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
+
+  label2 = gtk_label_new("Version:");
+  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_version, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
+
+  label2 = gtk_label_new("Description:");
+  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  hsep2 = gtk_hseparator_new();
+  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_descr, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
   hbox = gtk_hbox_new(FALSE, 0);
   apply = gtk_button_new_with_mnemonic("_Apply");
   cancel = gtk_button_new_with_mnemonic("_Cancel");
   gtk_box_pack_start(GTK_BOX(hbox), apply, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), cancel, FALSE, FALSE, 1);
-
-  vbox = gtk_vbox_new(FALSE, 0);
-  gtk_box_pack_start(GTK_BOX(vbox), label1, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->dir_chooser, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), hsep1, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), sw1, TRUE, TRUE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), sw2, TRUE, TRUE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), hsep3, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
-  gtk_widget_show_all(GTK_WIDGET(vbox));
 
   gtk_container_add(GTK_CONTAINER(ltrfilt), vbox);
   /* connect signals */
   g_signal_connect(G_OBJECT(ltrfilt->dir_chooser), "selection-changed",
                    G_CALLBACK(gtk_ltr_filter_change_filter_dir),
-                   ltrfilt->list_view);
+                   ltrfilt->list_view_all);
   g_signal_connect(G_OBJECT(cancel), "clicked",
                    G_CALLBACK(gtk_ltr_filter_cancel_clicked), ltrfilt);
-
-  gtk_window_resize(GTK_WINDOW(ltrfilt), 400, 350);
+  gtk_widget_show_all(GTK_WIDGET(ltrfilt));
+  gtk_window_resize(GTK_WINDOW(ltrfilt), 800, 600);
 }
 
 GType gtk_ltr_filter_get_type(void)
