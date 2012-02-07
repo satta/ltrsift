@@ -1307,11 +1307,9 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
                    G_CALLBACK(project_wizard_apply), (gpointer) ltrgui);
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant),
                                GTK_WINDOW(ltrgui->main_window));
-  GtkWidget *eddd;
 
-  eddd = gtk_ltr_filter_new();
   /* gtk_widget_show(ltrgui->assistant); */
-  gtk_widget_show(eddd);
+  gtk_widget_show(ltrgui->ltrfilt);
 }
 
 void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,

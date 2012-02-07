@@ -34,6 +34,15 @@
 #define IS_GTK_LTR_FILTER_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FILTER_TYPE)
 
+#define LTR_FILTER_TEMPLATE "name        = \"Name of the script here\"\n" \
+                            "author      = \"Your name here\"\n" \
+                            "version     = \"Script version here\"\n" \
+                            "email       = \"Your email here\"\n" \
+                            "description = \"Script desription here\"\n\n" \
+                            "function filter(gn)\n"\
+                            "  return true -- return false\n" \
+                            "end"
+
 typedef struct _GtkLTRFilter GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
 
@@ -48,6 +57,7 @@ struct _GtkLTRFilter
   GtkWidget *list_view_all;
   GtkWidget *list_view_sel;
   GtkWidget *dir_chooser;
+  GtkWidget *edit_dialog;
   GtkTextBuffer *text_buffer;
 };
 
@@ -55,6 +65,11 @@ struct _GtkLTRFilterClass
 {
   GtkWindowClass parent_class;
   void (* gtk_ltr_filter) (GtkLTRFilter *ltrfilt);
+};
+
+enum {
+  LTR_FILT_MOVE_DOWN = 0,
+  LTR_FILT_MOVE_UP
 };
 
 GType gtk_ltr_filter_get_type(void);

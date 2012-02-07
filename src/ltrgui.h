@@ -78,7 +78,7 @@ struct _GUIData
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
   GtkWidget *ltrfams;
-  GtkWidget *ltr_filter;
+  GtkWidget *ltrfilt;
   GtkWidget *projset;
   GtkWidget *progressbar;
   GtkWidget *sb_main;

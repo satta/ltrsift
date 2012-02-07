@@ -105,7 +105,7 @@ enum {
   LTRFAMS_DETAIL_TV_TYPE,
   LTRFAMS_DETAIL_TV_START,
   LTRFAMS_DETAIL_TV_END,
-  LTRFAMS_DETAIL_TV_INFO,
+  /* LTRFAMS_DETAIL_TV_INFO, not needed atm*/
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
@@ -164,7 +164,6 @@ struct _GtkLTRFamilies
   GtkWidget *statusbar;
   GtkWidget *progressbar;
   GtkWidget *projset;
-
 };
 
 struct _GtkLTRFamiliesClass

@@ -663,7 +663,7 @@ static void on_drag_data_get(GtkWidget *widget,
   if (gtk_tree_selection_count_selected_rows(sel) < 1)
     return;
   tdata = g_slice_new(FamilyTransferData);
-  tdata->nodes = gt_array_new(sizeof(GtGenomeNode*));
+  tdata->nodes = gt_array_new(sizeof (GtGenomeNode*));
   tdata->references = NULL;
   tdata->list_view = GTK_TREE_VIEW(widget);
 
@@ -1902,7 +1902,7 @@ static void gtk_ltr_families_nb_fam_lv_changed(GtkTreeView *list_view,
       types[1] = G_TYPE_STRING;
       types[2] = G_TYPE_ULONG;
       types[3] = G_TYPE_ULONG;
-      types[4] = G_TYPE_STRING;
+      /* types[4] = G_TYPE_STRING; no needed atm*/
 
       store = gtk_tree_store_newv(LTRFAMS_DETAIL_TV_N_COLUMS, types);
 
@@ -3224,15 +3224,13 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   gtk_tool_item_set_tooltip_text(ltrfams->new_fam, TB_NB_NEW_FAM);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), ltrfams->new_fam, 0);
   g_signal_connect(G_OBJECT(ltrfams->new_fam), "clicked",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_nf_clicked),
-                   ltrfams);
+                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_nf_clicked), ltrfams);
   ltrfams->fl_cands =
                      gtk_tool_button_new_from_stock(GTK_STOCK_FIND_AND_REPLACE);
   gtk_tool_item_set_tooltip_text(ltrfams->fl_cands, TB_NB_FL_CANDS);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), ltrfams->fl_cands, 1);
   g_signal_connect(G_OBJECT(ltrfams->fl_cands), "clicked",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_fl_clicked),
-                   ltrfams);
+                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_fl_clicked), ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), FALSE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->fl_cands), FALSE);
   ltrfams->nb_family = gtk_notebook_new();
@@ -3271,7 +3269,7 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   ltrfams->image_area = gtk_layout_new(NULL, vadj);
   gtk_widget_modify_bg(ltrfams->image_area, GTK_STATE_NORMAL, &color);
   g_signal_connect(ltrfams->image_area, "expose-event",
-      G_CALLBACK(image_area_expose_event), ltrfams);
+                   G_CALLBACK(image_area_expose_event), ltrfams);
   gtk_layout_set_size(GTK_LAYOUT(ltrfams->image_area), 100, 100);
   gtk_container_add(GTK_CONTAINER(sw3), ltrfams->image_area);
 
