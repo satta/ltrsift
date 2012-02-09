@@ -58,7 +58,9 @@ struct _GtkLTRFilter
   GtkWidget *list_view_sel;
   GtkWidget *dir_chooser;
   GtkWidget *edit_dialog;
+  GtkWidget *filter_action;
   GtkTextBuffer *text_buffer;
+  GError *gerr;
 };
 
 struct _GtkLTRFilterClass
@@ -67,9 +69,18 @@ struct _GtkLTRFilterClass
   void (* gtk_ltr_filter) (GtkLTRFilter *ltrfilt);
 };
 
+/*
 enum {
   LTR_FILT_MOVE_DOWN = 0,
   LTR_FILT_MOVE_UP
+};
+*/
+
+enum {
+  LTR_FILTER_LV_SEL_NAME = 0,
+  LTR_FILTER_LV_SEL_NOT,
+  LTR_FILTER_LV_SEL_FILE,
+  LTR_FILTER_LV_N_COLUMNS
 };
 
 GType gtk_ltr_filter_get_type(void);
