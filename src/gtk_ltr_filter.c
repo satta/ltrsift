@@ -17,6 +17,7 @@
 
 #include "error.h"
 #include "gtk_ltr_filter.h"
+#include "support.h"
 
 static void remove_list_view_row(GtkTreeRowReference *rowref,
                                  GtkTreeModel *model)
@@ -111,6 +112,7 @@ static void gtk_ltr_filter_cancel_clicked(GT_UNUSED GtkButton *button,
   gtk_widget_hide(GTK_WIDGET(user_data));
 }
 
+/*
 static void gtk_ltr_filter_change_filter_dir(GtkFileChooser *chooser,
                                              gpointer user_data)
 {
@@ -118,11 +120,14 @@ static void gtk_ltr_filter_change_filter_dir(GtkFileChooser *chooser,
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtkTreeSelection *selection;
+  GtError *err;
+  GtScriptFilter *script_filter;
   GDir *dir;
   gboolean valid;
   gchar *path;
   const char *file;
 
+  err = gt_error_new();
   model = gtk_tree_view_get_model(list_view);
   gtk_list_store_clear(GTK_LIST_STORE(model));
 
@@ -131,10 +136,16 @@ static void gtk_ltr_filter_change_filter_dir(GtkFileChooser *chooser,
 
   while ((file = g_dir_read_name(dir))) {
     if (g_str_has_suffix(file, ".lua")) {
-      gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-      gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                         0, file,
-                         -1);
+      script_filter = gt_script_filter_new(file, err);
+      if (script_filter != NULL) {
+        valid = gt_script_filter_validate(script_filter, err);
+        if (valid) {
+          gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+          gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, file, -1);
+        }
+      }
+      gt_script_filter_delete(script_filter);
+      gt_error_unset(err);
     }
   }
   valid = gtk_tree_model_get_iter_first(model, &iter);
@@ -143,14 +154,15 @@ static void gtk_ltr_filter_change_filter_dir(GtkFileChooser *chooser,
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
     gtk_list_store_append(GTK_LIST_STORE(model), &iter);
     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                       0, "No filter scripts found!",
-                       -1);
+                       0, "No valid filter scripts found!", -1);
   } else
     gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 
   g_dir_close(dir);
   g_free(path);
+  gt_error_delete(err);
 }
+*/
 
 static void gtk_ltr_filter_delete_event(GtkWidget *widget,
                                         GT_UNUSED GdkEvent *event,
@@ -169,8 +181,8 @@ static void gtk_ltr_filter_lv_all_changed(GtkTreeView *list_view,
   GtError *err;
   GtScriptFilter *script_filter;
   GList *rows;
-  gchar *file_name, *file_path, file[BUFSIZ];
-  const char *email, *author, *descr, *version, *name;
+  gchar *file;
+  const char *email, *author, *descr;
 
   err = gt_error_new();
   sel = gtk_tree_view_get_selection(list_view);
@@ -180,10 +192,7 @@ static void gtk_ltr_filter_lv_all_changed(GtkTreeView *list_view,
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   path = (GtkTreePath*) g_list_first(rows)->data;
   gtk_tree_model_get_iter(model, &iter, path);
-  gtk_tree_model_get(model, &iter, 0, &file_name, -1);
-  file_path =
-          gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ltrfilt->dir_chooser));
-  g_snprintf(file, BUFSIZ, "%s/%s", file_path, file_name);
+  gtk_tree_model_get(model, &iter, 0, &file, -1);
 
   script_filter = gt_script_filter_new(file, err);
   if (!script_filter) {
@@ -193,20 +202,6 @@ static void gtk_ltr_filter_lv_all_changed(GtkTreeView *list_view,
     gt_error_unset(err);
   } else {
     author = gt_script_filter_get_author(script_filter, err);
-    if (gt_error_is_set(err)) {
-      ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                  gt_error_get(err));
-      error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-      gt_error_unset(err);
-    }
-    name = gt_script_filter_get_name(script_filter, err);
-    if (gt_error_is_set(err)) {
-      ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                  gt_error_get(err));
-      error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-      gt_error_unset(err);
-    }
-    version = gt_script_filter_get_version(script_filter, err);
     if (gt_error_is_set(err)) {
       ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
                                   gt_error_get(err));
@@ -229,22 +224,98 @@ static void gtk_ltr_filter_lv_all_changed(GtkTreeView *list_view,
     }
 
     gtk_label_set_text(GTK_LABEL(ltrfilt->label_email), email);
-    gtk_label_set_text(GTK_LABEL(ltrfilt->label_name), name);
     gtk_label_set_text(GTK_LABEL(ltrfilt->label_author), author);
     gtk_label_set_text(GTK_LABEL(ltrfilt->label_descr), descr);
-    gtk_label_set_text(GTK_LABEL(ltrfilt->label_version), version);
   }
 
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
   gt_script_filter_delete(script_filter);
   gt_error_delete(err);
-  g_free(file_name);
-  g_free(file_path);
+  g_free(file);
 }
 
-static void gtk_ltr_filter_remove_clicked(GT_UNUSED GtkWidget *button,
-                                          GtkLTRFilter *ltrfilt)
+static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
+                                       GtkLTRFilter *ltrfilt)
+{
+  GtkWidget *filechooser,
+            *dialog;
+  GtkFileFilter *lua_file_filter;
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  GtError *err;
+  GtScriptFilter *script_filter;
+  GSList *filenames;
+  gchar *file;
+  gboolean valid,
+           skipped = FALSE;
+
+  filechooser = gtk_file_chooser_dialog_new("Select lua filter files",
+                                            GTK_WINDOW(ltrfilt),
+                                            GTK_FILE_CHOOSER_ACTION_OPEN,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL,
+                                            GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+                                            NULL);
+
+  gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(filechooser), TRUE);
+  if (ltrfilt->last_dir != NULL)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
+                                        ltrfilt->last_dir);
+  else
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
+                                        g_get_home_dir());
+  lua_file_filter = gtk_file_filter_new();
+  gtk_file_filter_set_name(lua_file_filter, "*.lua");
+  gtk_file_filter_add_pattern(lua_file_filter, "*.lua");
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), lua_file_filter);
+  gint result = gtk_dialog_run(GTK_DIALOG(filechooser));
+
+  if (result == GTK_RESPONSE_ACCEPT) {
+    err = gt_error_new();
+    model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_all));
+    filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
+    while (filenames != NULL) {
+      file = (gchar*) filenames->data;
+      if (!entry_in_list_view(model, file, LTR_FILTER_LV_FILE)) {
+        script_filter = gt_script_filter_new(file, err);
+        if (script_filter != NULL) {
+          valid = gt_script_filter_validate(script_filter, err);
+          if (valid) {
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, file, -1);
+          } else
+            skipped = TRUE;
+        } else
+          skipped = TRUE;
+        gt_script_filter_delete(script_filter);
+        gt_error_unset(err);
+      }
+      filenames = filenames->next;
+    }
+    if (ltrfilt->last_dir)
+      g_free(ltrfilt->last_dir);
+    ltrfilt->last_dir = g_path_get_dirname(file);
+    g_slist_foreach(filenames, (GFunc) g_free, NULL);
+    g_slist_free(filenames);
+    gt_error_delete(err);
+  }
+  gtk_widget_destroy(filechooser);
+  if (skipped) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(ltrfilt),
+                                    GTK_DIALOG_MODAL |
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    "%s",
+                                    LTR_FILTER_NO_VALID_FILES);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+}
+
+static void gtk_ltr_filter_back_clicked(GT_UNUSED GtkWidget *button,
+                                        GtkLTRFilter *ltrfilt)
 {
   GtkTreeModel *model;
   GtkTreeSelection *sel;
@@ -275,15 +346,15 @@ static void gtk_ltr_filter_remove_clicked(GT_UNUSED GtkWidget *button,
   g_list_free(rows);
 }
 
-static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
-                                       GtkLTRFilter *ltrfilt)
+static void gtk_ltr_filter_forward_clicked(GT_UNUSED GtkWidget *button,
+                                           GtkLTRFilter *ltrfilt)
 {
   GtkTreeModel *model_all, *model_sel;
   GtkTreeSelection *sel;
   GtkTreeIter iter_all, iter_sel;
   GtkTreePath *path;
   GList *rows, *tmp;
-  gchar *file_path, *file_name, file[BUFSIZ];
+  gchar *file;
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfilt->list_view_all));
   if (gtk_tree_selection_count_selected_rows(sel) < 1)
@@ -292,25 +363,21 @@ static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
   model_sel = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_sel));
   rows = gtk_tree_selection_get_selected_rows(sel, &model_all);
   tmp = rows;
-  file_path =
-          gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ltrfilt->dir_chooser));
   while (tmp != NULL) {
     path = (GtkTreePath*) tmp->data;
     gtk_tree_model_get_iter(model_all, &iter_all, path);
-    gtk_tree_model_get(model_all, &iter_all, 0, &file_name, -1);
-    g_snprintf(file, BUFSIZ, "%s/%s", file_path, file_name);
+    gtk_tree_model_get(model_all, &iter_all, LTR_FILTER_LV_FILE, &file, -1);
     gtk_list_store_append(GTK_LIST_STORE(model_sel), &iter_sel);
     gtk_list_store_set(GTK_LIST_STORE(model_sel), &iter_sel,
-                       LTR_FILTER_LV_SEL_NAME, file_name,
+                       LTR_FILTER_LV_FILE, file,
                        LTR_FILTER_LV_SEL_NOT, FALSE,
-                       LTR_FILTER_LV_SEL_FILE, file,
                        -1);
     tmp = tmp->next;
   }
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
-  g_free(file_path);
-  g_free(file_name);
+  g_free(file);
+  /* g_free(file_name); */
 }
 
 /*
@@ -369,6 +436,38 @@ static void gtk_ltr_filter_move_down_clicked(GT_UNUSED GtkWidget *button,
 }
 */
 
+static void gtk_ltr_filter_remove_clicked(GT_UNUSED GtkWidget *button,
+                                          GtkLTRFilter *ltrfilt)
+{
+  GtkTreeModel *model;
+  GtkTreeSelection *sel;
+  GtkTreeRowReference *rowref;
+  GList *rows, *tmp, *references = NULL;
+
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfilt->list_view_all));
+
+  if (!gtk_tree_selection_count_selected_rows(sel))
+    return;
+
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_all));
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+
+  while (tmp != NULL) {
+    rowref = gtk_tree_row_reference_new(model, (GtkTreePath*) tmp->data);
+    references =
+                g_list_prepend(references, gtk_tree_row_reference_copy(rowref));
+    gtk_tree_row_reference_free(rowref);
+    tmp = tmp->next;
+  }
+
+  g_list_foreach(references, (GFunc) remove_list_view_row, model);
+  g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(references);
+  g_list_free(rows);
+}
+
 static void gtk_ltr_filter_edit_clicked(GT_UNUSED GtkWidget *button,
                                              GtkLTRFilter *ltrfilt)
 {
@@ -377,7 +476,7 @@ static void gtk_ltr_filter_edit_clicked(GT_UNUSED GtkWidget *button,
   GtkTreeIter iter;
   GtkTreePath *path;
   GList *rows;
-  gchar *file_path, *file_name, file[BUFSIZ];
+  gchar *file;
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfilt->list_view_all));
   if (gtk_tree_selection_count_selected_rows(sel) < 1)
@@ -386,17 +485,13 @@ static void gtk_ltr_filter_edit_clicked(GT_UNUSED GtkWidget *button,
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   path = (GtkTreePath*) rows->data;
   gtk_tree_model_get_iter(model, &iter, path);
-  gtk_tree_model_get(model, &iter, 0, &file_name, -1);
-  file_path =
-          gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(ltrfilt->dir_chooser));
-  g_snprintf(file, BUFSIZ, "%s/%s", file_path, file_name);
+  gtk_tree_model_get(model, &iter, 0, &file, -1);
 
   create_edit_dialog(ltrfilt, file);
 
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
-  g_free(file_path);
-  g_free(file_name);
+  g_free(file);
 }
 
 static void gtk_ltr_filter_new_clicked(GT_UNUSED GtkWidget *button,
@@ -423,6 +518,30 @@ gtk_ltr_filter_lv_sel_not_toggled(GT_UNUSED GtkCellRendererToggle *rend,
   }
 }
 
+static void lv_all_cell_data_func(GT_UNUSED GtkTreeViewColumn *tree_column,
+                                  GtkCellRenderer *renderer,
+                                  GtkTreeModel *model,
+                                  GtkTreeIter *iter,
+                                  GT_UNUSED gpointer data)
+{
+  GtError *err;
+  GtScriptFilter *script_filter;
+  gchar *file, text[BUFSIZ];
+
+  gtk_tree_model_get(model, iter, LTR_FILTER_LV_FILE, &file, -1);
+
+  err = gt_error_new();
+  script_filter = gt_script_filter_new(file, err);
+  g_snprintf(text, BUFSIZ, "<b>Name:</b> %s\t<b>Version:</b> %s\n%s",
+             gt_script_filter_get_name(script_filter, err),
+             gt_script_filter_get_version(script_filter, err),
+             gt_script_filter_get_short_description(script_filter, err));
+  g_object_set(renderer, "markup", text, "family", "Courier", NULL);
+
+  g_free(file);
+  gt_error_delete(err);
+}
+
 static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
 {
   GtkWidget *apply,
@@ -430,9 +549,9 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
             *vbox,
             *vbox2,
             *hbox,
+            *image,
             *sw1,
-            *label1,
-            *label2,
+            *label,
             *hsep2,
             *button;
   GtkListStore *store;
@@ -448,6 +567,7 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   pango_attr_list_insert(pattrl, pattr);
 
   vbox = gtk_vbox_new(FALSE, 1);
+  /*
   hbox = gtk_hbox_new(FALSE, 1);
   label1 = gtk_label_new("Directory containing filter scripts (*.lua):");
   gtk_label_set_attributes(GTK_LABEL(label1), pattrl);
@@ -460,41 +580,10 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
                                       g_get_home_dir());
   gtk_box_pack_start(GTK_BOX(hbox), ltrfilt->dir_chooser, FALSE, FALSE, 5);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
+  */
 
-  /* edit/new filter buttons */
+  /* add/remove/edit/new filter buttons */
   hbox = gtk_hbox_new(FALSE, 1);
-  vbox2 = gtk_vbox_new(FALSE, 1);
-  button = gtk_button_new_from_stock(GTK_STOCK_EDIT);
-  g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_ltr_filter_edit_clicked), ltrfilt);
-  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
-  button = gtk_button_new_from_stock(GTK_STOCK_NEW);
-  g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_ltr_filter_new_clicked), ltrfilt);
-  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
-
-  /* select filter */
-  sw1 = gtk_scrolled_window_new(NULL, NULL);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
-                                 GTK_POLICY_AUTOMATIC,
-                                 GTK_POLICY_AUTOMATIC);
-  ltrfilt->list_view_all = gtk_tree_view_new();
-  renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes("lua filter files",
-                                                    renderer,
-                                                    "text",
-                                                    0,
-                                                    NULL);
-  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_all), column);
-  store = gtk_list_store_new(1, G_TYPE_STRING);
-  gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view_all),
-                          GTK_TREE_MODEL(store));
-  g_object_unref(store);
-  gtk_container_add(GTK_CONTAINER(sw1), ltrfilt->list_view_all);
-  gtk_box_pack_start(GTK_BOX(hbox), sw1, TRUE, TRUE, 1);
-
-  /* add/remove buttons */
   vbox2 = gtk_vbox_new(FALSE, 1);
   button = gtk_button_new_from_stock(GTK_STOCK_ADD);
   g_signal_connect(G_OBJECT(button), "clicked",
@@ -503,6 +592,57 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
   g_signal_connect(G_OBJECT(button), "clicked",
                    G_CALLBACK(gtk_ltr_filter_remove_clicked), ltrfilt);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
+  button = gtk_button_new_from_stock(GTK_STOCK_NEW);
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_new_clicked), ltrfilt);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
+  button = gtk_button_new_from_stock(GTK_STOCK_EDIT);
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_edit_clicked), ltrfilt);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
+
+  /* filter pool */
+  sw1 = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
+                                 GTK_POLICY_AUTOMATIC,
+                                 GTK_POLICY_AUTOMATIC);
+  ltrfilt->list_view_all = gtk_tree_view_new();
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes("lua filter files",
+                                                    renderer,
+                                                    "markup",
+                                                    LTR_FILTER_LV_FILE,
+                                                    NULL);
+  gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_all), column);
+  gtk_tree_view_column_set_cell_data_func(column, renderer,
+                                          lv_all_cell_data_func, NULL, NULL);
+  store = gtk_list_store_new(1, G_TYPE_STRING);
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfilt->list_view_all));
+  gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
+  gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view_all),
+                          GTK_TREE_MODEL(store));
+  g_object_unref(store);
+  gtk_container_add(GTK_CONTAINER(sw1), ltrfilt->list_view_all);
+  gtk_box_pack_start(GTK_BOX(hbox), sw1, TRUE, TRUE, 1);
+
+  /* assign/unasign filter buttons */
+  vbox2 = gtk_vbox_new(FALSE, 1);
+  button = gtk_button_new();
+  image = gtk_image_new_from_stock(GTK_STOCK_GO_FORWARD,
+                                   GTK_ICON_SIZE_SMALL_TOOLBAR);
+  gtk_button_set_image(GTK_BUTTON(button), image);
+
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_forward_clicked), ltrfilt);
+  gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
+  button = gtk_button_new();
+  image = gtk_image_new_from_stock(GTK_STOCK_GO_BACK,
+                                   GTK_ICON_SIZE_SMALL_TOOLBAR);
+  gtk_button_set_image(GTK_BUTTON(button), image);
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_back_clicked), ltrfilt);
   gtk_box_pack_start(GTK_BOX(vbox2), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox2, FALSE, FALSE, 1);
 
@@ -515,16 +655,18 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   renderer = gtk_cell_renderer_text_new();
   column = gtk_tree_view_column_new_with_attributes("Selected lua filter files",
                                                     renderer,
-                                                    "text",
-                                                    LTR_FILTER_LV_SEL_NAME,
+                                                    "markup",
+                                                    LTR_FILTER_LV_FILE,
                                                     NULL);
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_sel), column);
+  gtk_tree_view_column_set_cell_data_func(column, renderer,
+                                          lv_all_cell_data_func, NULL, NULL);
   renderer = gtk_cell_renderer_toggle_new();
   g_object_set((gpointer) renderer, "activatable", TRUE, NULL);
   g_signal_connect(G_OBJECT(renderer), "toggled",
                    G_CALLBACK(gtk_ltr_filter_lv_sel_not_toggled),
                    ltrfilt->list_view_sel);
-  column = gtk_tree_view_column_new_with_attributes("NOT?",
+  column = gtk_tree_view_column_new_with_attributes("Negate?",
                                                     renderer,
                                                     "active",
                                                     LTR_FILTER_LV_SEL_NOT,
@@ -533,11 +675,10 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   column = gtk_tree_view_column_new();
   gtk_tree_view_append_column(GTK_TREE_VIEW(ltrfilt->list_view_sel), column);
 
-  types = g_new0(GType, LTR_FILTER_LV_N_COLUMNS);
+  types = g_new0(GType, LTR_FILTER_LV_SEL_N_COLUMNS);
   types[0] = G_TYPE_STRING;
   types[1] = G_TYPE_BOOLEAN;
-  types[2] = G_TYPE_STRING;
-  store = gtk_list_store_newv(LTR_FILTER_LV_N_COLUMNS, types);
+  store = gtk_list_store_newv(LTR_FILTER_LV_SEL_N_COLUMNS, types);
   gtk_tree_view_set_model(GTK_TREE_VIEW(ltrfilt->list_view_sel),
                           GTK_TREE_MODEL(store));
   g_object_unref(store);
@@ -563,75 +704,55 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 1);
 
   hbox = gtk_hbox_new(FALSE, 1);
-  label2 = gtk_label_new("PLACEHOLDER");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  label = gtk_label_new("PLACEHOLDER");
+  gtk_label_set_attributes(GTK_LABEL(label), pattrl);
+  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   ltrfilt->filter_action = gtk_combo_box_new_text();
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "");
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action1");
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action2");
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action3");
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action4");
-  gtk_box_pack_start(GTK_BOX(hbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), ltrfilt->filter_action, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
 
   hsep2 = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
-  label2 = gtk_label_new("Script information");
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
-  ltrfilt->label_name = gtk_label_new("");
-  gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_name), 0.0, 0.5);
+  label = gtk_label_new("Further script information");
+  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   ltrfilt->label_descr = gtk_label_new("");
-  gtk_label_set_line_wrap(GTK_LABEL(ltrfilt->label_descr), TRUE);
+  /* gtk_label_set_line_wrap(GTK_LABEL(ltrfilt->label_descr), TRUE);
   gtk_label_set_line_wrap_mode(GTK_LABEL(ltrfilt->label_descr),
-                               PANGO_WRAP_WORD_CHAR);
+                               PANGO_WRAP_WORD_CHAR); */
   gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_descr), 0.0, 0.5);
   ltrfilt->label_author = gtk_label_new("");
   gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_author), 0.0, 0.5);
-  ltrfilt->label_version = gtk_label_new("");
-  gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_version), 0.0, 0.5);
   ltrfilt->label_email = gtk_label_new("");
   gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_email), 0.0, 0.5);
 
-  label2 = gtk_label_new("Name:");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  label = gtk_label_new("Author:");
+  gtk_label_set_attributes(GTK_LABEL(label), pattrl);
+  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   hsep2 = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_name, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
-
-  label2 = gtk_label_new("Author:");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
-  hsep2 = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_author, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
-  label2 = gtk_label_new("Author email:");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  label = gtk_label_new("Author email:");
+  gtk_label_set_attributes(GTK_LABEL(label), pattrl);
+  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   hsep2 = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_email, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
-  label2 = gtk_label_new("Version:");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
+  label = gtk_label_new("Description:");
+  gtk_label_set_attributes(GTK_LABEL(label), pattrl);
+  gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   hsep2 = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_version, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
-
-  label2 = gtk_label_new("Description:");
-  gtk_label_set_attributes(GTK_LABEL(label2), pattrl);
-  gtk_misc_set_alignment(GTK_MISC(label2), 0.0, 0.5);
-  hsep2 = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(vbox), label2, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), ltrfilt->label_descr, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
@@ -646,9 +767,9 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_container_add(GTK_CONTAINER(ltrfilt), vbox);
 
   /* connect signals */
-  g_signal_connect(G_OBJECT(ltrfilt->dir_chooser), "selection-changed",
+  /*g_signal_connect(G_OBJECT(ltrfilt->dir_chooser), "selection-changed",
                    G_CALLBACK(gtk_ltr_filter_change_filter_dir),
-                   ltrfilt->list_view_all);
+                   ltrfilt->list_view_all);*/
   g_signal_connect(G_OBJECT(cancel), "clicked",
                    G_CALLBACK(gtk_ltr_filter_cancel_clicked), ltrfilt);
   g_signal_connect(G_OBJECT(ltrfilt->list_view_all), "cursor-changed",
@@ -656,6 +777,18 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_window_resize(GTK_WINDOW(ltrfilt), 800, 600);
 
   pango_attr_list_unref(pattrl);
+}
+
+static gboolean gtk_ltr_filter_destroy(GtkWidget *widget,
+                                       GT_UNUSED GdkEvent *event,
+                                       GT_UNUSED gpointer user_data)
+{
+  GtkLTRFilter *ltrfilt;
+  ltrfilt = GTK_LTR_FILTER(widget);
+  if (ltrfilt->last_dir)
+    g_free(ltrfilt->last_dir);
+
+  return FALSE;
 }
 
 GType gtk_ltr_filter_get_type(void)
@@ -685,8 +818,11 @@ GtkWidget* gtk_ltr_filter_new()
 {
   GtkLTRFilter *ltrfilt;
   ltrfilt = gtk_type_new(GTK_LTR_FILTER_TYPE);
+  ltrfilt->last_dir = NULL;
   g_signal_connect(G_OBJECT(ltrfilt), "delete_event",
                    G_CALLBACK(gtk_ltr_filter_delete_event), NULL);
+  g_signal_connect(G_OBJECT(ltrfilt), "destroy",
+                   G_CALLBACK(gtk_ltr_filter_destroy), NULL);
   gtk_window_set_position(GTK_WINDOW(ltrfilt), GTK_WIN_POS_CENTER);
   gtk_window_set_modal(GTK_WINDOW(ltrfilt), TRUE);
   gtk_window_set_title(GTK_WINDOW(ltrfilt), "LTRGui - Filter");

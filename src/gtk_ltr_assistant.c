@@ -566,6 +566,7 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
   GtkTreeIter iter;
   GtkTreeModel *model;
   GSList *filenames;
+  gchar *file;
 
   filechooser = gtk_file_chooser_dialog_new(SELECT_GFF3_FILES,
                                             GTK_WINDOW(ltrassi),
@@ -590,21 +591,19 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
            gtk_tree_view_get_model(GTK_TREE_VIEW(ltrassi->list_view_gff3files));
     filenames = gtk_file_chooser_get_filenames(GTK_FILE_CHOOSER(filechooser));
     while (filenames != NULL) {
-      gchar *file = (gchar*) filenames->data;
-
+      file = (gchar*) filenames->data;
       if (!entry_in_list_view(model, file, 0)) {
         gtk_list_store_append(GTK_LIST_STORE(model), &iter);
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                            0, file,
                            -1);
-        if (ltrassi->last_dir)
-          g_free(ltrassi->last_dir);
-        ltrassi->last_dir = g_path_get_dirname(file);
         ltrassi->added_features = FALSE;
       }
-
       filenames = filenames->next;
     }
+    if (ltrassi->last_dir)
+      g_free(ltrassi->last_dir);
+    ltrassi->last_dir = g_path_get_dirname(file);
     update_gff3_label(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
                       GTK_LABEL(ltrassi->label_gff3files));
     g_slist_foreach(filenames, (GFunc) g_free, NULL);

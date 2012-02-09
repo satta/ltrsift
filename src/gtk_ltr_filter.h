@@ -38,10 +38,16 @@
                             "author      = \"Your name here\"\n" \
                             "version     = \"Script version here\"\n" \
                             "email       = \"Your email here\"\n" \
+                            "short_descr = \"Short description here\"\n" \
                             "description = \"Script desription here\"\n\n" \
                             "function filter(gn)\n"\
                             "  return true -- return false\n" \
                             "end"
+
+#define LTR_FILTER_NO_VALID_FILES "Some files could not be added!\n" \
+                                  "Possible reasons: Missing metadata, " \
+                                  "missing function 'filter' or syntax " \
+                                  "errors." \
 
 typedef struct _GtkLTRFilter GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
@@ -49,17 +55,17 @@ typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
 struct _GtkLTRFilter
 {
   GtkWindow window;
-  GtkWidget *label_name;
   GtkWidget *label_descr;
   GtkWidget *label_author;
-  GtkWidget *label_version;
   GtkWidget *label_email;
   GtkWidget *list_view_all;
   GtkWidget *list_view_sel;
-  GtkWidget *dir_chooser;
+  /* GtkWidget *dir_chooser; */
   GtkWidget *edit_dialog;
   GtkWidget *filter_action;
   GtkTextBuffer *text_buffer;
+  GtScriptFilter *script_filter;
+  gchar *last_dir;
   GError *gerr;
 };
 
@@ -77,10 +83,9 @@ enum {
 */
 
 enum {
-  LTR_FILTER_LV_SEL_NAME = 0,
+  LTR_FILTER_LV_FILE = 0,
   LTR_FILTER_LV_SEL_NOT,
-  LTR_FILTER_LV_SEL_FILE,
-  LTR_FILTER_LV_N_COLUMNS
+  LTR_FILTER_LV_SEL_N_COLUMNS
 };
 
 GType gtk_ltr_filter_get_type(void);
