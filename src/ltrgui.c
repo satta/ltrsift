@@ -87,6 +87,7 @@ static gboolean init_gui(GUIData *ltrgui)
   GW(mb_main_file_export_gff3);
   GW(mb_main_file_export_fasta);
   GW(mb_main_project_settings);
+  GW(mb_main_project_filter);
   GW(mb_main_view_columns);
   GW(vbox1_main);
   GW(sb_main);
@@ -102,7 +103,7 @@ static gboolean init_gui(GUIData *ltrgui)
                                          ltrgui->projset);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
-  ltrgui->ltrfilt = gtk_ltr_filter_new();
+  ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
   ltrgui->assistant = NULL;
 
   gtk_builder_connect_signals(builder, ltrgui);

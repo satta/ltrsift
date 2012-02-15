@@ -37,6 +37,7 @@
 #define SB_MAIN_MENU_HINT_CLOSE    "Close the current project."
 #define SB_MAIN_MENU_HINT_QUIT     "Quit the program."
 #define SB_MAIN_MENU_HINT_SETTINGS "View settings for the current project."
+#define SB_MAIN_MENU_HINT_FILTER   "Apply filter to the current project."
 #define SB_MAIN_MENU_HINT_COLUMNS  "Show/Hide feature columns."
 #define SB_MAIN_NUM_OF_CANDS       "Total number of candidates: %lu"
 

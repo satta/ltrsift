@@ -81,6 +81,20 @@ void reset_progressbar(GtkWidget *progressbar)
   gtk_widget_hide(progressbar);
 }
 
+void remove_node_from_array(GtArray *nodes, GtGenomeNode *gn)
+{
+  GtGenomeNode *tmp;
+  unsigned long i;
+
+  for (i = 0; i < gt_array_size(nodes); i++) {
+    tmp = *(GtGenomeNode**) gt_array_get(nodes, i);
+    if (gt_genome_node_cmp(tmp, gn) == 0) {
+        gt_array_rem(nodes, i);
+        break;
+    }
+  }
+}
+
 GtkWidget* unsaved_changes_dialog(GUIData *ltrgui, const gchar *text)
 {
   GtkWidget *dialog,

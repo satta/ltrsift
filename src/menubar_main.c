@@ -665,6 +665,8 @@ static gboolean mb_open_project_data_finished(gpointer data)
                               gtk_ltr_families_new(threaddata->ltrgui->sb_main,
                                                    threaddata->progressbar,
                                                    threaddata->ltrgui->projset);
+    gtk_ltr_filter_set_ltrfams(GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
+                               threaddata->ltrgui->ltrfams);
     ltrfams = threaddata->ltrgui->ltrfams;
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
                        ltrfams, TRUE, TRUE, 0);
@@ -844,6 +846,7 @@ void mb_main_activate_menuitems(GUIData *ltrgui)
   gtk_widget_set_sensitive(ltrgui->mb_main_file_export_fasta, TRUE);
   gtk_widget_set_sensitive(ltrgui->mb_main_file_export_gff3, TRUE);
   gtk_widget_set_sensitive(ltrgui->mb_main_file_close, TRUE);
+  gtk_widget_set_sensitive(ltrgui->mb_main_project_filter, TRUE);
 }
 
 static int get_keys(void *key, GT_UNUSED void *values, void *cptns,
@@ -1309,8 +1312,7 @@ void mb_main_file_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   gtk_window_set_transient_for(GTK_WINDOW(ltrgui->assistant),
                                GTK_WINDOW(ltrgui->main_window));
 
-  /* gtk_widget_show(ltrgui->assistant); */
-  gtk_widget_show(ltrgui->ltrfilt);
+  gtk_widget_show(ltrgui->assistant);
 }
 
 void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
@@ -1344,11 +1346,14 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
       gtk_widget_set_sensitive(ltrgui->mb_main_file_export_fasta, FALSE);
       gtk_widget_set_sensitive(ltrgui->mb_main_file_export_gff3, FALSE);
       gtk_widget_set_sensitive(ltrgui->mb_main_file_close, FALSE);
+      gtk_widget_set_sensitive(ltrgui->mb_main_project_filter, FALSE);
       gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
       gtk_widget_destroy(ltrgui->ltrfams);
       ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main,
                                              ltrgui->progressbar,
                                              ltrgui->projset);
+      gtk_ltr_filter_set_ltrfams(GTK_LTR_FILTER(ltrgui->ltrfilt),
+                                 ltrgui->ltrfams);
       gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                          TRUE, TRUE, 0);
       break;
@@ -1581,6 +1586,12 @@ void mb_main_project_settings_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_widget_show(ltrgui->projset);
 }
 
+void mb_main_project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                     GUIData *ltrgui)
+{
+  gtk_widget_show(ltrgui->ltrfilt);
+}
+
 void mb_main_init(GUIData *ltrgui)
 {
   GtkWidget *rc;
@@ -1604,6 +1615,8 @@ void mb_main_init(GUIData *ltrgui)
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_CLOSE);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_file_quit),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_QUIT);
+  g_object_set_data(G_OBJECT(ltrgui->mb_main_project_filter),
+                    SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_FILTER);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_project_settings),
                     SB_MAIN_MENU_HINT, (gpointer) SB_MAIN_MENU_HINT_SETTINGS);
   g_object_set_data(G_OBJECT(ltrgui->mb_main_view_columns),

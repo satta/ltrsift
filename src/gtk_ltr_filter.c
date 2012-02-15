@@ -32,6 +32,11 @@ static void remove_list_view_row(GtkTreeRowReference *rowref,
   gtk_tree_path_free(path);
 }
 
+void gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt, GtkWidget *ltrfams)
+{
+  ltrfilt->ltrfams = ltrfams;
+}
+
 static void
 gtk_ltr_filter_edit_dialog_delete_event(GtkWidget *widget,
                                         GT_UNUSED GdkEvent *event,
@@ -45,9 +50,26 @@ static void
 gtk_ltr_filter_edit_dialog_close_clicked(GT_UNUSED GtkWidget *button,
                                           GtkLTRFilter *ltrfilt)
 {
+  GtkWidget *dialog;
+
   if (ltrfilt->cur_filename)
     g_free(ltrfilt->cur_filename);
   ltrfilt->cur_filename = NULL;
+  if (gtk_text_buffer_get_modified(ltrfilt->text_buffer)) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(ltrfilt),
+                                    GTK_DIALOG_MODAL |
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_INFO, GTK_BUTTONS_YES_NO,
+                                    "%s",
+                                    LTR_FILTER_UNSAVED_CHANGES);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog);
+      return;
+    } else
+      gtk_widget_destroy(dialog);
+  }
   gtk_widget_destroy(ltrfilt->edit_dialog);
   ltrfilt->edit_dialog = NULL;
 }
@@ -61,8 +83,7 @@ static gboolean save_filter_file(GtkLTRFilter *ltrfilt)
   gboolean valid, result = FALSE;
   gchar *text;
 
-  gtk_text_buffer_get_start_iter(ltrfilt->text_buffer, &start);
-  gtk_text_buffer_get_end_iter(ltrfilt->text_buffer, &end);
+  gtk_text_buffer_get_bounds(ltrfilt->text_buffer, &start, &end);
   text = gtk_text_buffer_get_text(ltrfilt->text_buffer, &start, &end, FALSE);
   script_filter = gt_script_filter_new_from_string(text, err);
   if (script_filter != NULL) {
@@ -230,6 +251,102 @@ static void create_edit_dialog(GtkLTRFilter *ltrfilt)
                    ltrfilt);
   gtk_widget_show_all(ltrfilt->edit_dialog);
   pango_font_description_free(font_desc);
+}
+
+static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
+                                         GtkLTRFilter *ltrfilt)
+{
+  CandidateData *cdata;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtStrArray *filter_files = NULL;
+  GtError *err = gt_error_new();
+  GtNodeStream *array_in_stream,
+               *script_filter_stream,
+               *array_out_stream;
+  GtArray *nodes, *filtered_nodes;
+  GtGenomeNode *gn;
+  gchar *filter_file;
+  gint action, had_err = 0;
+  unsigned long i;
+
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_sel));
+
+  if (!gtk_tree_model_get_iter_first(model, &iter)) {
+    return;
+  } else {
+    filter_files = gt_str_array_new();
+    gtk_tree_model_get(model, &iter,
+                       LTR_FILTER_LV_FILE, &filter_file, -1);
+    gt_str_array_add_cstr(filter_files, filter_file);
+    g_free(filter_file);
+    while (gtk_tree_model_iter_next(model, &iter)) {
+      gtk_tree_model_get(model, &iter,
+                         LTR_FILTER_LV_FILE, &filter_file, -1);
+      gt_str_array_add_cstr(filter_files, filter_file);
+      g_free(filter_file);
+    }
+  }
+  filtered_nodes = gt_array_new(sizeof (GtGenomeNode*));
+  nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+  array_in_stream = gt_array_in_stream_new(nodes, NULL, err);
+  script_filter_stream = ltrgui_script_filter_stream_new(array_in_stream,
+                                                         filter_files,
+                                                         NULL, err);
+  array_out_stream = gt_array_out_stream_new(script_filter_stream,
+                                             filtered_nodes, err);
+  had_err = gt_node_stream_pull(array_out_stream, err);
+
+  gt_node_stream_delete(script_filter_stream);
+  gt_node_stream_delete(array_in_stream);
+  gt_node_stream_delete(array_out_stream);
+
+  action = gtk_combo_box_get_active(GTK_COMBO_BOX(ltrfilt->filter_action));
+
+  switch (action) {
+    case LTR_FILTER_ACTION_DELETE:
+      for (i = 0; i < gt_array_size(filtered_nodes); i++) {
+        gn = (GtGenomeNode*) gt_array_get(filtered_nodes, i);
+        cdata = (CandidateData*) gt_genome_node_get_user_data(gn, "cdata");
+        if (!cdata)
+          g_warning("%s", "Programming error!");
+        else {
+          GtkTreePath *path;
+          GtkTreeModel *model;
+          GtkTreeIter iter;
+          GtArray *tmp_nodes;
+          gboolean valid;
+          gchar *old_name, cur_name[BUFSIZ];
+          if (cdata->fam_ref) {
+            path = gtk_tree_row_reference_get_path(cdata->fam_ref);
+            model = gtk_tree_row_reference_get_model(cdata->fam_ref);
+            valid = gtk_tree_model_get_iter(model, &iter, path);
+            if (!valid)
+              g_warning("%s", "Programming error!");
+            else {
+              gtk_tree_model_get(model, &iter,
+                                 LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
+                                 LTRFAMS_FAM_LV_OLDNAME, &old_name,
+                                 -1);
+              remove_node_from_array(tmp_nodes, gn);
+              g_snprintf(cur_name, BUFSIZ, "%s (%lu)", old_name,
+                         gt_array_size(tmp_nodes));
+              gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                                 LTRFAMS_FAM_LV_CURNAME, cur_name,
+                                 -1);
+              g_free(old_name);
+            }
+          }
+        }
+      }
+      break;
+    case LTR_FILTER_ACTION_NEW_FAM:
+      break;
+    default:
+      break;
+  }
+
+  gt_array_delete(filtered_nodes);
 }
 
 static void gtk_ltr_filter_cancel_clicked(GT_UNUSED GtkButton *button,
@@ -837,9 +954,11 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   ltrfilt->filter_action = gtk_combo_box_new_text();
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action),
+                            LTR_FILTER_ACTION_DELETE_TEXT);
+  gtk_combo_box_set_active(GTK_COMBO_BOX(ltrfilt->filter_action),
                             LTR_FILTER_ACTION_DELETE);
   gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action),
-                            LTR_FILTER_ACTION_NEW_FAM);
+                            LTR_FILTER_ACTION_NEW_FAM_TEXT);
   gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), ltrfilt->filter_action, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
@@ -885,7 +1004,11 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
 
   hbox = gtk_hbox_new(FALSE, 0);
   apply = gtk_button_new_with_mnemonic("_Apply");
+  g_signal_connect(G_OBJECT(apply), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_apply_clicked), ltrfilt);
   cancel = gtk_button_new_with_mnemonic("_Cancel");
+  g_signal_connect(G_OBJECT(cancel), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_cancel_clicked), ltrfilt);
   gtk_box_pack_start(GTK_BOX(hbox), apply, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), cancel, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
@@ -897,8 +1020,6 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   /*g_signal_connect(G_OBJECT(ltrfilt->dir_chooser), "selection-changed",
                    G_CALLBACK(gtk_ltr_filter_change_filter_dir),
                    ltrfilt->list_view_all);*/
-  g_signal_connect(G_OBJECT(cancel), "clicked",
-                   G_CALLBACK(gtk_ltr_filter_cancel_clicked), ltrfilt);
   g_signal_connect(G_OBJECT(ltrfilt->list_view_all), "cursor-changed",
                    G_CALLBACK(gtk_ltr_filter_lv_all_changed), ltrfilt);
   gtk_window_resize(GTK_WINDOW(ltrfilt), 800, 600);
@@ -941,11 +1062,12 @@ GType gtk_ltr_filter_get_type(void)
   return ltr_filter_type;
 }
 
-GtkWidget* gtk_ltr_filter_new()
+GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams)
 {
   GtkLTRFilter *ltrfilt;
   ltrfilt = gtk_type_new(GTK_LTR_FILTER_TYPE);
   ltrfilt->last_dir = NULL;
+  ltrfilt->ltrfams = ltrfams;
   g_signal_connect(G_OBJECT(ltrfilt), "delete_event",
                    G_CALLBACK(gtk_ltr_filter_delete_event), NULL);
   g_signal_connect(G_OBJECT(ltrfilt), "destroy",

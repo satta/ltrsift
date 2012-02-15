@@ -83,7 +83,6 @@
 
 #define MAIN_TAB_LABEL "Unclassified"
 
-typedef struct _CandidateData       CandidateData;
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;
@@ -118,12 +117,6 @@ enum {
   LTRFAMS_FAM_LV_OLDNAME,
   LTRFAMS_FAM_LV_ROWREF,
   LTRFAMS_FAM_LV_N_COLUMS
-};
-
-struct _CandidateData
-{
-  GtkTreeRowReference *fam_ref,
-                      *cand_ref;
 };
 
 struct _FamilyTransferData

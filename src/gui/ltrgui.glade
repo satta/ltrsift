@@ -242,6 +242,7 @@
                     <child>
                       <object class="GtkMenuItem" id="mb_main_project_filter">
                         <property name="visible">True</property>
+                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="use_action_appearance">False</property>
                         <property name="label" translatable="yes">_Filter</property>

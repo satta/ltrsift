@@ -54,11 +54,19 @@
                                    "missing function 'filter' or syntax " \
                                    "errors."
 
+#define LTR_FILTER_UNSAVED_CHANGES "You have unsaved changes. Are you sure " \
+                                   "you want to close the window?"
+
 #define LUA_PATTERN        ".lua"
 #define LUA_FILTER_PATTERN "*.lua"
 
-#define LTR_FILTER_ACTION_DELETE  "Unclassify/Delete"
-#define LTR_FILTER_ACTION_NEW_FAM "Create new family"
+#define LTR_FILTER_ACTION_DELETE_TEXT  "Unclassify/Delete"
+#define LTR_FILTER_ACTION_NEW_FAM_TEXT "Create new family"
+
+enum {
+  LTR_FILTER_ACTION_DELETE = 0,
+  LTR_FILTER_ACTION_NEW_FAM
+};
 
 typedef struct _GtkLTRFilter GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
@@ -73,6 +81,7 @@ struct _GtkLTRFilter
   GtkWidget *list_view_sel;
   GtkWidget *edit_dialog;
   GtkWidget *filter_action;
+  GtkWidget *ltrfams;
   GtkTextBuffer *text_buffer;
   GtScriptFilter *script_filter;
   gchar *last_dir;
@@ -99,8 +108,11 @@ enum {
   LTR_FILTER_LV_SEL_N_COLUMNS
 };
 
-GType gtk_ltr_filter_get_type(void);
+GType      gtk_ltr_filter_get_type(void);
 
-GtkWidget* gtk_ltr_filter_new();
+GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams);
+
+void       gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt,
+                                      GtkWidget *ltrfams);
 
 #endif

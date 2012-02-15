@@ -30,6 +30,7 @@
 #include "gtk_ltr_filter.h"
 #include "gtk_project_settings.h"
 #include "preprocess_stream.h"
+#include "script_filter_stream.h"
 
 #define LTR_GET_OBJECT(builder, name, type, data) \
   data->name = type(gtk_builder_get_object(builder, #name))
@@ -75,6 +76,7 @@ struct _GUIData
   GtkWidget *mb_main_file_export_gff3;
   GtkWidget *mb_main_file_export_fasta;
   GtkWidget *mb_main_project_settings;
+  GtkWidget *mb_main_project_filter;
   GtkWidget *mb_main_view_columns;
   GtkWidget *vbox1_main;
   GtkWidget *ltrfams;

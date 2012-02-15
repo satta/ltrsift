@@ -59,7 +59,8 @@
 #define LEN_TOLERANCE  "Allowed candidate length deviation from group median:"
 #define FLCAND_RESULT  "Found %lu full length candidates (marked with *)"
 
-typedef struct _ThreadData ThreadData;
+typedef struct _ThreadData    ThreadData;
+typedef struct _CandidateData CandidateData;
 
 struct _ThreadData {
   GUIData *ltrgui;
@@ -94,6 +95,12 @@ struct _ThreadData {
                 n_features;
 };
 
+struct _CandidateData
+{
+  GtkTreeRowReference *fam_ref,
+                      *cand_ref;
+};
+
 void          free_gt_hash_elem(void *elem);
 
 gboolean      entry_in_list_view(GtkTreeModel *model, const gchar *entry,
@@ -121,6 +128,8 @@ void          export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
 void          export_sequences(GtArray *nodes, gchar *filen,
                                const gchar *indexname, gboolean flcands,
                                GtkWidget *toplevel, GError *err);
+
+void          remove_node_from_array(GtArray *nodes, GtGenomeNode *gn);
 
 unsigned long determine_full_length_candidates(GtArray *nodes,
                                                gfloat ltrtolerance,
