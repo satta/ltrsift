@@ -899,7 +899,7 @@ void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
   gboolean bakfile = FALSE;
 
   filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_SAVE_AS,
-                                            GTK_WINDOW (ltrgui->main_window),
+                                            GTK_WINDOW(ltrgui->main_window),
                                             GTK_FILE_CHOOSER_ACTION_SAVE,
                                             GTK_STOCK_CANCEL,
                                             GTK_RESPONSE_CANCEL,
@@ -924,6 +924,7 @@ void mb_main_file_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
       gchar *tmp = g_strdup(filename);
       g_free(filename);
       filename = g_strconcat(tmp, SQLITE_PATTERN, NULL);
+      g_free(tmp);
     }
   } else {
     gtk_widget_destroy(filechooser);

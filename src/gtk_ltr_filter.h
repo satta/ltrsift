@@ -44,10 +44,21 @@
                             "  return true -- return false\n" \
                             "end"
 
-#define LTR_FILTER_NO_VALID_FILES "Some files could not be added!\n" \
-                                  "Possible reasons: Missing metadata, " \
-                                  "missing function 'filter' or syntax " \
-                                  "errors." \
+#define LTR_FILTER_NOT_ADDED_FILES "Some files could not be added!\n" \
+                                   "Possible reasons: Missing metadata, " \
+                                   "missing function 'filter' or syntax " \
+                                   "errors."
+
+#define LTR_FILTER_NOT_SAVED_FILE  "File could not be saved!\n" \
+                                   "Possible reasons: Missing metadata, " \
+                                   "missing function 'filter' or syntax " \
+                                   "errors."
+
+#define LUA_PATTERN        ".lua"
+#define LUA_FILTER_PATTERN "*.lua"
+
+#define LTR_FILTER_ACTION_DELETE  "Unclassify/Delete"
+#define LTR_FILTER_ACTION_NEW_FAM "Create new family"
 
 typedef struct _GtkLTRFilter GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
@@ -60,12 +71,12 @@ struct _GtkLTRFilter
   GtkWidget *label_email;
   GtkWidget *list_view_all;
   GtkWidget *list_view_sel;
-  /* GtkWidget *dir_chooser; */
   GtkWidget *edit_dialog;
   GtkWidget *filter_action;
   GtkTextBuffer *text_buffer;
   GtScriptFilter *script_filter;
   gchar *last_dir;
+  gchar *cur_filename;
   GError *gerr;
 };
 

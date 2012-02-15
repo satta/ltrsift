@@ -42,14 +42,132 @@ gtk_ltr_filter_edit_dialog_delete_event(GtkWidget *widget,
 }
 
 static void
-gtk_ltr_filter_edit_dialog_cancel_clicked(GT_UNUSED GtkWidget *button,
+gtk_ltr_filter_edit_dialog_close_clicked(GT_UNUSED GtkWidget *button,
                                           GtkLTRFilter *ltrfilt)
 {
+  if (ltrfilt->cur_filename)
+    g_free(ltrfilt->cur_filename);
+  ltrfilt->cur_filename = NULL;
   gtk_widget_destroy(ltrfilt->edit_dialog);
   ltrfilt->edit_dialog = NULL;
 }
 
-static void create_edit_dialog(GtkLTRFilter *ltrfilt, gchar *filename)
+static gboolean save_filter_file(GtkLTRFilter *ltrfilt)
+{
+  GtkWidget *dialog;
+  GtkTextIter start, end;
+  GtScriptFilter *script_filter = NULL;
+  GtError *err = gt_error_new();
+  gboolean valid, result = FALSE;
+  gchar *text;
+
+  gtk_text_buffer_get_start_iter(ltrfilt->text_buffer, &start);
+  gtk_text_buffer_get_end_iter(ltrfilt->text_buffer, &end);
+  text = gtk_text_buffer_get_text(ltrfilt->text_buffer, &start, &end, FALSE);
+  script_filter = gt_script_filter_new_from_string(text, err);
+  if (script_filter != NULL) {
+    valid = gt_script_filter_validate(script_filter, err);
+    if (valid) {
+      result = g_file_set_contents(ltrfilt->cur_filename, text, -1,
+                                   &ltrfilt->gerr);
+      if (!result)
+        error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
+      else
+        gtk_text_buffer_set_modified(ltrfilt->text_buffer, FALSE);
+    } else {
+      dialog = gtk_message_dialog_new(GTK_WINDOW(ltrfilt),
+                                      GTK_DIALOG_MODAL |
+                                      GTK_DIALOG_DESTROY_WITH_PARENT,
+                                      GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                      "%s",
+                                      LTR_FILTER_NOT_SAVED_FILE);
+      gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+      gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+    }
+  } else {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(ltrfilt),
+                                    GTK_DIALOG_MODAL |
+                                    GTK_DIALOG_DESTROY_WITH_PARENT,
+                                    GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+                                    "%s",
+                                    LTR_FILTER_NOT_SAVED_FILE);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
+    gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+  }
+  gt_script_filter_delete(script_filter);
+
+  return result;
+}
+
+static void
+gtk_ltr_filter_edit_dialog_save_as_clicked(GT_UNUSED GtkWidget *button,
+                                           GtkLTRFilter *ltrfilt)
+{
+  GtkWidget *fc;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkFileFilter *lua_file_filter;
+  gboolean saved;
+  gchar *filename;
+
+  fc = gtk_file_chooser_dialog_new(GUI_DIALOG_SAVE_AS,
+                                   GTK_WINDOW(ltrfilt->edit_dialog),
+                                   GTK_FILE_CHOOSER_ACTION_SAVE,
+                                   GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+                                   GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
+  gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(fc), TRUE);
+  lua_file_filter = gtk_file_filter_new();
+  gtk_file_filter_set_name(lua_file_filter, LUA_FILTER_PATTERN);
+  gtk_file_filter_add_pattern(lua_file_filter, LUA_FILTER_PATTERN);
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fc), lua_file_filter);
+  if (ltrfilt->cur_filename) {
+    gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(fc), ltrfilt->cur_filename);
+    gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(fc),
+                                    g_path_get_basename(ltrfilt->cur_filename));
+  } else if (ltrfilt->last_dir)
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fc),
+                                        ltrfilt->last_dir);
+  else
+    gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fc), g_get_home_dir());
+
+  if (gtk_dialog_run(GTK_DIALOG(fc)) == GTK_RESPONSE_ACCEPT) {
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(fc));
+    if (!g_str_has_suffix(filename, LUA_PATTERN)) {
+      ltrfilt->cur_filename = g_strconcat(filename, LUA_PATTERN, NULL);
+      g_free(filename);
+    } else
+      ltrfilt->cur_filename = filename;
+  } else {
+    gtk_widget_destroy(fc);
+    return;
+  }
+  gtk_widget_destroy(fc);
+  saved = save_filter_file(ltrfilt);
+  if (saved) {
+    model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_all));
+    if (!entry_in_list_view(model, ltrfilt->cur_filename, LTR_FILTER_LV_FILE)) {
+      gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+      gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                         LTR_FILTER_LV_FILE, ltrfilt->cur_filename, -1);
+    }
+  }
+}
+
+static void
+gtk_ltr_filter_edit_dialog_save_clicked(GT_UNUSED GtkWidget *button,
+                                        GtkLTRFilter *ltrfilt)
+{
+  if (ltrfilt->cur_filename == NULL)
+    gtk_ltr_filter_edit_dialog_save_as_clicked(NULL, ltrfilt);
+  else {
+    gboolean saved;
+    saved = save_filter_file(ltrfilt);
+  }
+}
+
+static void create_edit_dialog(GtkLTRFilter *ltrfilt)
 {
   GtkWidget *sw, *tv, *vbox, *hbox, *button;
   PangoFontDescription *font_desc;
@@ -64,13 +182,15 @@ static void create_edit_dialog(GtkLTRFilter *ltrfilt, gchar *filename)
   gtk_widget_modify_font(tv, font_desc);
   ltrfilt->text_buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(tv));
 
-  if (filename == NULL)
+  if (ltrfilt->cur_filename == NULL) {
     gtk_text_buffer_set_text(ltrfilt->text_buffer, LTR_FILTER_TEMPLATE, -1);
-  else {
+    gtk_text_buffer_set_modified(ltrfilt->text_buffer, TRUE);
+  } else {
     gboolean result;
     gchar *text;
-    result = g_file_get_contents(filename, &text, NULL, NULL);
+    result = g_file_get_contents(ltrfilt->cur_filename, &text, NULL, NULL);
     gtk_text_buffer_set_text(ltrfilt->text_buffer, text, -1);
+    gtk_text_buffer_set_modified(ltrfilt->text_buffer, FALSE);
     g_free(text);
   }
   sw = gtk_scrolled_window_new(NULL, NULL);
@@ -82,12 +202,18 @@ static void create_edit_dialog(GtkLTRFilter *ltrfilt, gchar *filename)
   gtk_box_pack_start(GTK_BOX(vbox), sw, TRUE, TRUE, 1);
   hbox = gtk_hbox_new(FALSE, 1);
   button = gtk_button_new_from_stock(GTK_STOCK_SAVE);
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_edit_dialog_save_clicked),
+                   ltrfilt);
   gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
   button = gtk_button_new_from_stock(GTK_STOCK_SAVE_AS);
-  gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
-  button = gtk_button_new_from_stock(GTK_STOCK_CANCEL);
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_ltr_filter_edit_dialog_cancel_clicked),
+                   G_CALLBACK(gtk_ltr_filter_edit_dialog_save_as_clicked),
+                   ltrfilt);
+  gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
+  button = gtk_button_new_from_stock(GTK_STOCK_CLOSE);
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(gtk_ltr_filter_edit_dialog_close_clicked),
                    ltrfilt);
   gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
@@ -266,8 +392,8 @@ static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
     gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(filechooser),
                                         g_get_home_dir());
   lua_file_filter = gtk_file_filter_new();
-  gtk_file_filter_set_name(lua_file_filter, "*.lua");
-  gtk_file_filter_add_pattern(lua_file_filter, "*.lua");
+  gtk_file_filter_set_name(lua_file_filter, LUA_FILTER_PATTERN);
+  gtk_file_filter_add_pattern(lua_file_filter, LUA_FILTER_PATTERN);
   gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), lua_file_filter);
   gint result = gtk_dialog_run(GTK_DIALOG(filechooser));
 
@@ -307,7 +433,7 @@ static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
                                     "%s",
-                                    LTR_FILTER_NO_VALID_FILES);
+                                    LTR_FILTER_NOT_ADDED_FILES);
     gtk_window_set_title(GTK_WINDOW(dialog), "Attention!");
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
@@ -487,17 +613,18 @@ static void gtk_ltr_filter_edit_clicked(GT_UNUSED GtkWidget *button,
   gtk_tree_model_get_iter(model, &iter, path);
   gtk_tree_model_get(model, &iter, 0, &file, -1);
 
-  create_edit_dialog(ltrfilt, file);
+  ltrfilt->cur_filename = file;
+  create_edit_dialog(ltrfilt);
 
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
-  g_free(file);
 }
 
 static void gtk_ltr_filter_new_clicked(GT_UNUSED GtkWidget *button,
                                        GtkLTRFilter *ltrfilt)
 {
-  create_edit_dialog(ltrfilt, NULL);
+  ltrfilt->cur_filename = NULL;
+  create_edit_dialog(ltrfilt);
 }
 
 static void
@@ -704,15 +831,15 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_box_pack_start(GTK_BOX(vbox), hbox, TRUE, TRUE, 1);
 
   hbox = gtk_hbox_new(FALSE, 1);
-  label = gtk_label_new("PLACEHOLDER");
+  label =
+     gtk_label_new("Action to perform with filtered candidates:");
   gtk_label_set_attributes(GTK_LABEL(label), pattrl);
   gtk_misc_set_alignment(GTK_MISC(label), 0.0, 0.5);
   ltrfilt->filter_action = gtk_combo_box_new_text();
-  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "");
-  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action1");
-  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action2");
-  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action3");
-  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action), "Action4");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action),
+                            LTR_FILTER_ACTION_DELETE);
+  gtk_combo_box_append_text(GTK_COMBO_BOX(ltrfilt->filter_action),
+                            LTR_FILTER_ACTION_NEW_FAM);
   gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), ltrfilt->filter_action, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
