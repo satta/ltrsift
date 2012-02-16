@@ -19,6 +19,33 @@
 #include "error.h"
 #include "support.h"
 
+void delete_gt_genome_node(GtGenomeNode *gn)
+{
+  CandidateData *cdata;
+
+  cdata = gt_genome_node_get_user_data(gn, "cdata");
+  gt_genome_node_release_user_data(gn, "cdata");
+  g_slice_free(CandidateData, cdata);
+  gt_genome_node_delete(gn);
+}
+
+void remove_row(GtkTreeRowReference *rowref)
+{
+  GtkTreeIter iter;
+  GtkTreePath *path;
+  GtkTreeModel *model;
+  gboolean valid;
+
+  model = gtk_tree_row_reference_get_model(rowref);
+  path = gtk_tree_row_reference_get_path(rowref);
+  valid = gtk_tree_model_get_iter(model, &iter, path);
+  if (!valid)
+    g_warning("%s", "Programming error!");
+  else
+    gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+  gtk_tree_path_free(path);
+}
+
 gboolean entry_in_list_view(GtkTreeModel *model, const gchar *entry,
                             gint column_no)
 {

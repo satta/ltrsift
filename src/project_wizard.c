@@ -31,11 +31,13 @@ static gboolean project_wizard_finished_job(gpointer data)
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
+    gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
     threaddata->ltrgui->ltrfams =
                               gtk_ltr_families_new(threaddata->ltrgui->sb_main,
                                                    threaddata->progressbar,
                                                    threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
+    threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
                        TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),

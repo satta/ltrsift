@@ -19,17 +19,236 @@
 #include "gtk_ltr_filter.h"
 #include "support.h"
 
-static void remove_list_view_row(GtkTreeRowReference *rowref,
-                                 GtkTreeModel *model)
+static gint gtk_ltr_filter_remove_file_from_sqlite(GtkTreeRowReference *row_ref,
+                                                   GtkLTRFilter *ltrfilt)
 {
-  GtkTreeIter iter;
+  GtkTreeModel *model;
   GtkTreePath *path;
+  GtkTreeIter iter;
+  GtRDB *rdb;
+  GtRDBStmt *stmt;
+  GtError *err = gt_error_new();
+  gchar *file, *pfile, query[BUFSIZ];
+  gint had_err = 0;
 
-  path = gtk_tree_row_reference_get_path(rowref);
+  pfile = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+  if (!pfile)
+    return had_err;
+
+  model = gtk_tree_row_reference_get_model(row_ref);
+  path = gtk_tree_row_reference_get_path(row_ref);
   gtk_tree_model_get_iter(model, &iter, path);
+  gtk_tree_model_get(model, &iter, LTR_FILTER_LV_FILE, &file, -1);
 
-  gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+  rdb = gt_rdb_sqlite_new(pfile, err);
+  if (!rdb) {
+    g_set_error(&ltrfilt->gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gtk_tree_path_free(path);
+    g_free(file);
+    return -1;
+  }
+  g_snprintf(query, BUFSIZ,
+             "DELETE FROM filter_files WHERE filename = \"%s\"", file);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&ltrfilt->gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gtk_tree_path_free(path);
+    g_free(file);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+  gt_rdb_delete(rdb);
+  gt_error_delete(err);
   gtk_tree_path_free(path);
+  g_free(file);
+
+  return 0;
+}
+
+static gint gtk_ltr_filter_add_file_to_sqlite(GtkLTRFilter *ltrfilt,
+                                              gchar *file)
+{
+  GtRDB *rdb;
+  GtRDBStmt *stmt;
+  GtError *err = gt_error_new();
+  gchar *pfile, query[BUFSIZ];
+  gint had_err = 0;
+
+  pfile = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+  if (!pfile)
+    return had_err;
+  rdb = gt_rdb_sqlite_new(pfile, err);
+  if (!rdb) {
+    g_set_error(&ltrfilt->gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    return -1;
+  }
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS filter_files "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                             "filename TEXT)",
+                           -1, &stmt, err);
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&ltrfilt->gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+  g_snprintf(query, BUFSIZ,
+             "INSERT INTO filter_files (filename) values (\"%s\")", file);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&ltrfilt->gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+  gt_rdb_delete(rdb);
+  gt_error_delete(err);
+
+  return 0;
+}
+
+gint gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
+                                              GError *gerr)
+{
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtScriptFilter *script_filter;
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
+  GtError *err;
+  GtStr *result;
+  gboolean valid;
+  gint had_err = 0;
+  gchar *pfile;
+  err = gt_error_new();
+
+  pfile = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+  rdb = gt_rdb_sqlite_new(pfile, err);
+  if (!rdb) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not apply gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    return -1;
+  }
+  had_err = gt_rdb_prepare(rdb,
+                           "SELECT filename FROM filter_files",
+                           -1, &stmt, err);
+  if (had_err) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not apply gui settings: %s",
+                gt_error_get(err));
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
+    result = gt_str_new();
+    had_err = gt_rdb_stmt_get_string(stmt, 0, result, err);
+    if (!had_err) {
+      if (g_file_test(gt_str_get(result), G_FILE_TEST_EXISTS)) {
+        model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_all));
+        script_filter = gt_script_filter_new(gt_str_get(result), err);
+        if (script_filter != NULL) {
+          valid = gt_script_filter_validate(script_filter, err);
+          if (valid) {
+            gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+            gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                               LTR_FILTER_LV_FILE, gt_str_get(result), -1);
+          }
+        }
+        gt_script_filter_delete(script_filter);
+        gt_error_unset(err);
+      }
+    }
+    gt_str_delete(result);
+  }
+  gt_rdb_stmt_delete(stmt);
+  if (had_err == -1) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not apply gui settings: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return had_err;
+  }
+  gt_error_delete(err);
+  gt_rdb_delete(rdb);
+
+  return 0;
+}
+
+static void gtk_ltr_filter_delete_from_family(CandidateData *cdata,
+                                              GtGenomeNode *gn)
+{
+  GtkTreePath *path;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtArray *tmp_nodes;
+  gboolean valid;
+  gchar *old_name, cur_name[BUFSIZ];
+
+  path = gtk_tree_row_reference_get_path(cdata->fam_ref);
+  model = gtk_tree_row_reference_get_model(cdata->fam_ref);
+  valid = gtk_tree_model_get_iter(model, &iter, path);
+  if (!valid)
+    g_warning("%s", "Programming error!");
+  else {
+    gtk_tree_model_get(model, &iter,
+                       LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
+                       LTRFAMS_FAM_LV_OLDNAME, &old_name,
+                       -1);
+    remove_node_from_array(tmp_nodes, gn);
+    if (gt_array_size(tmp_nodes) == 0) {
+      remove_row(cdata->fam_ref);
+      gt_array_delete(tmp_nodes);
+    } else {
+      g_snprintf(cur_name, BUFSIZ, "%s (%lu)", old_name,
+                 gt_array_size(tmp_nodes));
+      gtk_list_store_set(GTK_LIST_STORE(model), &iter,
+                         LTRFAMS_FAM_LV_CURNAME, cur_name,
+                         -1);
+    }
+    g_free(old_name);
+  }
+  gtk_tree_path_free(path);
+
+  if (cdata->cand_ref) {
+    remove_row(cdata->cand_ref);
+    cdata->cand_ref = NULL;
+  }
 }
 
 void gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt, GtkWidget *ltrfams)
@@ -261,13 +480,16 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
   GtkTreeIter iter;
   GtStrArray *filter_files = NULL;
   GtError *err = gt_error_new();
+  GtFeatureNodeIterator *fni;
+  GtFeatureNode *curnode;
   GtNodeStream *array_in_stream,
                *script_filter_stream,
                *array_out_stream;
   GtArray *nodes, *filtered_nodes;
   GtGenomeNode *gn;
-  gchar *filter_file;
+  gchar *filter_file, fam_name[BUFSIZ];
   gint action, had_err = 0;
+  const char *attr;
   unsigned long i;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_sel));
@@ -275,6 +497,7 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
   if (!gtk_tree_model_get_iter_first(model, &iter)) {
     return;
   } else {
+    gtk_widget_hide(GTK_WIDGET(ltrfilt));
     filter_files = gt_str_array_new();
     gtk_tree_model_get(model, &iter,
                        LTR_FILTER_LV_FILE, &filter_file, -1);
@@ -302,45 +525,96 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
   gt_node_stream_delete(array_out_stream);
 
   action = gtk_combo_box_get_active(GTK_COMBO_BOX(ltrfilt->filter_action));
+  if (gt_array_size(filtered_nodes) == 0) {
+    gt_array_delete(filtered_nodes);
+    return;
+  }
+  gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfilt->ltrfams), TRUE);
 
   switch (action) {
     case LTR_FILTER_ACTION_DELETE:
       for (i = 0; i < gt_array_size(filtered_nodes); i++) {
-        gn = (GtGenomeNode*) gt_array_get(filtered_nodes, i);
+        gn = *(GtGenomeNode**) gt_array_get(filtered_nodes, i);
         cdata = (CandidateData*) gt_genome_node_get_user_data(gn, "cdata");
-        if (!cdata)
+        if (!cdata) {
           g_warning("%s", "Programming error!");
-        else {
-          GtkTreePath *path;
-          GtkTreeModel *model;
-          GtkTreeIter iter;
-          GtArray *tmp_nodes;
-          gboolean valid;
-          gchar *old_name, cur_name[BUFSIZ];
-          if (cdata->fam_ref) {
-            path = gtk_tree_row_reference_get_path(cdata->fam_ref);
-            model = gtk_tree_row_reference_get_model(cdata->fam_ref);
-            valid = gtk_tree_model_get_iter(model, &iter, path);
-            if (!valid)
-              g_warning("%s", "Programming error!");
-            else {
-              gtk_tree_model_get(model, &iter,
-                                 LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
-                                 LTRFAMS_FAM_LV_OLDNAME, &old_name,
-                                 -1);
-              remove_node_from_array(tmp_nodes, gn);
-              g_snprintf(cur_name, BUFSIZ, "%s (%lu)", old_name,
-                         gt_array_size(tmp_nodes));
-              gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                                 LTRFAMS_FAM_LV_CURNAME, cur_name,
-                                 -1);
-              g_free(old_name);
-            }
-          }
+          return;
+        }
+        if (cdata->fam_ref) {
+          gtk_ltr_filter_delete_from_family(cdata, gn);
+          GtkWidget *main_tab;
+          GtkTreeView *list_view;
+          GtkNotebook *noteb;
+          GList *children;
+          gint main_tab_no;
+
+          noteb = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+          main_tab_no = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noteb),
+                                                          "main_tab"));
+          main_tab = gtk_notebook_get_nth_page(noteb, main_tab_no);
+          children = gtk_container_get_children(GTK_CONTAINER(main_tab));
+          list_view = GTK_TREE_VIEW(g_list_first(children)->data);
+          fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+          curnode = gt_feature_node_iterator_next(fni);
+          attr = gt_feature_node_get_attribute(curnode, ATTR_LTRFAM);
+          if (attr)
+            gt_feature_node_remove_attribute(curnode, ATTR_LTRFAM);
+          attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+          if (attr)
+            gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
+          gtk_ltr_families_nb_fam_lv_append_gn(
+                                           GTK_LTR_FAMILIES(ltrfilt->ltrfams),
+                                               list_view, gn, NULL, NULL,
+                                               NULL, NULL);
+          gt_feature_node_iterator_delete(fni);
+          gtk_ltr_families_update_unclass_cands(
+                                           GTK_LTR_FAMILIES(ltrfilt->ltrfams),
+                                                1);
+
+        } else if (!cdata->fam_ref && cdata->cand_ref) {
+          remove_row(cdata->cand_ref);
+          remove_node_from_array(nodes, gn);
+          delete_gt_genome_node(gn);
+          gtk_ltr_families_update_unclass_cands(
+                                           GTK_LTR_FAMILIES(ltrfilt->ltrfams),
+                                                -1);
+
         }
       }
       break;
     case LTR_FILTER_ACTION_NEW_FAM:
+      srand(time(NULL));
+      g_snprintf(fam_name, BUFSIZ, "%s%d", LTR_FILTER_NEW_FAM_NAME,
+                 rand() % 100);
+      for (i = 0; i < gt_array_size(filtered_nodes); i++) {
+        gn = *(GtGenomeNode**) gt_array_get(filtered_nodes, i);
+        cdata = (CandidateData*) gt_genome_node_get_user_data(gn, "cdata");
+        if (!cdata) {
+          g_warning("%s", "Programming error!");
+          return;
+        }
+        if (cdata->fam_ref)
+          gtk_ltr_filter_delete_from_family(cdata, gn);
+        if (cdata->cand_ref) {
+          remove_row(cdata->cand_ref);
+          cdata->cand_ref = NULL;
+          if (!cdata->fam_ref)
+            gtk_ltr_families_update_unclass_cands(
+                                             GTK_LTR_FAMILIES(ltrfilt->ltrfams),
+                                                  -1);
+        }
+
+        fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
+        curnode = gt_feature_node_iterator_next(fni);
+        gt_feature_node_set_attribute(curnode, ATTR_LTRFAM, fam_name);
+        attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
+        if (attr)
+          gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
+        gt_feature_node_iterator_delete(fni);
+      }
+      gtk_ltr_families_nb_fam_lv_append_array(
+                                             GTK_LTR_FAMILIES(ltrfilt->ltrfams),
+                                              NULL, filtered_nodes, NULL);
       break;
     default:
       break;
@@ -354,58 +628,6 @@ static void gtk_ltr_filter_cancel_clicked(GT_UNUSED GtkButton *button,
 {
   gtk_widget_hide(GTK_WIDGET(user_data));
 }
-
-/*
-static void gtk_ltr_filter_change_filter_dir(GtkFileChooser *chooser,
-                                             gpointer user_data)
-{
-  GtkTreeView *list_view = GTK_TREE_VIEW(user_data);
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  GtkTreeSelection *selection;
-  GtError *err;
-  GtScriptFilter *script_filter;
-  GDir *dir;
-  gboolean valid;
-  gchar *path;
-  const char *file;
-
-  err = gt_error_new();
-  model = gtk_tree_view_get_model(list_view);
-  gtk_list_store_clear(GTK_LIST_STORE(model));
-
-  path = gtk_file_chooser_get_filename(chooser);
-  dir = g_dir_open(path, 0, NULL);
-
-  while ((file = g_dir_read_name(dir))) {
-    if (g_str_has_suffix(file, ".lua")) {
-      script_filter = gt_script_filter_new(file, err);
-      if (script_filter != NULL) {
-        valid = gt_script_filter_validate(script_filter, err);
-        if (valid) {
-          gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-          gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, file, -1);
-        }
-      }
-      gt_script_filter_delete(script_filter);
-      gt_error_unset(err);
-    }
-  }
-  valid = gtk_tree_model_get_iter_first(model, &iter);
-  selection = gtk_tree_view_get_selection(list_view);
-  if (!valid) {
-    gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
-    gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-    gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-                       0, "No valid filter scripts found!", -1);
-  } else
-    gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-
-  g_dir_close(dir);
-  g_free(path);
-  gt_error_delete(err);
-}
-*/
 
 static void gtk_ltr_filter_delete_event(GtkWidget *widget,
                                         GT_UNUSED GdkEvent *event,
@@ -527,6 +749,7 @@ static void gtk_ltr_filter_add_clicked(GT_UNUSED GtkWidget *button,
           if (valid) {
             gtk_list_store_append(GTK_LIST_STORE(model), &iter);
             gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, file, -1);
+            gtk_ltr_filter_add_file_to_sqlite(ltrfilt, file);
           } else
             skipped = TRUE;
         } else
@@ -582,7 +805,7 @@ static void gtk_ltr_filter_back_clicked(GT_UNUSED GtkWidget *button,
     tmp = tmp->next;
   }
 
-  g_list_foreach(references, (GFunc) remove_list_view_row, model);
+  g_list_foreach(references, (GFunc) remove_row, NULL);
   g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(references);
@@ -620,7 +843,6 @@ static void gtk_ltr_filter_forward_clicked(GT_UNUSED GtkWidget *button,
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
   g_free(file);
-  /* g_free(file_name); */
 }
 
 /*
@@ -704,7 +926,9 @@ static void gtk_ltr_filter_remove_clicked(GT_UNUSED GtkWidget *button,
     tmp = tmp->next;
   }
 
-  g_list_foreach(references, (GFunc) remove_list_view_row, model);
+  g_list_foreach(references, (GFunc) gtk_ltr_filter_remove_file_from_sqlite,
+                 ltrfilt);
+  g_list_foreach(references, (GFunc) remove_row, NULL);
   g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(references);
@@ -776,11 +1000,11 @@ static void lv_all_cell_data_func(GT_UNUSED GtkTreeViewColumn *tree_column,
 
   err = gt_error_new();
   script_filter = gt_script_filter_new(file, err);
-  g_snprintf(text, BUFSIZ, "<b>Name:</b> %s\t<b>Version:</b> %s\n%s",
+  g_snprintf(text, BUFSIZ, "<b>%s</b> %s\n<small>%s</small>",
              gt_script_filter_get_name(script_filter, err),
              gt_script_filter_get_version(script_filter, err),
              gt_script_filter_get_short_description(script_filter, err));
-  g_object_set(renderer, "markup", text, "family", "Courier", NULL);
+  g_object_set(renderer, "markup", text, NULL);
 
   g_free(file);
   gt_error_delete(err);

@@ -661,13 +661,13 @@ static gboolean mb_open_project_data_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
+    gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
     threaddata->ltrgui->ltrfams =
                               gtk_ltr_families_new(threaddata->ltrgui->sb_main,
                                                    threaddata->progressbar,
                                                    threaddata->ltrgui->projset);
-    gtk_ltr_filter_set_ltrfams(GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
-                               threaddata->ltrgui->ltrfams);
     ltrfams = threaddata->ltrgui->ltrfams;
+    threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
                        ltrfams, TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
@@ -679,6 +679,9 @@ static gboolean mb_open_project_data_finished(gpointer data)
     gtk_project_settings_set_data_from_sqlite(GTK_PROJECT_SETTINGS(
                                                    threaddata->ltrgui->projset),
                                               threaddata->filename);
+    threaddata->had_err = gtk_ltr_filter_get_filter_files_from_sql(
+                                  GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
+                                  threaddata->ltrgui->err);
     mb_main_view_columns_set_submenu(threaddata->ltrgui,
                                      threaddata->features,
                                      threaddata->err, TRUE);
@@ -1352,8 +1355,8 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
       ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main,
                                              ltrgui->progressbar,
                                              ltrgui->projset);
-      gtk_ltr_filter_set_ltrfams(GTK_LTR_FILTER(ltrgui->ltrfilt),
-                                 ltrgui->ltrfams);
+      gtk_widget_destroy(ltrgui->ltrfilt);
+      ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
       gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                          TRUE, TRUE, 0);
       break;

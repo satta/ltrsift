@@ -154,7 +154,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
     g_set_error(&projset->err,
                 G_FILE_ERROR,
                 0,
-                "Could not save gui settings: %s",
+                "Could not apply gui settings: %s",
                 gt_error_get(err));
     gt_error_delete(err);
     return -1;

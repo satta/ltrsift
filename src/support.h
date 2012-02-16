@@ -101,6 +101,8 @@ struct _CandidateData
                       *cand_ref;
 };
 
+void          delete_gt_genome_node(GtGenomeNode *gn);
+
 void          free_gt_hash_elem(void *elem);
 
 gboolean      entry_in_list_view(GtkTreeModel *model, const gchar *entry,
@@ -130,6 +132,8 @@ void          export_sequences(GtArray *nodes, gchar *filen,
                                GtkWidget *toplevel, GError *err);
 
 void          remove_node_from_array(GtArray *nodes, GtGenomeNode *gn);
+
+void          remove_row(GtkTreeRowReference *rowref);
 
 unsigned long determine_full_length_candidates(GtArray *nodes,
                                                gfloat ltrtolerance,

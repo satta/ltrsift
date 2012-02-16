@@ -300,19 +300,6 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
   ltrassi->added_features = TRUE;
 }
 
-static void remove_list_view_row(GtkTreeRowReference *rowref,
-                                 GtkTreeModel *model)
-{
-  GtkTreeIter iter;
-  GtkTreePath *path;
-
-  path = gtk_tree_row_reference_get_path(rowref);
-  gtk_tree_model_get_iter(model, &iter, path);
-
-  gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
-  gtk_tree_path_free(path);
-}
-
 static void update_cluster_overview(GtkLTRAssistant *ltrassi)
 {
   gint psmall,
@@ -548,7 +535,7 @@ static void remove_gff3_button_clicked(GT_UNUSED GtkButton *button,
     tmp = tmp->next;
   }
 
-  g_list_foreach(references, (GFunc) remove_list_view_row, model);
+  g_list_foreach(references, (GFunc) remove_row, NULL);
   check_complete_page_general(ltrassi);
   update_gff3_label(GTK_TREE_VIEW(ltrassi->list_view_gff3files),
                     GTK_LABEL(ltrassi->label_gff3files));

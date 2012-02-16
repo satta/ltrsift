@@ -220,9 +220,25 @@ void         gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
 void         gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
                                                   gint pos);
 
+void         gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
+                                                   long int amount);
+
 void         gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
                                              GtkTreeIter *iter,
                                              GtArray *nodes,
                                              gboolean load,
                                              GtkLTRFamilies *ltrfams);
+
+void         gtk_ltr_families_nb_fam_lv_append_gn(GtkLTRFamilies *ltrfams,
+                                                  GtkTreeView *list_view,
+                                                  GtGenomeNode *gn,
+                                                  GtkTreeRowReference *rowref,
+                                                  GtkListStore *store,
+                                                  GtStyle *style,
+                                                  GtHashmap *colors);
+
+void         gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
+                                                     GtkTreeView *list_view,
+                                                     GtArray *nodes,
+                                                     GtkListStore *store);
 #endif

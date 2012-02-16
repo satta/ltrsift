@@ -62,6 +62,7 @@
 
 #define LTR_FILTER_ACTION_DELETE_TEXT  "Unclassify/Delete"
 #define LTR_FILTER_ACTION_NEW_FAM_TEXT "Create new family"
+#define LTR_FILTER_NEW_FAM_NAME        "filtered"
 
 enum {
   LTR_FILTER_ACTION_DELETE = 0,
@@ -114,5 +115,8 @@ GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams);
 
 void       gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt,
                                       GtkWidget *ltrfams);
+
+gint       gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
+                                                    GError *gerr);
 
 #endif
