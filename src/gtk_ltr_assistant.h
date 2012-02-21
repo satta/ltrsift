@@ -40,22 +40,8 @@
 
 #define BROWSE_PROJECT "Bro_wse..."
 #define BROWSE_INDEX   "Brow_se..."
-#define USE_DEFAULT    "Use default?"
 #define USE_DEFAULT_A  "Use default"
 #define NEW_FAM_PREFIX "newfam_"
-
-#define BLASTN_STRAND        "-strand"
-#define BLASTN_CULLING       "-culling_limit"
-#define BLASTN_BESTHIT_OVERH "-best_hit_overhang"
-#define BLASTN_BESTHIT_SCORE "-best_hit_score"
-#define BLASTN_MAXT_SEQS     "-max_target_seqs"
-#define BLASTN_XDROP_UNG     "-xdrop_ungap"
-#define BLASTN_XDROP_GAP     "-xdrop_gap"
-#define BLASTN_NO_GREEDY     "-no_greedy"
-#define BLASTN_MIN_RAW       "-min_raw_gapped_score"
-#define BLASTN_UNGAPPED      "-ungapped"
-#define BLASTN_WINDOWS       "-window_size"
-#define BLASTN_OFF_DIAG      "-off_diagonal_range"
 
 typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;

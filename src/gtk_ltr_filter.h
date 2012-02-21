@@ -69,7 +69,7 @@ enum {
   LTR_FILTER_ACTION_NEW_FAM
 };
 
-typedef struct _GtkLTRFilter GtkLTRFilter;
+typedef struct _GtkLTRFilter      GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
 
 struct _GtkLTRFilter

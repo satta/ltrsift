@@ -1141,7 +1141,7 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
   }
 
   if (!multi) {
-    nodes = gt_array_new(sizeof(GtGenomeNode*));
+    nodes = gt_array_new(sizeof (GtGenomeNode*));
     rows = gtk_tree_selection_get_selected_rows(sel, &model);
     tmp = rows;
     while (tmp != NULL) {
@@ -2795,6 +2795,83 @@ gtk_ltr_families_lv_fams_tb_add_clicked(GT_UNUSED GtkWidget *button,
   gtk_tree_path_free(path);
 }
 
+static void
+gtk_ltr_families_lv_fams_tb_refseqmatch_clicked(GT_UNUSED GtkWidget *button,
+                                                GtkLTRFamilies *ltrfams)
+{
+  GtkWidget *dialog,
+            *blastn_params;
+  GtkTreeSelection *sel;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtArray *nodes, *tmpnodes;
+  GList *rows, *tmp;
+  gdouble evalue, xdrop, seqid;
+  gboolean dust, flcands;
+  gint gapopen, gapextend, penalty, reward, threads, wordsize, match_len;
+  const gchar *moreblast, *refseq_file;
+
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
+
+  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+    return;
+
+  blastn_params = gtk_blastn_params_refseq_new();
+  dialog = gtk_dialog_new_with_buttons("Match dialog",
+                       GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams))),
+                                       GTK_DIALOG_MODAL |
+                                       GTK_DIALOG_DESTROY_WITH_PARENT,
+                                       GTK_STOCK_APPLY,
+                                       GTK_RESPONSE_ACCEPT,
+                                       GTK_STOCK_CANCEL,
+                                       GTK_RESPONSE_REJECT,
+                                       NULL);
+
+  gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), blastn_params);
+  gtk_widget_show_all(dialog);
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_REJECT) {
+    gtk_widget_destroy(dialog);
+    return;
+  }
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
+  evalue = gtk_blastn_params_get_evalue(GTK_BLASTN_PARAMS(blastn_params));
+  dust = gtk_blastn_params_get_dust(GTK_BLASTN_PARAMS(blastn_params));
+  gapopen = gtk_blastn_params_get_gapopen(GTK_BLASTN_PARAMS(blastn_params));
+  gapextend = gtk_blastn_params_get_gapextend(GTK_BLASTN_PARAMS(blastn_params));
+  xdrop = gtk_blastn_params_get_xdrop(GTK_BLASTN_PARAMS(blastn_params));
+  penalty = gtk_blastn_params_get_penalty(GTK_BLASTN_PARAMS(blastn_params));
+  reward = gtk_blastn_params_get_reward(GTK_BLASTN_PARAMS(blastn_params));
+  threads = gtk_blastn_params_get_threads(GTK_BLASTN_PARAMS(blastn_params));
+  wordsize = gtk_blastn_params_get_wordsize(GTK_BLASTN_PARAMS(blastn_params));
+  seqid = gtk_blastn_params_get_seqid(GTK_BLASTN_PARAMS(blastn_params));
+  moreblast = gtk_blastn_params_get_moreblast(GTK_BLASTN_PARAMS(blastn_params));
+  refseq_file = gtk_blastn_params_refseq_get_refseq_file(
+                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+  match_len = gtk_blastn_params_refseq_get_match_len(
+                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+  flcands = gtk_blastn_params_refseq_get_flcands(
+                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+
+  nodes = gt_array_new(sizeof (GtGenomeNode*));
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       LTRFAMS_FAM_LV_NODE_ARRAY, &tmpnodes,
+                       -1);
+    gt_array_add_array(nodes, tmpnodes);
+    tmp = tmp->next;
+  }
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  gt_genome_nodes_sort_stable(nodes);
+
+  /* extend threaddata && create thread for matching */
+
+  gt_array_delete(nodes);
+  gtk_widget_destroy(dialog);
+}
+
 static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
                                                    GtkLTRFamilies *ltrfams)
 {
@@ -3178,8 +3255,7 @@ gboolean gtk_ltr_families_lv_fams_key_pressed(GT_UNUSED GtkWidget *list_view,
       break;
     case GDK_F2:
       gtk_ltr_families_lv_fams_pmenu_edit_clicked(NULL,
-                                                  (gpointer)
-                                                          ltrfams->lv_families);
+                                               (gpointer) ltrfams->lv_families);
       return TRUE;
       break;
     default:
@@ -3205,7 +3281,8 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
 
   GtkAdjustment *vadj = NULL;
   GtkToolItem *add,
-              *remove;
+              *remove,
+              *refseqmatch;
   GdkColor color;
   GtkTreeSelection *selection;
 
@@ -3220,9 +3297,12 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   add = gtk_tool_button_new_from_stock(GTK_STOCK_ADD);
   gtk_tool_item_set_tooltip_text(add, TB_FAMS_ADD);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_lv_families), add, 0);
-  remove = gtk_tool_button_new_from_stock(GTK_STOCK_REMOVE);
+  remove = gtk_tool_button_new_from_stock(GTK_STOCK_CLEAR);
   gtk_tool_item_set_tooltip_text(remove, TB_FAMS_REMOVE);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_lv_families), remove, 1);
+  refseqmatch = gtk_tool_button_new_from_stock(GTK_STOCK_CONVERT);
+  gtk_tool_item_set_tooltip_text(refseqmatch, TB_FAMS_REF_MATCH);
+  gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_lv_families), refseqmatch, 2);
   sw1 = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw1),
                                  GTK_POLICY_AUTOMATIC,
@@ -3233,11 +3313,14 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   g_signal_connect(G_OBJECT(ltrfams->lv_families), "key-press-event",
                    G_CALLBACK(gtk_ltr_families_lv_fams_key_pressed), ltrfams);
   g_signal_connect(G_OBJECT(add), "clicked",
-                           G_CALLBACK(gtk_ltr_families_lv_fams_tb_add_clicked),
-                           ltrfams);
+                   G_CALLBACK(gtk_ltr_families_lv_fams_tb_add_clicked),
+                   ltrfams);
   g_signal_connect(G_OBJECT(remove), "clicked",
-                           G_CALLBACK(gtk_ltr_families_lv_fams_tb_rm_clicked),
-                           ltrfams);
+                   G_CALLBACK(gtk_ltr_families_lv_fams_tb_rm_clicked),
+                   ltrfams);
+  g_signal_connect(G_OBJECT(refseqmatch), "clicked",
+                   G_CALLBACK(gtk_ltr_families_lv_fams_tb_refseqmatch_clicked),
+                   ltrfams);
   gtk_container_add(GTK_CONTAINER(sw1), ltrfams->lv_families);
   hsep1 = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(vbox1), ltrfams->tb_lv_families, FALSE, TRUE, 1);
@@ -3358,5 +3441,6 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
   ltrfams->statusbar = statusbar;
   ltrfams->progressbar = progressbar;
   ltrfams->projset = projset;
+
   return GTK_WIDGET(ltrfams);
 }

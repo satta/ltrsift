@@ -24,6 +24,8 @@
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
 #include "genometools.h"
+#include "gtk_blastn_params.h"
+#include "gtk_blastn_params_refseq.h"
 #include "gtk_label_close.h"
 #include "gtk_ltr_assistant.h"
 #include "gtk_ltr_families.h"

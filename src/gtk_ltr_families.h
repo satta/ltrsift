@@ -47,10 +47,11 @@
 
 #define LTRFAM_DETINFO "Detailed Information"
 
-#define TB_FAMS_ADD    "Add new family"
-#define TB_FAMS_REMOVE "Remove families with less than three members"
-#define TB_NB_NEW_FAM  "Search new families for selected candidates"
-#define TB_NB_FL_CANDS "Determine full length candidates for current family"
+#define TB_FAMS_ADD       "Add new family"
+#define TB_FAMS_REMOVE    "Remove families with less than three members"
+#define TB_NB_NEW_FAM     "Search new families for selected candidates"
+#define TB_NB_FL_CANDS    "Determine full length candidates for current family"
+#define TB_FAMS_REF_MATCH "Match selection against reference sequences"
 
 #define FAMS_RM_DIALOG    "You are about to remove %d family/families. All "\
                           "members (if any) will be unclassified after this "\
@@ -165,6 +166,7 @@ struct _GtkLTRFamilies
   GtkWidget *statusbar;
   GtkWidget *progressbar;
   GtkWidget *projset;
+  GtkWidget *blastn_classify;
 };
 
 struct _GtkLTRFamiliesClass
