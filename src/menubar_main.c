@@ -290,8 +290,8 @@ static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
     gt_rdb_stmt_delete(stmt);
   }
 
-  list_view =
-           gtk_ltr_families_get_lv_fams(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  list_view = gtk_ltr_families_get_list_view_families(
+                                             GTK_LTR_FAMILIES(ltrgui->ltrfams));
   model = gtk_tree_view_get_model(list_view);
 
   valid = gtk_tree_model_get_iter_first(model, &iter);
@@ -428,8 +428,8 @@ static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                            "SELECT name FROM empty_families",
                            -1, &stmt, NULL);
   if (!had_err) {
-    list_view =
-           gtk_ltr_families_get_lv_fams(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+    list_view = gtk_ltr_families_get_list_view_families(
+                                             GTK_LTR_FAMILIES(ltrgui->ltrfams));
     model = gtk_tree_view_get_model(list_view);
     while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
       result = gt_str_new();
@@ -591,6 +591,10 @@ static gboolean mb_save_project_data_finished(gpointer data)
       threaddata->had_err =
                   gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(
                                                   threaddata->ltrgui->projset));
+    if (!threaddata->had_err)
+      threaddata->had_err = gtk_ltr_filter_save_data(
+                                    GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
+                                                     threaddata->ltrgui->err);
   } else
     g_rename(threaddata->tmp_filename, threaddata->filename);
   if (threaddata->had_err) {
@@ -634,6 +638,14 @@ gboolean mb_save_as_project_data_finished(gpointer data)
   if (!threaddata->had_err) {
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      threaddata->filename);
+    threaddata->had_err = gtk_ltr_filter_save_data(
+                                    GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
+                                                   threaddata->ltrgui->err);
+    if (threaddata->had_err) {
+      gdk_threads_enter();
+      error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+      gdk_threads_leave();
+    }
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
     create_recently_used_resource(threaddata->filename);
   } else {
@@ -668,6 +680,8 @@ static gboolean mb_open_project_data_finished(gpointer data)
                                                    threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
+    gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
+                                       threaddata->ltrgui->ltrfilt);
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main),
                        ltrfams, TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
@@ -1147,7 +1161,7 @@ void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
 void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
                                   GUIData *ltrgui)
 {
-  GtkWidget *filechooser;
+  GtkWidget *filechooser, *dialog;
   GtkFileFilter *gff3_file_filter;
   GtArray *nodes;
   GtHashmap *features;
@@ -1155,11 +1169,38 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
                *preprocess_stream = NULL,
                *array_out_stream = NULL;
   GtError *err = gt_error_new();
-  int had_err = 0;
+  gint response = GTK_RESPONSE_REJECT, had_err = 0;
   unsigned long n_features;
   gchar *filename;
 
-  /* TODO: check for modified project (check for save) */
+  if (gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
+    if (!gtk_ltr_families_get_projectfile(
+                                        GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
+      dialog = unsaved_changes_dialog(ltrgui, NO_PROJECT_DIALOG);
+      response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+    } else if (gtk_ltr_families_get_modified(
+                                           GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
+      dialog = unsaved_changes_dialog(ltrgui, UNSAVED_CHANGES_DIALOG);
+      response = gtk_dialog_run(GTK_DIALOG(dialog));
+      gtk_widget_destroy(dialog);
+    }
+  }
+
+  switch (response) {
+    case GTK_RESPONSE_CANCEL:
+      return;
+      break;
+    case GTK_RESPONSE_ACCEPT:
+      mb_main_file_save_activate(NULL, ltrgui);
+      return;
+      break;
+    case GTK_RESPONSE_REJECT:
+      break;
+    default:
+      return;
+      break;
+  }
 
   filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_IMPORT,
                                             GTK_WINDOW (ltrgui->main_window),
@@ -1189,6 +1230,15 @@ void mb_main_file_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   array_out_stream = gt_array_out_stream_new(preprocess_stream, nodes, err);
   had_err = gt_node_stream_pull(array_out_stream, err);
   if (!had_err) {
+    gtk_widget_destroy(ltrgui->ltrfams);
+    gtk_widget_destroy(ltrgui->ltrfilt);
+    ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main, ltrgui->progressbar,
+                                           ltrgui->projset);
+    ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
+    gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
+                                       ltrgui->ltrfilt);
+    gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams, TRUE, TRUE,
+                       0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltrfams),
                                     nodes,
                                     features,
@@ -1357,6 +1407,8 @@ void mb_main_file_close_activate(GT_UNUSED GtkMenuItem *menuitem,
                                              ltrgui->projset);
       gtk_widget_destroy(ltrgui->ltrfilt);
       ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
+      gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
+                                         ltrgui->ltrfilt);
       gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                          TRUE, TRUE, 0);
       break;
@@ -1592,6 +1644,8 @@ void mb_main_project_settings_activate(GT_UNUSED GtkMenuItem *menuitem,
 void mb_main_project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
                                      GUIData *ltrgui)
 {
+  gtk_ltr_filter_set_range(GTK_LTR_FILTER(ltrgui->ltrfilt),
+                           LTR_FILTER_RANGE_PROJECT);
   gtk_widget_show(ltrgui->ltrfilt);
 }
 

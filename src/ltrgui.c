@@ -104,6 +104,8 @@ static gboolean init_gui(GUIData *ltrgui)
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
                      TRUE, TRUE, 0);
   ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
+  gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
+                                     ltrgui->ltrfilt);
   ltrgui->assistant = NULL;
 
   gtk_builder_connect_signals(builder, ltrgui);

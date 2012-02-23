@@ -17,6 +17,11 @@
 
 #include "script_filter_stream.h"
 
+enum {
+  SCRIPT_FILTER_AND = 0,
+  SCRIPT_FILTER_OR
+};
+
 struct LTRGuiScriptFilterStream {
   const GtNodeStream parent_instance;
   GtNodeStream *in_stream;
@@ -24,6 +29,7 @@ struct LTRGuiScriptFilterStream {
           *filtered_nodes,
           *script_filters;
   GtBittab *negate;
+  int logic;
   bool first_next;
   unsigned long next_index;
 };
@@ -32,7 +38,8 @@ struct LTRGuiScriptFilterStream {
         gt_node_stream_cast(ltrgui_script_filter_stream_class(), GS);
 
 static int filter_nodes_lua(GtArray *filters, GtFeatureNode *fn,
-                            bool *select_node, GtError *err)
+                            GtBittab *negate, int logic, bool *select_node,
+                            GtError *err)
 {
   int had_err = 0;
   unsigned long i;
@@ -44,12 +51,21 @@ static int filter_nodes_lua(GtArray *filters, GtFeatureNode *fn,
     GtScriptFilter *sf = *(GtScriptFilter**) gt_array_get(filters, i);
     had_err = gt_script_filter_run(sf, fn, &result, err);
 
-    if (!had_err && i == 0) {
-      *select_node = result;
-    } else if (!had_err) {
-      *select_node = *select_node || result;
-      if (*select_node) {
-        break;
+    if (!had_err) {
+      if (gt_bittab_bit_is_set(negate, i))
+        result = !result;
+      if (i == 0)
+        *select_node = result;
+      else if (logic == SCRIPT_FILTER_AND) {
+        *select_node = *select_node || result;
+        if (*select_node) {
+          break;
+        }
+      } else if (logic == SCRIPT_FILTER_OR) {
+        *select_node = *select_node && result;
+        if (!*select_node) {
+          break;
+        }
       }
     }
   }
@@ -66,7 +82,7 @@ static int filter_nodes(LTRGuiScriptFilterStream *sfs, GtError *err)
   for (i = 0; i < gt_array_size(sfs->nodes); i++) {
     gn = *(GtGenomeNode**) gt_array_get(sfs->nodes, i);
     had_err = filter_nodes_lua(sfs->script_filters, (GtFeatureNode*) gn,
-                               &select_node, err);
+                               sfs->negate, sfs->logic, &select_node, err);
     if (!had_err && select_node)
       gt_array_add(sfs->filtered_nodes, gn);
   }
@@ -139,6 +155,7 @@ const GtNodeStreamClass* ltrgui_script_filter_stream_class(void)
 GtNodeStream* ltrgui_script_filter_stream_new(GtNodeStream *in_stream,
                                               GtStrArray *filter_files,
                                               GtBittab *negate,
+                                              int logic,
                                               GtError *err)
 {
   GtNodeStream *gs;
@@ -148,6 +165,7 @@ GtNodeStream* ltrgui_script_filter_stream_new(GtNodeStream *in_stream,
   sfs->in_stream = gt_node_stream_ref(in_stream);
   sfs->nodes = gt_array_new(sizeof(GtGenomeNode*));
   sfs->filtered_nodes = gt_array_new(sizeof(GtGenomeNode*));
+  sfs->logic = logic;
   sfs->first_next = true;
   sfs->next_index = 0;
   sfs->negate = negate;

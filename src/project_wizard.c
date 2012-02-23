@@ -38,6 +38,8 @@ static gboolean project_wizard_finished_job(gpointer data)
                                                    threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
+    gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
+                                       threaddata->ltrgui->ltrfilt);
     gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
                        TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),

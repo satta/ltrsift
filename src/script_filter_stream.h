@@ -27,6 +27,7 @@ const GtNodeStreamClass* ltrgui_script_filter_stream_class(void);
 GtNodeStream* ltrgui_script_filter_stream_new(GtNodeStream *in_stream,
                                               GtStrArray *filter_files,
                                               GtBittab *negate,
+                                              int logic,
                                               GtError *err);
 
 #endif

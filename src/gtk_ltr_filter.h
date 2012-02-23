@@ -48,14 +48,17 @@
                                    "Possible reasons: Missing metadata, " \
                                    "missing function 'filter' or syntax " \
                                    "errors."
-
 #define LTR_FILTER_NOT_SAVED_FILE  "File could not be saved!\n" \
                                    "Possible reasons: Missing metadata, " \
                                    "missing function 'filter' or syntax " \
                                    "errors."
-
 #define LTR_FILTER_UNSAVED_CHANGES "You have unsaved changes. Are you sure " \
                                    "you want to close the window?"
+#define LTR_FILTER_DIALOG          "Filtered %lu candidates. %lu were "\
+                                   "unclassified and %lu were deleted."
+
+#define LTR_FILTER_AND "All filters have to match (logical AND)"
+#define LTR_FILTER_OR  "Any filter has to match (logical OR)"
 
 #define LUA_PATTERN        ".lua"
 #define LUA_FILTER_PATTERN "*.lua"
@@ -63,11 +66,6 @@
 #define LTR_FILTER_ACTION_DELETE_TEXT  "Unclassify/Delete"
 #define LTR_FILTER_ACTION_NEW_FAM_TEXT "Create new family"
 #define LTR_FILTER_NEW_FAM_NAME        "filtered"
-
-enum {
-  LTR_FILTER_ACTION_DELETE = 0,
-  LTR_FILTER_ACTION_NEW_FAM
-};
 
 typedef struct _GtkLTRFilter      GtkLTRFilter;
 typedef struct _GtkLTRFilterClass GtkLTRFilterClass;
@@ -82,11 +80,13 @@ struct _GtkLTRFilter
   GtkWidget *list_view_sel;
   GtkWidget *edit_dialog;
   GtkWidget *filter_action;
+  GtkWidget *filter_logic;
   GtkWidget *ltrfams;
   GtkTextBuffer *text_buffer;
   GtScriptFilter *script_filter;
   gchar *last_dir;
   gchar *cur_filename;
+  gint range;
   GError *gerr;
 };
 
@@ -96,12 +96,21 @@ struct _GtkLTRFilterClass
   void (* gtk_ltr_filter) (GtkLTRFilter *ltrfilt);
 };
 
-/*
 enum {
-  LTR_FILT_MOVE_DOWN = 0,
-  LTR_FILT_MOVE_UP
+  LTR_FILTER_ACTION_DELETE = 0,
+  LTR_FILTER_ACTION_NEW_FAM
 };
-*/
+
+enum {
+  LTR_FILTER_LOGIC_AND = 0,
+  LTR_FILTER_LOGIC_OR
+};
+
+enum {
+  LTR_FILTER_RANGE_PROJECT = 0,
+  LTR_FILTER_RANGE_FAMILIES,
+  LTR_FILTER_RANGE_CANDIDATES
+};
 
 enum {
   LTR_FILTER_LV_FILE = 0,
@@ -118,5 +127,9 @@ void       gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt,
 
 gint       gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
                                                     GError *gerr);
+
+void       gtk_ltr_filter_set_range(GtkLTRFilter *ltrfilt, gint range);
+
+gint       gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr);
 
 #endif

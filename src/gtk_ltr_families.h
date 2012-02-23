@@ -71,9 +71,10 @@
 #define ONE_FILE_DIALOG  "_One file..."
 #define SEP_FILES_DIALOG "_Separate files..."
 
-#define REMOVE_SELECTED  "Remove selection"
+#define DELETE_SELECTED  "Delete selection"
 #define UNCLASS_SELECTED "Unclassify selection"
 
+#define LTR_FAMILIES_FILTER_SELECTION "Filter selection..."
 #define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
 #define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
 #define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
@@ -106,7 +107,6 @@ enum {
   LTRFAMS_DETAIL_TV_TYPE,
   LTRFAMS_DETAIL_TV_START,
   LTRFAMS_DETAIL_TV_END,
-  /* LTRFAMS_DETAIL_TV_INFO, not needed atm*/
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
@@ -167,6 +167,7 @@ struct _GtkLTRFamilies
   GtkWidget *progressbar;
   GtkWidget *projset;
   GtkWidget *blastn_classify;
+  GtkWidget *ltrfilt;
 };
 
 struct _GtkLTRFamiliesClass
@@ -206,7 +207,7 @@ void         gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
 void         gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams,
                                            gboolean modified);
 
-GtkTreeView* gtk_ltr_families_get_lv_fams(GtkLTRFamilies *ltrfams);
+GtkTreeView* gtk_ltr_families_get_list_view_families(GtkLTRFamilies *ltrfams);
 
 gint         gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
 
@@ -221,6 +222,9 @@ void         gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
 
 void         gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
                                                   gint pos);
+
+void         gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
+                                                GtkWidget *ltrfilt);
 
 void         gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
                                                    long int amount);

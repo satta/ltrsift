@@ -36,7 +36,7 @@ GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams)
   return GTK_NOTEBOOK(ltrfams->nb_family);
 }
 
-GtkTreeView* gtk_ltr_families_get_lv_fams(GtkLTRFamilies *ltrfams)
+GtkTreeView* gtk_ltr_families_get_list_view_families(GtkLTRFamilies *ltrfams)
 {
   return GTK_TREE_VIEW(ltrfams->lv_families);
 }
@@ -121,6 +121,12 @@ void gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams, gint pos)
 void gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams, gint pos)
 {
   gtk_paned_set_position(GTK_PANED(ltrfams->vpaned), pos);
+}
+
+void gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
+                                        GtkWidget *ltrfilt)
+{
+  ltrfams->ltrfilt = ltrfilt;
 }
 /* set functions end */
 
@@ -829,6 +835,16 @@ static void on_drag_data_received(GtkWidget *widget,
 
 /* popupmenu related functions start*/
 static void
+gtk_ltr_families_notebook_list_view_pmenu_filter_clicked(
+                                                  GT_UNUSED GtkWidget *menuitem,
+                                                        GtkLTRFamilies *ltrfams)
+{
+  gtk_ltr_filter_set_range(GTK_LTR_FILTER(ltrfams->ltrfilt),
+                           LTR_FILTER_RANGE_CANDIDATES);
+  gtk_widget_show(ltrfams->ltrfilt);
+}
+
+static void
 gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                                                 GtkLTRFamilies *ltrfams)
 {
@@ -964,9 +980,15 @@ static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
   menu = gtk_menu_new();
 
   menuitem = gtk_menu_item_new_with_label((cur_tab_no == main_tab_no)
-                                          ? REMOVE_SELECTED : UNCLASS_SELECTED);
+                                          ? DELETE_SELECTED : UNCLASS_SELECTED);
   g_signal_connect(menuitem, "activate",
                    G_CALLBACK(gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked),
+                   ltrfams);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+  menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
+  g_signal_connect(menuitem, "activate",
+           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_filter_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
@@ -1035,6 +1057,16 @@ gtk_ltr_families_lv_fams_pmenu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
   path = gtk_tree_model_get_path(model, &iter);
   gtk_tree_view_set_cursor(tree_view, path, column, TRUE);
   gtk_tree_path_free(path);
+}
+
+static void
+gtk_ltr_families_list_view_families_pmenu_filter_clicked(
+                                                  GT_UNUSED GtkWidget *menuitem,
+                                                        GtkLTRFamilies *ltrfams)
+{
+  gtk_ltr_filter_set_range(GTK_LTR_FILTER(ltrfams->ltrfilt),
+                           LTR_FILTER_RANGE_FAMILIES);
+  gtk_widget_show(ltrfams->ltrfilt);
 }
 
 static void
@@ -1393,6 +1425,12 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
   g_signal_connect(menuitem, "activate",
                    G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_edit_clicked),
                    tree_view);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+  menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
+  g_signal_connect(menuitem, "activate",
+           G_CALLBACK(gtk_ltr_families_list_view_families_pmenu_filter_clicked),
+                   ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(FAMS_REMOVE_SEL);
