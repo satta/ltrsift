@@ -36,55 +36,6 @@
 #define IS_GTK_LTR_FAMILIES_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_FAMILIES_TYPE)
 
-#define LTRFAMS_LV_CAPTION_SEQID   "SeqID"
-#define LTRFAMS_LV_CAPTION_STRAND  "S"
-#define LTRFAMS_LV_CAPTION_START   "Start"
-#define LTRFAMS_LV_CAPTION_END     "End"
-#define LTRFAMS_LV_CAPTION_LLTRLEN "lLTR length"
-#define LTRFAMS_LV_CAPTION_ELEMLEN "Element length"
-#define LTRFAMS_TV_CAPTION_INFO    "Attributes"
-#define LTRFAMS_TV_CAPTION_TYPE    "Feature name"
-
-#define LTRFAM_DETINFO "Detailed Information"
-
-#define TB_FAMS_ADD       "Add new family"
-#define TB_FAMS_REMOVE    "Remove families with less than three members"
-#define TB_NB_NEW_FAM     "Search new families for selected candidates"
-#define TB_NB_FL_CANDS    "Determine full length candidates for current family"
-#define TB_FAMS_REF_MATCH "Match selection against reference sequences"
-
-#define FAMS_RM_DIALOG    "You are about to remove %d family/families. All "\
-                          "members (if any) will be unclassified after this "\
-                          "action and added to the 'Unclassified' tab.\n\n "\
-                          "Are you sure?"
-#define FAMS_EMPTY_DIALOG "Family name must not be empty!"
-#define FAMS_EXIST_DIALOG "Family name already exists!"
-#define NEW_FAM_DIALOG    "Please select at least three candidates for "\
-                          "classification"
-
-#define CAND_RM_DIALOG "All selected candidates will be deleted from the "\
-                       "project. This action cannot be undone!\nAre you sure?"
-#define CAND_UC_DIALOG "All selected members will be unclassified after this "\
-                       "operation and added to the 'Unclassified' tab.\n"\
-                       "Are you sure?"
-
-#define ONE_FILE_DIALOG  "_One file..."
-#define SEP_FILES_DIALOG "_Separate files..."
-
-#define DELETE_SELECTED  "Delete selection"
-#define UNCLASS_SELECTED "Unclassify selection"
-
-#define LTR_FAMILIES_FILTER_SELECTION "Filter selection..."
-#define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
-#define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
-#define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
-#define FAMS_EXPORT_ANNO_MULT "Export annotation (multiple files)..."
-#define FAMS_EXPORT_FLCANDS   "Export _full length candidates only."
-#define FAMS_EDIT_NAME   "Edit name"
-#define FAMS_REMOVE_SEL  "Remove selection"
-
-#define MAIN_TAB_LABEL "Unclassified"
-
 typedef struct _FamilyTransferData  FamilyTransferData;
 typedef struct _GtkLTRFamilies      GtkLTRFamilies;
 typedef struct _GtkLTRFamiliesClass GtkLTRFamiliesClass;

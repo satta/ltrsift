@@ -18,7 +18,8 @@
 #include <string.h>
 #include "error.h"
 #include "gtk_ltr_families.h"
-#include "statusbar_main.h"
+#include "message_strings.h"
+#include "statusbar.h"
 #include "support.h"
 
 /* function prototypes start */
@@ -161,9 +162,9 @@ void gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
 
   ltrfams->unclassified_cands += amount;
   update_main_tab_label(ltrfams);
-  g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
+  g_snprintf(sb_text, BUFSIZ, STATUSBAR_NUM_OF_CANDS,
              gt_array_size(ltrfams->nodes));
-  sb_main_set_status(ltrfams->statusbar, sb_text);
+  statusbar_set_status(ltrfams->statusbar, sb_text);
 }
 
 static gboolean prefix_in_list_view_fams(GtkTreeModel *model,
@@ -3235,6 +3236,7 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                      unsigned long noc)
 {
   gchar sb_text[BUFSIZ];
+  gint had_err;
 
   ltrfams->nodes = nodes;
   ltrfams->features = features;
@@ -3243,14 +3245,19 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->n_features = noc;
   ltrfams->err = gt_error_new();
   ltrfams->style = gt_style_new(ltrfams->err);
-  gt_style_load_file(ltrfams->style, DEFAULT_STYLE, ltrfams->err);
+
+  had_err = gt_style_load_file(ltrfams->style, DEFAULT_STYLE, ltrfams->err);
+  if (had_err) {
+    g_warning("%s", gt_error_get(ltrfams->err));
+    gt_error_unset(ltrfams->err);
+  }
   gtk_ltr_families_nb_fam_create(ltrfams);
   update_main_tab_label(ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->tb_lv_families), TRUE);
-  g_snprintf(sb_text, BUFSIZ, SB_MAIN_NUM_OF_CANDS,
+  g_snprintf(sb_text, BUFSIZ, STATUSBAR_NUM_OF_CANDS,
              gt_array_size(ltrfams->nodes));
-  sb_main_set_status(ltrfams->statusbar, sb_text);
+  statusbar_set_status(ltrfams->statusbar, sb_text);
 }
 
 static gboolean gtk_ltr_families_destroy(GtkWidget *widget,

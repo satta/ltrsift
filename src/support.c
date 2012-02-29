@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include "error.h"
+#include "message_strings.h"
 #include "support.h"
 
 void delete_gt_genome_node(GtGenomeNode *gn)

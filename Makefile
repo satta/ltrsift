@@ -32,25 +32,21 @@ gt_prefix ?= /usr/local
 
 .PHONY: all clean cleanup dirs
 
-all: dirs bin/ltrgui
+all: dirs bin/ltrsift
 
-dirs: bin obj obj/src bin/ltrgui.glade
+dirs: bin obj obj/src
 
 obj/%.o: %.c
 	@echo "[compile $@]"
 	@$(CC) -c $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
 
-bin/ltrgui: $(OBJECTS)
+bin/ltrsift: $(OBJECTS)
 	@echo "[linking $@]"
 	@$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
 
 bin obj obj/src:
 	@echo '[create $(@)]'
 	@test -d $(@) || mkdir -p $(@)
-
-bin/ltrgui.glade: src/gui/ltrgui.glade
-	@echo '[copy $(@F)]'
-	@cp -u src/gui/$(@F) $(@D)
 
 clean:
 	rm -rf obj

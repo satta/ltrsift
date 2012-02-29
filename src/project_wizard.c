@@ -16,7 +16,8 @@
 */
 
 #include "error.h"
-#include "menubar_main.h"
+#include "menubar.h"
+#include "message_strings.h"
 #include "project_wizard.h"
 #include "support.h"
 
@@ -33,14 +34,14 @@ static gboolean project_wizard_finished_job(gpointer data)
     gtk_widget_destroy(ltrfams);
     gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
     threaddata->ltrgui->ltrfams =
-                              gtk_ltr_families_new(threaddata->ltrgui->sb_main,
-                                                   threaddata->progressbar,
-                                                   threaddata->ltrgui->projset);
+                             gtk_ltr_families_new(threaddata->ltrgui->statusbar,
+                                                  threaddata->progressbar,
+                                                  threaddata->ltrgui->projset);
     ltrfams = threaddata->ltrgui->ltrfams;
     threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
     gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
                                        threaddata->ltrgui->ltrfilt);
-    gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox1_main), ltrfams,
+    gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox), ltrfams,
                        TRUE, TRUE, 0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
                                     threaddata->nodes,
@@ -52,13 +53,13 @@ static gboolean project_wizard_finished_job(gpointer data)
                                           threaddata->ltrtolerance,
                                           threaddata->lentolerance);
     }
-    mb_main_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
+    menubar_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
                                      threaddata->err, FALSE);
-    mb_main_activate_menuitems(threaddata->ltrgui);
+    menubar_activate_menuitems(threaddata->ltrgui);
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      g_strdup(threaddata->fullname));
     extract_project_settings(threaddata->ltrgui);
-    mb_main_file_save_activate(NULL, threaddata->ltrgui);
+    menubar_save_activate(NULL, threaddata->ltrgui);
     create_recently_used_resource(threaddata->fullname);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
   } else {

@@ -16,6 +16,7 @@
 */
 
 #include "gtk_project_settings.h"
+#include "message_strings.h"
 
 const gchar* gtk_project_settings_get_indexname(GtkProjectSettings *projset)
 {
@@ -715,12 +716,15 @@ GType gtk_project_settings_get_type(void)
 GtkWidget* gtk_project_settings_new()
 {
   GtkProjectSettings *projset;
+  gchar title[BUFSIZ];
+
   projset = gtk_type_new(GTK_PROJECT_SETTINGS_TYPE);
   g_signal_connect(G_OBJECT(projset), "delete_event",
                    G_CALLBACK(gtk_project_settings_delete_event), NULL);
   gtk_window_set_position(GTK_WINDOW(projset), GTK_WIN_POS_CENTER_ALWAYS);
   gtk_window_set_modal(GTK_WINDOW(projset), TRUE);
-  gtk_window_set_title(GTK_WINDOW(projset), "Project settings");
+  g_snprintf(title, BUFSIZ, PROJSET_WINDOW_TITLE, GUI_NAME);
+  gtk_window_set_title(GTK_WINDOW(projset), title);
   gtk_container_set_border_width(GTK_CONTAINER(projset), 5);
 
   return GTK_WIDGET(projset);

@@ -37,10 +37,6 @@
 #define IS_GTK_BLASTN_PARAMS_REFSEQ_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_BLASTN_PARAMS_REFSEQ_TYPE)
 
-#define FAS_FILTER_PATTERN "*.fas"
-#define FASTA_FILTER_PATTERN "*.fasta"
-#define FASTA_FILTER_NAME "FASTA files"
-
 typedef struct _GtkBlastnParamsRefseq GtkBlastnParamsRefseq;
 typedef struct _GtkBlastnParamsRefseqClass GtkBlastnParamsRefseqClass;
 

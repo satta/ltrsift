@@ -17,6 +17,7 @@
 
 #include "error.h"
 #include "gtk_ltr_filter.h"
+#include "message_strings.h"
 #include "support.h"
 
 void gtk_ltr_filter_set_range(GtkLTRFilter *ltrfilt, gint range)
@@ -1424,6 +1425,8 @@ GType gtk_ltr_filter_get_type(void)
 GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams)
 {
   GtkLTRFilter *ltrfilt;
+  gchar title[BUFSIZ];
+
   ltrfilt = gtk_type_new(GTK_LTR_FILTER_TYPE);
   ltrfilt->last_dir = NULL;
   ltrfilt->ltrfams = ltrfams;
@@ -1433,7 +1436,8 @@ GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams)
                    G_CALLBACK(gtk_ltr_filter_destroy), NULL);
   gtk_window_set_position(GTK_WINDOW(ltrfilt), GTK_WIN_POS_CENTER);
   gtk_window_set_modal(GTK_WINDOW(ltrfilt), TRUE);
-  gtk_window_set_title(GTK_WINDOW(ltrfilt), "LTRGui - Filter");
+  g_snprintf(title, BUFSIZ, LTRFILT_WINDOW_TITLE, GUI_NAME);
+  gtk_window_set_title(GTK_WINDOW(ltrfilt), title);
   gtk_container_set_border_width(GTK_CONTAINER(ltrfilt), 5);
 
   return GTK_WIDGET(ltrfilt);

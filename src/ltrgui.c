@@ -17,8 +17,9 @@
 
 #include "error.h"
 #include "ltrgui.h"
-#include "menubar_main.h"
-#include "statusbar_main.h"
+#include "menubar.h"
+#include "message_strings.h"
+#include "statusbar.h"
 #include "support.h"
 
 static void free_gui(GUIData *ltrgui)
@@ -52,7 +53,7 @@ gboolean main_window_delete_event(GT_UNUSED GtkWidget *widget,
       return TRUE;
       break;
     case GTK_RESPONSE_ACCEPT:
-      mb_main_file_save_activate(NULL, ltrgui);
+      menubar_save_activate(NULL, ltrgui);
       return TRUE;
       break;
     case GTK_RESPONSE_REJECT:
@@ -63,56 +64,33 @@ gboolean main_window_delete_event(GT_UNUSED GtkWidget *widget,
   return FALSE;
 }
 
-static gboolean init_gui(GUIData *ltrgui)
+static void init_gui(GUIData *ltrgui)
 {
-  GtkBuilder *builder;
 
-  builder = gtk_builder_new();
-
-  if (gtk_builder_add_from_file(builder, GUI_FILE, &ltrgui->err) == 0)
-    return FALSE;
-
-  /* Get objects from UI */
-#define GW(name) LTR_GET_WIDGET(builder, name, ltrgui)
-  GW(main_window);
-  GW(mb_main);
-  GW(mb_main_file_new);
-  GW(mb_main_file_open);
-  GW(mb_main_file_open_recent);
-  GW(mb_main_file_save);
-  GW(mb_main_file_save_as);
-  GW(mb_main_file_import);
-  GW(mb_main_file_close);
-  GW(mb_main_file_quit);
-  GW(mb_main_file_export_gff3);
-  GW(mb_main_file_export_fasta);
-  GW(mb_main_project_settings);
-  GW(mb_main_project_filter);
-  GW(mb_main_view_columns);
-  GW(vbox1_main);
-  GW(sb_main);
-  GW(progressbar);
-#undef GW
-  sb_main_init(ltrgui);
-  mb_main_init(ltrgui);
-
+  ltrgui->main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_position(GTK_WINDOW(ltrgui->main_window), GTK_WIN_POS_CENTER);
   gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
+  gtk_window_set_default_size(GTK_WINDOW(ltrgui->main_window), 1024, 768);
+  g_signal_connect(G_OBJECT(ltrgui->main_window), "delete-event",
+                   G_CALLBACK(main_window_delete_event), ltrgui);
+  g_signal_connect(G_OBJECT(ltrgui->main_window), "destroy",
+                   G_CALLBACK(gtk_main_quit), NULL);
+  ltrgui->vbox = gtk_vbox_new(FALSE, 1);
+  gtk_container_add(GTK_CONTAINER(ltrgui->main_window), ltrgui->vbox);
+
+  menubar_init(ltrgui);
+  statusbar_init(ltrgui);
+  gtk_box_pack_start(GTK_BOX(ltrgui->vbox), ltrgui->menubar, FALSE, FALSE, 0);
   ltrgui->projset = gtk_project_settings_new();
-  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->sb_main,
+  ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
                                          ltrgui->progressbar,
                                          ltrgui->projset);
-  gtk_box_pack_start(GTK_BOX(ltrgui->vbox1_main), ltrgui->ltrfams,
-                     TRUE, TRUE, 0);
+  gtk_box_pack_start(GTK_BOX(ltrgui->vbox), ltrgui->ltrfams, TRUE, TRUE, 0);
   ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
   gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
                                      ltrgui->ltrfilt);
   ltrgui->assistant = NULL;
-
-  gtk_builder_connect_signals(builder, ltrgui);
-
-  g_object_unref(G_OBJECT(builder));
-
-  return TRUE;
+  gtk_widget_show_all(ltrgui->main_window);
 }
 
 gint main(gint argc, gchar *argv[])
@@ -129,11 +107,7 @@ gint main(gint argc, gchar *argv[])
   gtk_init(&argc, &argv);
   gt_lib_init();
 
-  if (!init_gui(ltrgui)) {
-    fprintf(stderr, "ERROR: %s\n", ltrgui->err->message);
-    g_slice_free(GUIData, ltrgui);
-    return 1;
-  }
+  init_gui(ltrgui);
   /* show the window */
   gtk_widget_show(ltrgui->main_window);
 

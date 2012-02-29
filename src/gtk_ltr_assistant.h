@@ -36,13 +36,6 @@
 #define IS_GTK_LTR_ASSISTANT_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LTR_ASSISTANT_TYPE)
 
-#define SELECT_GFF3_FILES "Select GFF3 files..."
-
-#define BROWSE_PROJECT "Bro_wse..."
-#define BROWSE_INDEX   "Brow_se..."
-#define USE_DEFAULT_A  "Use default"
-#define NEW_FAM_PREFIX "newfam_"
-
 typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
 

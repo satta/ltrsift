@@ -36,21 +36,6 @@
 #define IS_GTK_BLASTN_PARAMS_CLASS(klass)\
         G_TYPE_CHECK_CLASS_TYPE((klass), GTK_BLASTN_PARAMS_TYPE)
 
-#define BLASTN_STRAND        "-strand"
-#define BLASTN_CULLING       "-culling_limit"
-#define BLASTN_BESTHIT_OVERH "-best_hit_overhang"
-#define BLASTN_BESTHIT_SCORE "-best_hit_score"
-#define BLASTN_MAXT_SEQS     "-max_target_seqs"
-#define BLASTN_XDROP_UNG     "-xdrop_ungap"
-#define BLASTN_XDROP_GAP     "-xdrop_gap"
-#define BLASTN_NO_GREEDY     "-no_greedy"
-#define BLASTN_MIN_RAW       "-min_raw_gapped_score"
-#define BLASTN_UNGAPPED      "-ungapped"
-#define BLASTN_WINDOWS       "-window_size"
-#define BLASTN_OFF_DIAG      "-off_diagonal_range"
-
-#define USE_DEFAULT    "Use default?"
-
 typedef struct _GtkBlastnParams GtkBlastnParams;
 typedef struct _GtkBlastnParamsClass GtkBlastnParamsClass;
 

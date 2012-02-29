@@ -16,6 +16,7 @@
 */
 
 #include "gtk_blastn_params.h"
+#include "message_strings.h"
 
 gdouble gtk_blastn_params_get_evalue(GtkBlastnParams *blastpar)
 {

@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include "gtk_ltr_assistant.h"
+#include "message_strings.h"
 #include "support.h"
 
 typedef struct {
@@ -1813,8 +1814,11 @@ GType gtk_ltr_assistant_get_type(void)
 GtkWidget* gtk_ltr_assistant_new()
 {
   GtkLTRAssistant *ltrassi;
+  gchar title[BUFSIZ];
+
   ltrassi = gtk_type_new(GTK_LTR_ASSISTANT_TYPE);
-  gtk_window_set_title(GTK_WINDOW(ltrassi), "LTRGui - Project Wizard");
+  g_snprintf(title, BUFSIZ, LTRASSI_WINDOW_TITLE, GUI_NAME);
+  gtk_window_set_title(GTK_WINDOW(ltrassi), title);
   gtk_assistant_set_forward_page_func(GTK_ASSISTANT(ltrassi),
                                       (GtkAssistantPageFunc) page_forward,
                                       ltrassi, NULL);

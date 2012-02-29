@@ -20,45 +20,6 @@
 
 #include "ltrgui.h"
 
-#define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
-                           "want to replace it?"
-
-#define DEFAULT_STYLE  "../style/default.style"
-#define GUI_NAME       "LTRGui"
-#define FAS_PATTERN    ".fas"
-#define GFF3_PATTERN   ".gff3"
-#define ESQ_PATTERN   ".esq"
-#define SQLITE_PATTERN ".sqlite"
-
-#define GFF3_FILTER_PATTERN "*.gff3"
-#define ESQ_FILTER_PATTERN  "*.esq"
-
-#define NO_INDEX_DIALOG    "No indexname found. Do you want to select the "\
-                           "indename?"
-#define SELECT_INDEX       "Select indexname..."
-#define EXPORT_ANNO_TEXT   "Export annotation..."
-#define EXPORT_SEQS_TEXT   "Export sequences..."
-#define CHOOSE_FILEN_ANNO  "Choose filename for annotation file..."
-#define CHOOSE_FILEN_SEQS  "Choose filename for sequence file..."
-#define CHOOSE_PREFIX_ANNO "Choose prefix for annotation files..."
-#define CHOOSE_PREFIX_SEQS "Choose prefix for sequence files..."
-
-#define ATTR_RID       "ID"
-#define ATTR_CLUSTID   "clid"
-#define ATTR_PFAMN     "name"
-#define ATTR_FULLLEN   "flcand"
-#define ATTR_LTRFAM   "ltrfam"
-#define FNT_PROTEINM   "protein_match"
-#define FNT_LTR        "long_terminal_repeat"
-#define FNT_REPEATR    "repeat_region"
-#define FNT_LLTR       "lLTR"
-#define FNT_RLTR       "rLTR"
-#define FNT_LTRRETRO   "LTR_retrotransposon"
-
-#define LTR_TOLERANCE  "Allowed LTR length deviation from group median:"
-#define LEN_TOLERANCE  "Allowed candidate length deviation from group median:"
-#define FLCAND_RESULT  "Found %lu full length candidates (marked with *)"
-
 typedef struct _ThreadData    ThreadData;
 typedef struct _CandidateData CandidateData;
 

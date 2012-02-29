@@ -15,27 +15,16 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef MENUBAR_MAIN_H
-#define MENUBAR_MAIN_H
+#ifndef STATUSBAR_H
+#define STATUSBAR_H
 
 #include "ltrgui.h"
 
-void mb_main_init(GUIData *ltrgui);
+void     statusbar_set_status(GtkWidget *sb, gchar *status_msg);
 
-void mb_main_file_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
+gboolean statusbar_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
+                               GUIData *ltrgui);
 
-void mb_main_file_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
-
-void mb_main_file_import_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
-
-void mb_main_file_new_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
-
-void mb_main_file_open_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
-
-void mb_main_help_about_activate(GtkMenuItem *menutiem, GUIData *ltrgui);
-
-void mb_main_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
-                                      GtError *err, gboolean sqlt);
-void mb_main_activate_menuitems(GUIData *ltrgui);
+void     statusbar_init(GUIData *ltrgui);
 
 #endif

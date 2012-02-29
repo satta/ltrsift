@@ -16,6 +16,7 @@
 */
 
 #include "gtk_blastn_params_refseq.h"
+#include "message_strings.h"
 
 const gchar*
 gtk_blastn_params_refseq_get_refseq_file(GtkBlastnParamsRefseq *blastparref)
