@@ -1953,7 +1953,6 @@ static void gtk_ltr_families_nb_fam_lv_changed(GtkTreeView *list_view,
       types[1] = G_TYPE_STRING;
       types[2] = G_TYPE_ULONG;
       types[3] = G_TYPE_ULONG;
-      /* types[4] = G_TYPE_STRING; not needed atm*/
 
       store = gtk_tree_store_newv(LTRFAMS_DETAIL_TV_N_COLUMS, types);
 
@@ -2752,13 +2751,9 @@ static void gtk_ltr_families_tv_det_create(GtkTreeView *tree_view)
                                                     NULL);
   gtk_tree_view_append_column(tree_view, column);
 
-  /* LTRFAMS_DETAIL_TV_INFO is not needed atm */
-  /* renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes(LTRFAMS_TV_CAPTION_INFO,
-                                                    renderer, "text",
-                                                    LTRFAMS_DETAIL_TV_INFO,
-                                                    NULL);
-  gtk_tree_view_append_column(tree_view, column); */
+  column = gtk_tree_view_column_new();
+  gtk_tree_view_append_column(tree_view, column);
+
   gtk_widget_show_all(GTK_WIDGET(tree_view));
 }
 /* <tv_details> related functions end */

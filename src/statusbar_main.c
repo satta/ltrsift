@@ -39,7 +39,7 @@ void sb_main_set_status(GtkWidget *sb, gchar *status_msg)
 }
 
 gboolean sb_main_menuhints(GtkMenuItem *menuitem, GdkEvent *event,
-                               GUIData *ltrgui)
+                           GUIData *ltrgui)
 {
   gchar *menu_hint = NULL;
 
