@@ -91,6 +91,7 @@ static void init_gui(GUIData *ltrgui)
                                      ltrgui->ltrfilt);
   ltrgui->assistant = NULL;
   gtk_widget_show_all(ltrgui->main_window);
+  gtk_widget_hide(ltrgui->progressbar);
 }
 
 gint main(gint argc, gchar *argv[])

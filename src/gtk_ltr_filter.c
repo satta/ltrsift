@@ -616,7 +616,8 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
         filter_message[BUFSIZ];
   gint action, logic, had_err = 0, tab_no;
   const char *attr;
-  unsigned long unclassified_candidates = 0,
+  unsigned long total_candidates,
+                unclassified_candidates = 0,
                 deleted_candidates = 0,
                 i = 0;
 
@@ -656,6 +657,7 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
   switch (ltrfilt->range) {
     case LTR_FILTER_RANGE_PROJECT:
       nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
+      total_candidates = gt_array_size(nodes);
       break;
     case LTR_FILTER_RANGE_FAMILIES:
       nodes = gt_array_new(sizeof (GtGenomeNode*));
@@ -673,6 +675,7 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
         tmp = tmp->next;
       }
       gt_genome_nodes_sort_stable(nodes);
+      total_candidates = gt_array_size(nodes);
       g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
       g_list_free(rows);
       break;
@@ -694,6 +697,7 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
         gt_array_add(nodes, gn);
         tmp = tmp->next;
       }
+      total_candidates = gt_array_size(nodes);
       gt_genome_nodes_sort_stable(nodes);
       g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
       g_list_free(rows);
@@ -742,7 +746,7 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
           gn = *(GtGenomeNode**) gt_array_get(filtered_nodes, i);
           cdata = (CandidateData*) gt_genome_node_get_user_data(gn, "cdata");
           if (!cdata) {
-            g_warning("%s", "Programming error!");
+            g_warning("%s", "Get user data filter - Programming error!");
             return;
           }
           if (cdata->fam_ref) {
@@ -776,6 +780,8 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
                                              GTK_LTR_FAMILIES(ltrfilt->ltrfams),
                                                   1);
           } else if (!cdata->fam_ref && cdata->cand_ref) {
+            nodes =
+                 gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
             remove_row(cdata->cand_ref);
             remove_node_from_array(nodes, gn);
             delete_gt_genome_node(gn);
@@ -787,8 +793,8 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
           }
         }
         g_snprintf(filter_message, BUFSIZ, LTR_FILTER_DIALOG,
-                   gt_array_size(filtered_nodes), unclassified_candidates,
-                   deleted_candidates);
+                   gt_array_size(filtered_nodes), total_candidates,
+                   unclassified_candidates, deleted_candidates);
         dialog = gtk_message_dialog_new(
                           GTK_WINDOW(gtk_widget_get_toplevel(ltrfilt->ltrfams)),
                                         GTK_DIALOG_MODAL |

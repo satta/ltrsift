@@ -599,7 +599,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
           continue;
         }
       }
-      attr = gt_feature_node_get_attribute(curnode, "ltrfam");
+      attr = gt_feature_node_get_attribute(curnode, ATTR_LTRFAM);
       if (attr)
         g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", attr, gt_str_get(seqid),
                    range.start, range.end);

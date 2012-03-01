@@ -28,7 +28,8 @@
 #define ATTR_CLUSTID   "clid"
 #define ATTR_PFAMN     "name"
 #define ATTR_FULLLEN   "flcand"
-#define ATTR_LTRFAM   "ltrfam"
+#define ATTR_LTRFAM    "ltrfam"
+#define ATTR_PARENT    "Parent"
 #define FNT_PROTEINM   "protein_match"
 #define FNT_LTR        "long_terminal_repeat"
 #define FNT_REPEATR    "repeat_region"
@@ -111,6 +112,7 @@
 #define UNCLASS_SELECTED "Unclassify selection"
 
 #define LTR_FAMILIES_FILTER_SELECTION "Filter selection..."
+#define LTR_FAMILIES_MERGE_SELECTION  "Merge selection..."
 #define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
 #define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
 #define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
@@ -142,8 +144,9 @@
                                    "errors."
 #define LTR_FILTER_UNSAVED_CHANGES "You have unsaved changes. Are you sure " \
                                    "you want to close the window?"
-#define LTR_FILTER_DIALOG          "Filtered %lu candidates. %lu were "\
-                                   "unclassified and %lu were deleted."
+#define LTR_FILTER_DIALOG          "Filtered %lu candidates (out of %lu "\
+                                   "selected). %lu were unclassified and %lu "\
+                                   "were deleted."
 
 #define LTR_FILTER_AND "All filters have to match (logical AND)"
 #define LTR_FILTER_OR  "Any filter has to match (logical OR)"
@@ -192,12 +195,12 @@
 #define STATUSBAR_MENU_HINT_OPEN     "Open an existing project."
 #define STATUSBAR_MENU_HINT_SAVE     "Save the current project."
 #define STATUSBAR_MENU_HINT_SAVE_AS  "Save the current project " \
-                                   "with a different name."
+                                     "with a different name."
 #define STATUSBAR_MENU_HINT_IMPORT   "Import GFF3 annotation file. NOTE: "\
-                                   "This file should contain at least cluster "\
-                                   "numbers for features."
+                                     "This file should contain at least "\
+                                     "cluster numbers for features."
 #define STATUSBAR_MENU_HINT_EGFF3    "Export the complete data as GFF3 "\
-                                   "annotation."
+                                     "annotation."
 #define STATUSBAR_MENU_HINT_FASTA    "Export sequences for the current project."
 #define STATUSBAR_MENU_HINT_CLOSE    "Close the current project."
 #define STATUSBAR_MENU_HINT_QUIT     "Quit the program."
@@ -208,5 +211,14 @@
 
 /* Misc */
 #define DEFAULT_STYLE "../style/default.style"
+#define PREFIX_EXISTS "Prefix already exists.\nPlease choose a "\
+                      "different one\nto avoid duplicate entries"
+#define START_CLASSIF "Starting classification"
+#define MATCH_DIALOG  "Match dialog"
+#define ATTENTION     "Attention!"
+#define INFORMATION   "Information"
+
+#define MERGE_FAMILIES_DIALOG  "Merge selection"
+#define ENTER_NEW_FAMILIE_NAME "Enter name for new family"
 
 #endif

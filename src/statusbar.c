@@ -31,7 +31,6 @@ void statusbar_init(GUIData *ltrgui)
   gtk_box_pack_start(GTK_BOX(hbox), ltrgui->statusbar, FALSE, TRUE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), ltrgui->progressbar, TRUE, TRUE, 1);
   gtk_widget_show_all(hbox);
-  gtk_widget_hide(ltrgui->progressbar);
 
   id = gtk_statusbar_get_context_id(GTK_STATUSBAR(ltrgui->statusbar),
                                     STATUSBAR_CONTEXT);
