@@ -32,6 +32,7 @@
 #include "gtk_ltr_filter.h"
 #include "gtk_project_settings.h"
 #include "preprocess_stream.h"
+#include "refseq_match_stream.h"
 #include "script_filter_stream.h"
 
 typedef struct _GUIData GUIData;
