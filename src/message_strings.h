@@ -113,6 +113,7 @@
 
 #define LTR_FAMILIES_FILTER_SELECTION "Filter selection..."
 #define LTR_FAMILIES_MERGE_SELECTION  "Merge selection..."
+#define LTR_FAMILIES_MATCH_SELECTION  "Match selection..."
 #define FAMS_EXPORT_SEQS_ONE  "Export sequences (one file)..."
 #define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
 #define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
@@ -214,7 +215,7 @@
 #define PREFIX_EXISTS "Prefix already exists.\nPlease choose a "\
                       "different one\nto avoid duplicate entries"
 #define START_CLASSIF "Starting classification"
-#define MATCH_DIALOG  "Match dialog"
+#define MATCH_DIALOG  "Match against reference sequences"
 #define ATTENTION     "Attention!"
 #define INFORMATION   "Information"
 

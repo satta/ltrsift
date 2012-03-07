@@ -24,10 +24,10 @@ gtk_blastn_params_refseq_get_refseq_file(GtkBlastnParamsRefseq *blastparref)
   return gtk_label_get_text(GTK_LABEL(blastparref->label_refseq));
 }
 
-gint gtk_blastn_params_refseq_get_match_len(GtkBlastnParamsRefseq *blastparref)
+gdouble
+gtk_blastn_params_refseq_get_match_len(GtkBlastnParamsRefseq *blastparref)
 {
-  return
-     gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(blastparref->spinb_mlen));
+  return gtk_spin_button_get_value(GTK_SPIN_BUTTON(blastparref->spinb_mlen));
 }
 
 gboolean
@@ -110,8 +110,8 @@ static void gtk_blastn_params_refseq_init(GtkBlastnParamsRefseq *blastparref)
   hbox = gtk_hbox_new(FALSE, 1);
   label = gtk_label_new("% of the candidate seq. a match needs to cover:");
   gtk_misc_set_alignment(GTK_MISC(blastparref->label_refseq), 0.0, 0.5);
-  adjust = gtk_adjustment_new(30.0, 30.0, 100.0, 1.0, 10.0, 0.0);
-  blastparref->spinb_mlen = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
+  adjust = gtk_adjustment_new(30.0, 0.0, 100.0, 0.1, 1.0, 0.0);
+  blastparref->spinb_mlen = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 0.1, 1);
   gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), blastparref->spinb_mlen, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(blastparref), hbox, FALSE, FALSE, 1);

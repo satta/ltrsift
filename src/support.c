@@ -215,21 +215,16 @@ void threaddata_delete(ThreadData *threaddata)
                    NULL);
     g_list_free(threaddata->references);
     gt_array_delete(threaddata->old_nodes);
-    gt_error_delete(threaddata->err);
-    gt_free(threaddata->current_state);
     g_free(threaddata->fam_prefix);
     gt_hashmap_delete(threaddata->sel_features);
-  } else if (threaddata->open) {
-    gt_error_delete(threaddata->err);
-  } else if (threaddata->save_as || threaddata->save) {
-    gt_error_delete(threaddata->err);
+  } else if (threaddata->save_as || threaddata->save)
     g_free(threaddata->tmp_filename);
-  } else if (threaddata->projectw) {
+  else if (threaddata->projectw) {
     g_free(threaddata->projectfile);
     g_free(threaddata->projectdir);
-    gt_free(threaddata->current_state);
-    gt_error_delete(threaddata->err);
   }
+  gt_free(threaddata->current_state);
+  gt_error_delete(threaddata->err);
   g_slice_free(ThreadData, threaddata);
 }
 
@@ -242,6 +237,8 @@ ThreadData* threaddata_new()
   threaddata->ltrfams = NULL;
   threaddata->window = NULL;
   threaddata->progressbar = NULL;
+  threaddata->dialog = NULL;
+  threaddata->blastn_refseq = NULL;
   threaddata->list_view = NULL;
   threaddata->references = NULL;
   threaddata->nodes = NULL;

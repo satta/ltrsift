@@ -59,7 +59,7 @@ GType        gtk_blastn_params_refseq_get_type(void);
 
 const gchar* gtk_blastn_params_refseq_get_refseq_file(GtkBlastnParamsRefseq*);
 
-gint         gtk_blastn_params_refseq_get_match_len(GtkBlastnParamsRefseq*);
+gdouble      gtk_blastn_params_refseq_get_match_len(GtkBlastnParamsRefseq*);
 
 gboolean     gtk_blastn_params_refseq_get_flcands(GtkBlastnParamsRefseq*);
 

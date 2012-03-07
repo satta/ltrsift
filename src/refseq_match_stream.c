@@ -35,7 +35,6 @@ struct LTRGuiRefseqMatchStream {
   bool first_next,
        dust,
        flcands;
-  float min_ali_len_perc;
   int word_size,
       gapopen,
       gapextend,
@@ -44,7 +43,8 @@ struct LTRGuiRefseqMatchStream {
       num_threads;
   double evalue,
          xdrop,
-         identity;
+         identity,
+         min_ali_len_perc;
   const char *moreblast;
 };
 
@@ -257,6 +257,11 @@ static int ltrgui_refseq_match_stream_next(GtNodeStream *ns, GtGenomeNode **gn,
 static void ltrgui_refseq_match_stream_free(GtNodeStream *gs)
 {
   LTRGuiRefseqMatchStream *rms = ltrgui_refseq_match_stream_cast(gs);
+  unsigned long i;
+
+  for (i = 0; i < gt_array_size(rms->nodes); i++)
+    gt_genome_node_delete(*(GtGenomeNode**) gt_array_get(rms->nodes, i));
+  gt_array_delete(rms->nodes);
   gt_hashmap_delete(rms->header_to_fn);
   gt_node_stream_delete(rms->in_stream);
 }
@@ -287,7 +292,7 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
                                              double identity,
                                              const char *moreblast,
                                              bool flcands,
-                                             float min_ali_len_perc,
+                                             double min_ali_len_perc,
                                              GT_UNUSED GtError *err)
 {
   GtNodeStream *gs;
@@ -295,6 +300,7 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
   gs = gt_node_stream_create(ltrgui_refseq_match_stream_class(), true);
   rms = ltrgui_refseq_match_stream_cast(gs);
   rms->in_stream = gt_node_stream_ref(in_stream);
+  rms->nodes = gt_array_new(sizeof(GtGenomeNode*));
   rms->first_next = true;
   rms->next_index = 0;
   rms->header_to_fn = gt_hashmap_new(GT_HASH_STRING, free_hash_elem, NULL);

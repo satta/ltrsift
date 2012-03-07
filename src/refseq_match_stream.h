@@ -40,7 +40,7 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
                                              double identity,
                                              const char *moreblast,
                                              bool flcands,
-                                             float min_ali_len_perc,
+                                             double min_ali_len_perc,
                                              GtError *err);
 
 #endif

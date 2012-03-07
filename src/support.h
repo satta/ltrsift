@@ -27,7 +27,9 @@ struct _ThreadData {
   GUIData *ltrgui;
   GtkLTRFamilies *ltrfams;
   GtkWidget *window,
-            *progressbar;
+            *progressbar,
+            *dialog,
+            *blastn_refseq;
   GtkTreeView *list_view;
   GList *references;
   GtArray *nodes,
