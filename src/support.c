@@ -265,6 +265,7 @@ ThreadData* threaddata_new()
   threaddata->had_err = 0;
   threaddata->progress = 0;
   threaddata->n_features = 0;
+  threaddata->last_id = 0;
 
   return threaddata;
 }

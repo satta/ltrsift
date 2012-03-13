@@ -98,6 +98,92 @@ const gchar* gtk_blastn_params_get_moreblast(GtkBlastnParams *blastpar)
   return gtk_label_get_text(GTK_LABEL(blastpar->label_moreblast));
 }
 
+void gtk_blastn_params_set_paramset(GtkBlastnParams *blastpar, gdouble evalue,
+                                    gboolean dust, gint gapopen, gint gapextend,
+                                    gdouble xdrop, gint penalty, gint reward,
+                                    gint threads, gint wordsize, gdouble seqid,
+                                    const gchar *moreblast)
+{
+  if (evalue == GT_UNDEF_DOUBLE)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_evalue),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_evalue), evalue);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_evalue),
+                                 FALSE);
+  }
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_dust), dust);
+  if (gapopen == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapopen),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_gapopen),
+                              gapopen);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapopen),
+                                 FALSE);
+  }
+  if (gapextend == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapextend),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_gapextend),
+                              gapextend);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapextend),
+                                 FALSE);
+  }
+  if (xdrop == GT_UNDEF_DOUBLE)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_xdrop),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_xdrop), xdrop);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_xdrop),
+                                 FALSE);
+  }
+  if (penalty == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_penalty),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_penalty),
+                              penalty);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_penalty),
+                                 FALSE);
+  }
+  if (reward == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_reward),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_reward), reward);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_reward),
+                                 FALSE);
+  }
+  if (threads == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_threads),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_threads),
+                              threads);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_threads),
+                                 FALSE);
+  }
+  if (wordsize == GT_UNDEF_INT)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_words),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_words), wordsize);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_words),
+                                 FALSE);
+  }
+  if (seqid == GT_UNDEF_DOUBLE)
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_seqid),
+                                 TRUE);
+  else {
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastpar->spinb_seqid), seqid);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_seqid),
+                                 FALSE);
+  }
+  gtk_label_set_text(GTK_LABEL(blastpar->label_moreblast), moreblast);
+}
+
 static void checkb_evalue_toggled(GtkToggleButton *togglebutton,
                                    GtkBlastnParams *blastpar)
 {
@@ -270,6 +356,7 @@ void gtk_blastn_params_set_extra_widget(GtkBlastnParams *blastpar,
     gtk_widget_destroy(blastpar->extra_widget);
   blastpar->extra_widget = widget;
   gtk_box_pack_start(GTK_BOX(blastpar), widget, FALSE, FALSE, 1);
+  gtk_widget_show_all(widget);
 }
 
 GtkWidget* gtk_blastn_params_get_extra_widget(GtkBlastnParams *blastpar)

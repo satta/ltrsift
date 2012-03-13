@@ -46,6 +46,7 @@ struct _GtkBlastnParamsRefseq
   GtkWidget *label_refseq;
   GtkWidget *spinb_mlen;
   GtkWidget *checkb_flcands;
+  GtkWidget *extra_widget;
   gchar *last_dir;
 };
 
@@ -62,6 +63,23 @@ const gchar* gtk_blastn_params_refseq_get_refseq_file(GtkBlastnParamsRefseq*);
 gdouble      gtk_blastn_params_refseq_get_match_len(GtkBlastnParamsRefseq*);
 
 gboolean     gtk_blastn_params_refseq_get_flcands(GtkBlastnParamsRefseq*);
+
+void         gtk_blastn_params_refseq_set_extra_widget(GtkBlastnParamsRefseq*,
+                                                       GtkWidget*, gint);
+
+void         gtk_blastn_params_refseq_set_paramset(GtkBlastnParamsRefseq *blast,
+                                                   gdouble evalue,
+                                                   gboolean dust,
+                                                   gint gapopen,
+                                                   gint gapextend,
+                                                   gdouble xdrop,
+                                                   gint penalty,
+                                                   gint reward,
+                                                   gint threads,
+                                                   gint wordsize,
+                                                   gdouble seqid,
+                                                   const gchar *moreblast,
+                                                   gdouble mlen);
 
 GtkWidget*   gtk_blastn_params_refseq_new();
 

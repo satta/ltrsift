@@ -37,6 +37,39 @@ gtk_blastn_params_refseq_get_flcands(GtkBlastnParamsRefseq *blastparref)
    gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(blastparref->checkb_flcands));
 }
 
+void gtk_blastn_params_refseq_set_paramset(GtkBlastnParamsRefseq *blastparref,
+                                           gdouble evalue,
+                                           gboolean dust,
+                                           gint gapopen,
+                                           gint gapextend,
+                                           gdouble xdrop,
+                                           gint penalty,
+                                           gint reward,
+                                           gint threads,
+                                           gint wordsize,
+                                           gdouble seqid,
+                                           const gchar *moreblast,
+                                           gdouble mlen)
+{
+  gtk_blastn_params_set_paramset(GTK_BLASTN_PARAMS(blastparref), evalue, dust,
+                                 gapopen, gapextend, xdrop, penalty, reward,
+                                 threads, wordsize, seqid, moreblast);
+  gtk_spin_button_set_value(GTK_SPIN_BUTTON(blastparref->spinb_mlen), mlen);
+}
+
+void
+gtk_blastn_params_refseq_set_extra_widget(GtkBlastnParamsRefseq *blastparref,
+                                          GtkWidget *widget, gint position)
+{
+  if (blastparref->extra_widget)
+    gtk_widget_destroy(blastparref->extra_widget);
+  blastparref->extra_widget = widget;
+  gtk_box_pack_start(GTK_BOX(blastparref), widget, FALSE, FALSE, 1);
+  if (position > -1)
+    gtk_box_reorder_child(GTK_BOX(blastparref), widget, position);
+  gtk_widget_show_all(widget);
+}
+
 static void
 gtk_blastn_params_refseq_browse_clicked(GT_UNUSED GtkWidget *button,
                                         GtkBlastnParamsRefseq *blastparref)

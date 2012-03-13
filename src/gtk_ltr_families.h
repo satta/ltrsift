@@ -117,7 +117,8 @@ struct _GtkLTRFamilies
   GtkWidget *statusbar;
   GtkWidget *progressbar;
   GtkWidget *projset;
-  GtkWidget *blastn_classify;
+  GtkWidget *blastn_params;
+  GtkWidget *blastn_params_combob;
   GtkWidget *ltrfilt;
 };
 

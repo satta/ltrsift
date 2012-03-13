@@ -5,7 +5,7 @@
 #define FILE_EXISTS_DIALOG "A file named \"%s\" already exists.\n\nDo you "\
                            "want to replace it?"
 
-#define GUI_NAME       "LTRSift"
+#define GUI_NAME       "LTRsift"
 #define FAS_PATTERN    ".fas"
 #define GFF3_PATTERN   ".gff3"
 #define ESQ_PATTERN   ".esq"
@@ -191,7 +191,7 @@
                                 "or discard them?"
 
 /* statusbar_main.h */
-#define STATUSBAR_CONTEXT            "LTRSift"
+#define STATUSBAR_CONTEXT            "LTRsift"
 #define STATUSBAR_MSG_WELCOME        "Welcome to %s"
 #define STATUSBAR_MENU_HINT          "menuhint"
 #define STATUSBAR_MENU_HINT_NEW      "Create a new project."

@@ -55,7 +55,8 @@ struct _ThreadData {
          lentolerance;
   int had_err;
   unsigned long progress,
-                n_features;
+                n_features,
+                last_id;
 };
 
 struct _CandidateData

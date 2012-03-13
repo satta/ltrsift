@@ -105,6 +105,19 @@ gdouble      gtk_blastn_params_get_seqid(GtkBlastnParams *blastpar);
 
 const gchar* gtk_blastn_params_get_moreblast(GtkBlastnParams *blastpar);
 
+void         gtk_blastn_params_set_paramset(GtkBlastnParams *blastpar,
+                                            gdouble evalue,
+                                            gboolean dust,
+                                            gint gapopen,
+                                            gint gapextend,
+                                            gdouble xdrop,
+                                            gint penalty,
+                                            gint reward,
+                                            gint threads,
+                                            gint wordsize,
+                                            gdouble seqid,
+                                            const gchar *moreblast);
+
 GtkWidget*   gtk_blastn_params_new();
 
 #endif

@@ -1812,7 +1812,7 @@ void menubar_init(GUIData *ltrgui)
   gtk_menu_shell_append(GTK_MENU_SHELL(ltrgui->menubar),
                         ltrgui->menubar_project);
 
-  menuitem = gtk_menu_item_new_with_mnemonic("_Filter");
+  menuitem = gtk_menu_item_new_with_mnemonic("_Filter...");
   g_object_set_data(G_OBJECT(menuitem),
                     STATUSBAR_MENU_HINT, (gpointer) STATUSBAR_MENU_HINT_FILTER);
   g_signal_connect(G_OBJECT(menuitem), "enter-notify-event",
@@ -1823,7 +1823,7 @@ void menubar_init(GUIData *ltrgui)
                    G_CALLBACK(menubar_project_filter_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
-  menuitem = gtk_menu_item_new_with_mnemonic("_Settings");
+  menuitem = gtk_menu_item_new_with_mnemonic("_Settings...");
   g_object_set_data(G_OBJECT(menuitem),
                     STATUSBAR_MENU_HINT,
                     (gpointer) STATUSBAR_MENU_HINT_SETTINGS);

@@ -30,8 +30,10 @@ struct LTRGuiRefseqMatchStream {
   GtHashmap *header_to_fn;
   const char *indexname,
              *refseq_file,
-             *seq_file;
-  unsigned long next_index;
+             *seq_file,
+             *source;
+  unsigned long params_id,
+                next_index;
   bool first_next,
        dust,
        flcands;
@@ -156,7 +158,14 @@ static void add_match_to_fn(LTRGuiRefseqMatchStream *rms, GtMatch *match,
                                  fn_range.start + match_range.end,
                                  GT_STRAND_FORWARD);
   gt_feature_node_set_source((GtFeatureNode*) new_node,
-                             gt_str_new_cstr(ATTR_NAME));
+                             gt_str_new_cstr(rms->source));
+  if (rms->params_id != GT_UNDEF_ULONG) {
+    char params_id[BUFSIZ];
+
+    (void) snprintf(params_id, BUFSIZ, "%lu", rms->params_id);
+    gt_feature_node_set_attribute((GtFeatureNode*) new_node, "params",
+                                  params_id);
+  }
   /* TODO: add attributes */
   gt_feature_node_add_child(fn, (GtFeatureNode*) new_node);
 
@@ -202,12 +211,19 @@ static int refseq_match(LTRGuiRefseqMatchStream *rms, GtError *err)
                                               rms->moreblast,
                                               err);
     if (mi) {
-      while ((status = gt_match_iterator_next(mi, &match, err))
-             != GT_MATCHER_STATUS_END) {
-        if (status == GT_MATCHER_STATUS_OK) {
-          add_match_to_fn(rms, match, err);
-        } else
+      if ((status = gt_match_iterator_next(mi, &match, err))
+           != GT_MATCHER_STATUS_OK) {
+          gt_error_set(err, "Could not run BLASTN.");
           had_err = -1;
+      } else {
+          add_match_to_fn(rms, match, err);
+          while ((status = gt_match_iterator_next(mi, &match, err))
+                 != GT_MATCHER_STATUS_END) {
+            if (status == GT_MATCHER_STATUS_OK) {
+              add_match_to_fn(rms, match, err);
+            } else
+              had_err = -1;
+          }
       }
     } else
       had_err = -1;
@@ -290,6 +306,8 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
                                              const char *moreblast,
                                              bool flcands,
                                              double min_ali_len_perc,
+                                             unsigned long params_id,
+                                             const char *source,
                                              GT_UNUSED GtError *err)
 {
   GtNodeStream *gs;
@@ -299,6 +317,7 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
   rms->in_stream = gt_node_stream_ref(in_stream);
   rms->nodes = gt_array_new(sizeof(GtGenomeNode*));
   rms->first_next = true;
+  rms->params_id = params_id;
   rms->next_index = 0;
   rms->header_to_fn = gt_hashmap_new(GT_HASH_STRING, free_hash_elem, NULL);
   rms->indexname = indexname;
@@ -316,6 +335,7 @@ GtNodeStream* ltrgui_refseq_match_stream_new(GtNodeStream *in_stream,
   rms->identity = identity;
   rms->moreblast = moreblast;
   rms->flcands = flcands;
+  rms->source = source;
   rms->min_ali_len_perc = min_ali_len_perc;
 
   return gs;

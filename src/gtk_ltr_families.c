@@ -132,6 +132,172 @@ void gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
 /* set functions end */
 
 /* "support" functions start */
+gint remove_refseq_params(const gchar *projectfile, unsigned long last_id,
+                          GError *gerr)
+{
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
+  GtError *err;
+  gchar query[BUFSIZ];
+  gint had_err = 0;
+  err = gt_error_new();
+
+  rdb = gt_rdb_sqlite_new(projectfile, err);
+  if (!rdb) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not remove parameter: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    return -1;
+  }
+  g_snprintf(query, BUFSIZ,
+             "DELETE FROM refseq_match_params WHERE id = \"%lu\"", last_id);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not remove parameter: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+  gt_error_delete(err);
+  gt_rdb_delete(rdb);
+  return 0;
+}
+
+gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
+                        int gapextend, int penalty, int reward, int threads,
+                        double xdrop, double identity, const char *moreblast,
+                        double minlen, const char *projectfile,
+                        unsigned long *last_id, GError *gerr)
+{
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
+  GtError *err;
+  gchar query[BUFSIZ];
+  gint had_err = 0;
+  err = gt_error_new();
+
+  rdb = gt_rdb_sqlite_new(projectfile, err);
+  if (!rdb) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save parameter: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    return -1;
+  }
+
+  had_err = gt_rdb_prepare(rdb,
+                           "CREATE TABLE IF NOT EXISTS refseq_match_params "
+                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "evalue TEXT, "
+                            "dust INTEGER, "
+                            "gapopen TEXT, "
+                            "gapextend TEXT, "
+                            "xdrop TEXT, "
+                            "penalty TEXT, "
+                            "reward TEXT, "
+                            "threads TEXT, "
+                            "wordsize TEXT, "
+                            "identity TEXT, "
+                            "moreblast TEXT, "
+                            "minlen REAL)",
+                           -1, &stmt, err);
+
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save parameter: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+
+  gchar evalue_str[15], gapopen_str[15], gapextend_str[15], xdrop_str[15],
+        penalty_str[15], reward_str[15], threads_str[15], wordsize_str[15],
+        identity_str[15];
+
+  if (evalue == GT_UNDEF_DOUBLE)
+    g_snprintf(evalue_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(evalue_str, 15, "%.6f", evalue);
+  if (gapopen == GT_UNDEF_INT)
+    g_snprintf(gapopen_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(gapopen_str, 15, "%d", gapopen);
+  if (gapextend == GT_UNDEF_INT)
+    g_snprintf(gapextend_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(gapextend_str, 15, "%d", gapextend);
+  if (xdrop == GT_UNDEF_DOUBLE)
+    g_snprintf(xdrop_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(xdrop_str, 15, "%.2f", xdrop);
+  if (penalty == GT_UNDEF_INT)
+    g_snprintf(penalty_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(penalty_str, 15, "%d", penalty);
+  if (reward == GT_UNDEF_INT)
+    g_snprintf(reward_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(reward_str, 15, "%d", reward);
+  if (threads == GT_UNDEF_INT)
+    g_snprintf(threads_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(threads_str, 15, "%d", threads);
+  if (wordsize == GT_UNDEF_INT)
+    g_snprintf(wordsize_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(wordsize_str, 15, "%d", wordsize);
+  if (identity == GT_UNDEF_DOUBLE)
+    g_snprintf(identity_str, 15, "%s", "DEFAULT");
+  else
+    g_snprintf(identity_str, 15, "%.2f", identity);
+
+  g_snprintf(query, BUFSIZ,
+             "INSERT INTO refseq_match_params ("
+              "evalue, dust, gapopen, "
+              "gapextend, xdrop, penalty, reward, threads, wordsize, "
+              "identity, moreblast, "
+              "minlen) values (\"%s\", "
+              "\"%d\", \"%s\", \"%s\", "
+              "\"%s\", \"%s\", \"%s\", "
+              "\"%s\", \"%s\", \"%s\", \"%s\", "
+              "\"%.2f\")",
+             evalue_str, (dust ? 1 : 0), gapopen_str, gapextend_str, xdrop_str,
+             penalty_str, reward_str, threads_str, wordsize_str, identity_str,
+             moreblast, minlen);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+
+  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    g_set_error(&gerr,
+                G_FILE_ERROR,
+                0,
+                "Could not save parameter: %s",
+                gt_error_get(err));
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  *last_id = gt_rdb_last_inserted_id(rdb, "refseq_match_params", err);
+  gt_rdb_stmt_delete(stmt);
+  gt_error_delete(err);
+  gt_rdb_delete(rdb);
+  return 0;
+}
+
 void update_main_tab_label(GtkLTRFamilies *ltrfams)
 {
   GtkWidget *tab_label, *child;
@@ -243,7 +409,7 @@ get_features_and_prefix_for_classification(GtkLTRFamilies *ltrfams,
                                         NULL);
   gtk_dialog_set_has_separator(GTK_DIALOG(dialog), FALSE);
   gtk_dialog_set_response_sensitive(GTK_DIALOG(dialog), GTK_RESPONSE_OK, FALSE);
-  label = gtk_label_new ("Select features for classification");
+  label = gtk_label_new("Select features for classification");
   list_view = gtk_tree_view_new();
   sw = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),
@@ -1125,16 +1291,29 @@ static gboolean match_cands_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
 
   if (threaddata->had_err) {
+    if (threaddata->last_id != GT_UNDEF_ULONG) {
+      gint had_err;
+      had_err = remove_refseq_params(threaddata->ltrfams->projectfile,
+                                     threaddata->last_id,
+                                     threaddata->ltrfams->gerr);
+      if (!had_err) {
+        gdk_threads_enter();
+        error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
+                     threaddata->ltrfams->gerr);
+        gdk_threads_leave();
+      }
+    }
     g_set_error(&threaddata->ltrfams->gerr,
                 G_FILE_ERROR,
                 0,
-                "Could not classify the selected data: %s",
+                "Could not match the selected data: %s",
                 gt_error_get(threaddata->err));
     gdk_threads_enter();
     error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
                  threaddata->ltrfams->gerr);
     gdk_threads_leave();
-  }
+  } else
+    gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
   gt_array_delete(threaddata->nodes);
   threaddata_delete(threaddata);
   return FALSE;
@@ -1175,8 +1354,23 @@ static gpointer match_cands_start(gpointer data)
   indexname =
      gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
                                                  threaddata->ltrfams->projset));
-  g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
-             g_path_get_dirname(threaddata->ltrfams->projectfile));
+  if (threaddata->ltrfams->projectfile) {
+    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
+               g_path_get_dirname(threaddata->ltrfams->projectfile));
+    threaddata->had_err = save_refseq_params(evalue, dust, wordsize, gapopen,
+                                             gapextend, penalty, reward,
+                                             threads, xdrop, seqid, moreblast,
+                                             match_len,
+                                             threaddata->ltrfams->projectfile,
+                                             &threaddata->last_id,
+                                             threaddata->ltrfams->gerr);
+  } else {
+    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
+               g_get_home_dir());
+    threaddata->last_id = GT_UNDEF_ULONG;
+  }
+
+  /* TODO: show dialog for continuing on error while saving params */
 
   gdk_threads_enter();
   array_in_stream = gt_array_in_stream_new(threaddata->nodes,
@@ -1190,6 +1384,8 @@ static gpointer match_cands_start(gpointer data)
                                                        penalty, reward, threads,
                                                        xdrop, seqid, moreblast,
                                                        flcands, match_len,
+                                                       threaddata->last_id,
+                                                       GUI_NAME,
                                                        threaddata->err);
   threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
                                             threaddata->err);
@@ -1202,6 +1398,122 @@ static gpointer match_cands_start(gpointer data)
   return NULL;
 }
 
+static void changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
+{
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
+  GtError *err;
+  gint had_err = 0;
+  gchar *param, query[BUFSIZ];
+
+  param = gtk_combo_box_get_active_text(combob);
+  if (!param || (g_strcmp0(param, "") == 0))
+    return;
+  err = gt_error_new();
+  rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
+  if (!rdb)
+    had_err = -1;
+  if (!had_err) {
+    g_snprintf(query, BUFSIZ,
+               "SELECT * FROM refseq_match_params WHERE id = \"%s\"", param);
+    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, NULL);
+    if (!had_err) {
+      had_err = gt_rdb_stmt_exec(stmt, err);
+      if (!(had_err < 0)) {
+        GtStr *result = gt_str_new();
+        gint dust, gapopen, gapextend, penalty, reward, threads, wordsize;
+        gdouble xdrop, evalue, seqid, mlen;
+        gchar *moreblast;
+
+        gt_rdb_stmt_get_string(stmt, 1, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          evalue = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &evalue);
+        gt_str_delete(result);
+        gt_rdb_stmt_get_int(stmt, 2, &dust, err);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 3, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          gapopen = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &gapopen);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 4, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          gapextend = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &gapextend);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 5, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          xdrop = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &xdrop);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 6, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          penalty = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &penalty);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 7, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          reward = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &reward);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 8, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          threads = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &threads);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 9, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          wordsize = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &wordsize);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 10, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          seqid = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &seqid);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 11, result, err);
+        moreblast = gt_cstr_dup(gt_str_get(result));
+        gt_str_delete(result);
+        gt_rdb_stmt_get_double(stmt, 12, &mlen, err);
+
+        gtk_blastn_params_refseq_set_paramset(GTK_BLASTN_PARAMS_REFSEQ(
+                                                        ltrfams->blastn_params),
+                                              evalue, dust, gapopen, gapextend,
+                                              xdrop, penalty, reward, threads,
+                                              wordsize, seqid, moreblast, mlen);
+      }
+    }
+  }
+}
+
+static void toggled(GtkToggleButton *togglebutton,
+                    GtkLTRFamilies *ltrfams)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrfams->blastn_params_combob, active);
+  if (active)
+    changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob), ltrfams);
+}
+
 static void
 gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
                                                         GtkLTRFamilies *ltrfams)
@@ -1210,7 +1522,10 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
   GtkWidget *dialog,
             *dialog2,
             *blastn_params,
-            *toplevel;
+            *toplevel,
+            *hbox,
+            *checkb,
+            *combob;
   GtkTreeSelection *sel;
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -1222,9 +1537,65 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
     return;
-
-  blastn_params = gtk_blastn_params_refseq_new();
   toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+  ltrfams->blastn_params = blastn_params = gtk_blastn_params_refseq_new();
+
+  hbox = gtk_hbox_new(FALSE, 1);
+  checkb = gtk_check_button_new_with_label("Use existing param set?");
+  ltrfams->blastn_params_combob = combob = gtk_combo_box_new_text();
+  gtk_widget_set_sensitive(combob, FALSE);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(toggled), ltrfams);
+  g_signal_connect(G_OBJECT(combob), "changed",
+                   G_CALLBACK(changed), ltrfams);
+  if (ltrfams->projectfile) {
+    GtRDB *rdb = NULL;
+    GtRDBStmt *stmt;
+    GtError *err;
+    gint had_err = 0;
+
+    err = gt_error_new();
+    rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
+    if (!rdb)
+      had_err = -1;
+    if (!had_err)
+      had_err = gt_rdb_prepare(rdb,
+                               "SELECT id FROM refseq_match_params",
+                               -1, &stmt, NULL);
+    if (!had_err) {
+      unsigned long result;
+
+      while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
+        had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
+        if (!had_err) {
+          gchar buffer[BUFSIZ];
+
+          g_snprintf(buffer, BUFSIZ, "%lu", result);
+          gtk_combo_box_append_text(GTK_COMBO_BOX(combob), buffer);
+        }
+      }
+      gt_rdb_stmt_delete(stmt);
+    }
+    if (had_err == -1) {
+      g_set_error(&ltrfams->gerr,
+                  G_FILE_ERROR,
+                  0,
+                  "Could not retrieve parameter sets: %s",
+                  gt_error_get(err));
+      error_handle(toplevel, ltrfams->gerr);
+    }
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+  } else {
+    gtk_widget_set_sensitive(checkb, FALSE);
+    gtk_widget_set_sensitive(combob, FALSE);
+  }
+  gtk_box_pack_start(GTK_BOX(hbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), combob, FALSE, FALSE, 1);
+  gtk_blastn_params_refseq_set_extra_widget(GTK_BLASTN_PARAMS_REFSEQ(
+                                                                 blastn_params),
+                                     hbox, 3);
+
   dialog = gtk_dialog_new_with_buttons(MATCH_DIALOG,
                                        GTK_WINDOW(toplevel),
                                        GTK_DIALOG_MODAL |
@@ -1237,7 +1608,7 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
 
   gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), blastn_params);
   gtk_widget_show_all(dialog);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_REJECT) {
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT) {
     gtk_widget_destroy(dialog);
     return;
   }
@@ -1322,7 +1693,7 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
   threaddata->dialog = dialog;
   threaddata->blastn_refseq = blastn_params;
   threaddata->nodes = nodes;
-  threaddata->current_state = gt_cstr_dup("Blaaaa");
+  threaddata->err = gt_error_new();
 
   progress_dialog_init(threaddata,toplevel);
 
