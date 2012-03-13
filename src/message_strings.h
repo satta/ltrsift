@@ -124,6 +124,8 @@
 
 #define MAIN_TAB_LABEL "Unclassified"
 
+#define SEQFILE_FOR_REFSEQ "%s/tmp/fam_seqs_for_refseq_match.fas"
+
 /* gtk_ltr_filter.h */
 #define LTR_FILTER_TEMPLATE "name        = \"Name of the script here\"\n" \
                             "author      = \"Your name here\"\n" \

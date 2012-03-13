@@ -75,7 +75,6 @@ static int extract_sequences(LTRGuiRefseqMatchStream *rms, GtError *err)
 
   gt_assert(rms);
   gt_error_check(err);
-
   outfp = gt_file_new(rms->seq_file, "w", err);
   if (!outfp)
     had_err = -1;
@@ -131,8 +130,8 @@ static void add_match_to_fn(LTRGuiRefseqMatchStream *rms, GtMatch *match,
   GtStr *seq;
   GtFeatureNode *fn;
   GtGenomeNode *new_node;
-  GtRange range;
-  const char *seqid1, *seqid2;
+  GtRange fn_range, match_range;
+  const char *seqid1;
   unsigned long ali_length,
                 fn_length,
                 min_ali_length;
@@ -143,18 +142,21 @@ static void add_match_to_fn(LTRGuiRefseqMatchStream *rms, GtMatch *match,
   seqid1 = gt_match_get_seqid1(match);
   fn = (GtFeatureNode*) gt_hashmap_get(rms->header_to_fn, (void*) seqid1);
   fn_length = gt_genome_node_get_length((GtGenomeNode*) fn);
-  min_ali_length = rms->min_ali_len_perc * fn_length;
+  fn_range = gt_genome_node_get_range((GtGenomeNode*) fn);
+  min_ali_length = (rms->min_ali_len_perc / 100.0) * fn_length;
   ali_length = gt_match_blast_get_align_length((GtMatchBlast*) match);
   if (ali_length < min_ali_length) {
     gt_match_delete(match);
     return;
   }
-  gt_match_get_range_seq1(match, &range);
+  gt_match_get_range_seq1(match, &match_range);
   seq = gt_genome_node_get_seqid((GtGenomeNode*) fn);
-  new_node = gt_feature_node_new(seq, NEW_FN_TYPE, range.start,
-                                 range.end, GT_STRAND_FORWARD);
-  seqid2 = gt_match_get_seqid2(match);
-  gt_feature_node_add_attribute((GtFeatureNode*) new_node, ATTR_NAME, seqid2);
+  new_node = gt_feature_node_new(seq, NEW_FN_TYPE,
+                                 fn_range.start + match_range.start,
+                                 fn_range.start + match_range.end,
+                                 GT_STRAND_FORWARD);
+  gt_feature_node_set_source((GtFeatureNode*) new_node,
+                             gt_str_new_cstr(ATTR_NAME));
   /* TODO: add attributes */
   gt_feature_node_add_child(fn, (GtFeatureNode*) new_node);
 
@@ -163,7 +165,7 @@ static void add_match_to_fn(LTRGuiRefseqMatchStream *rms, GtMatch *match,
 
 static int refseq_match(LTRGuiRefseqMatchStream *rms, GtError *err)
 {
-  GtMatchIterator *mi;
+  GtMatchIterator *mi = NULL;
   GtMatch *match = NULL;
   GtMatchIteratorStatus status;
   char makeblastdb_call[BUFSIZ],
@@ -172,7 +174,6 @@ static int refseq_match(LTRGuiRefseqMatchStream *rms, GtError *err)
 
   gt_assert(rms);
   gt_error_check(err);
-
   env = getenv(GT_BLAST_PATH_ENV);
   if (env)
     (void) snprintf(makeblastdb_call, BUFSIZ,
@@ -257,11 +258,7 @@ static int ltrgui_refseq_match_stream_next(GtNodeStream *ns, GtGenomeNode **gn,
 static void ltrgui_refseq_match_stream_free(GtNodeStream *gs)
 {
   LTRGuiRefseqMatchStream *rms = ltrgui_refseq_match_stream_cast(gs);
-  unsigned long i;
 
-  for (i = 0; i < gt_array_size(rms->nodes); i++)
-    gt_genome_node_delete(*(GtGenomeNode**) gt_array_get(rms->nodes, i));
-  gt_array_delete(rms->nodes);
   gt_hashmap_delete(rms->header_to_fn);
   gt_node_stream_delete(rms->in_stream);
 }

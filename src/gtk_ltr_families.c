@@ -1130,8 +1130,10 @@ static gboolean match_cands_finished(gpointer data)
                 0,
                 "Could not classify the selected data: %s",
                 gt_error_get(threaddata->err));
+    gdk_threads_enter();
     error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
                  threaddata->ltrfams->gerr);
+    gdk_threads_leave();
   }
   gt_array_delete(threaddata->nodes);
   threaddata_delete(threaddata);
@@ -1147,7 +1149,8 @@ static gpointer match_cands_start(gpointer data)
   gdouble evalue, xdrop, seqid, match_len;
   gboolean dust, flcands;
   gint gapopen, gapextend, penalty, reward, threads, wordsize;
-  const gchar *moreblast, *refseq_file;
+  const gchar *indexname;
+  gchar seq_out_file[BUFSIZ], *moreblast, *refseq_file;
 
   evalue = gtk_blastn_params_get_evalue(GTK_BLASTN_PARAMS(blastn_params));
   dust = gtk_blastn_params_get_dust(GTK_BLASTN_PARAMS(blastn_params));
@@ -1159,22 +1162,29 @@ static gpointer match_cands_start(gpointer data)
   threads = gtk_blastn_params_get_threads(GTK_BLASTN_PARAMS(blastn_params));
   wordsize = gtk_blastn_params_get_wordsize(GTK_BLASTN_PARAMS(blastn_params));
   seqid = gtk_blastn_params_get_seqid(GTK_BLASTN_PARAMS(blastn_params));
-  moreblast = gtk_blastn_params_get_moreblast(GTK_BLASTN_PARAMS(blastn_params));
-  refseq_file = gtk_blastn_params_refseq_get_refseq_file(
-                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+  moreblast =
+    g_strdup(gtk_blastn_params_get_moreblast(GTK_BLASTN_PARAMS(blastn_params)));
+  refseq_file = g_strdup(gtk_blastn_params_refseq_get_refseq_file(
+                                      GTK_BLASTN_PARAMS_REFSEQ(blastn_params)));
   match_len = gtk_blastn_params_refseq_get_match_len(
                                        GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
   flcands = gtk_blastn_params_refseq_get_flcands(
                                        GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
   gtk_widget_destroy(threaddata->dialog);
 
-  /* TODO: get indexname & tmpdir */
+  indexname =
+     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
+                                                 threaddata->ltrfams->projset));
+  g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
+             g_path_get_dirname(threaddata->ltrfams->projectfile));
+
+  gdk_threads_enter();
   array_in_stream = gt_array_in_stream_new(threaddata->nodes,
                                            NULL, threaddata->err);
   refseq_match_stream = ltrgui_refseq_match_stream_new(array_in_stream,
-                                                       NULL,
+                                                       indexname,
                                                        refseq_file,
-                                                       NULL,
+                                                       seq_out_file,
                                                        evalue, dust, wordsize,
                                                        gapopen, gapextend,
                                                        penalty, reward, threads,
@@ -1183,8 +1193,11 @@ static gpointer match_cands_start(gpointer data)
                                                        threaddata->err);
   threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
                                             threaddata->err);
+  gdk_threads_leave();
   gt_node_stream_delete(refseq_match_stream);
   gt_node_stream_delete(array_in_stream);
+  g_free(moreblast);
+  g_free(refseq_file);
   g_idle_add(match_cands_finished, data);
   return NULL;
 }
@@ -1195,20 +1208,25 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
 {
   ThreadData *threaddata;
   GtkWidget *dialog,
-            *blastn_params;
+            *dialog2,
+            *blastn_params,
+            *toplevel;
   GtkTreeSelection *sel;
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtArray *nodes, *tmpnodes;
   GList *rows, *tmp;
+  const gchar *indexname;
+  gchar tmp_index[BUFSIZ];
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
   if (gtk_tree_selection_count_selected_rows(sel) == 0)
     return;
 
   blastn_params = gtk_blastn_params_refseq_new();
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
   dialog = gtk_dialog_new_with_buttons(MATCH_DIALOG,
-                       GTK_WINDOW(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams))),
+                                       GTK_WINDOW(toplevel),
                                        GTK_DIALOG_MODAL |
                                        GTK_DIALOG_DESTROY_WITH_PARENT,
                                        GTK_STOCK_APPLY,
@@ -1223,6 +1241,66 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
     gtk_widget_destroy(dialog);
     return;
   }
+  gtk_widget_hide(dialog);
+  indexname =
+     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(ltrfams->projset));
+  g_snprintf(tmp_index, BUFSIZ, "%s%s", indexname, ESQ_PATTERN);
+  if ((g_strcmp0(indexname, "") == 0) ||
+      !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
+    dialog2 = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                     "%s",
+                                     NO_INDEX_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog2), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog2), GTK_WIN_POS_CENTER_ALWAYS);
+    if (gtk_dialog_run(GTK_DIALOG(dialog2)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog2);
+      gtk_widget_destroy(dialog);
+      return;
+    } else {
+      gtk_widget_destroy(dialog2);
+
+      dialog2 = gtk_file_chooser_dialog_new(SELECT_INDEX,
+                                            GTK_WINDOW(toplevel),
+                                            GTK_FILE_CHOOSER_ACTION_SAVE,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL, "Sele_ct",
+                                            GTK_RESPONSE_ACCEPT, NULL);
+      if (ltrfams->projectfile != NULL)
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
+                                      g_path_get_dirname(ltrfams->projectfile));
+      else
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
+                                            g_get_home_dir());
+      GtkFileFilter *esq_file_filter;
+      esq_file_filter = gtk_file_filter_new();
+      gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
+      gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
+      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog2), esq_file_filter);
+      if (gtk_dialog_run(GTK_DIALOG(dialog2)) == GTK_RESPONSE_ACCEPT) {
+        gchar *tmpname, *tmp;
+        tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog2));
+        tmp = g_strndup(tmpname, strlen(tmpname) - 4);
+
+        gtk_widget_destroy(dialog2);
+        gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(
+                                                              ltrfams->projset),
+                                              tmp);
+        gtk_ltr_families_set_modified(ltrfams, TRUE);
+        g_free(tmp);
+        g_free(tmpname);
+
+      } else {
+        gtk_widget_destroy(dialog2);
+        gtk_widget_destroy(dialog);
+        return;
+      }
+      gtk_widget_destroy(dialog2);
+    }
+  }
+
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
   nodes = gt_array_new(sizeof (GtGenomeNode*));
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -1246,12 +1324,11 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
   threaddata->nodes = nodes;
   threaddata->current_state = gt_cstr_dup("Blaaaa");
 
-  progress_dialog_init(threaddata,
-                       gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
+  progress_dialog_init(threaddata,toplevel);
 
   if (!g_thread_create(match_cands_start, (gpointer) threaddata, FALSE,
                        &ltrfams->gerr)) {
-    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->gerr);
+    error_handle(toplevel, ltrfams->gerr);
   }
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
@@ -2237,7 +2314,7 @@ static void gtk_ltr_families_nb_fam_lv_changed(GtkTreeView *list_view,
   GtRange range;
   GtHashmap *iter_hash;
   GList *rows;
-  const char *fnt;
+  const char *fnt, *global_parent;
 
   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(list_view));
   if (gtk_tree_selection_count_selected_rows(selection) != 1)
@@ -2284,14 +2361,16 @@ static void gtk_ltr_families_nb_fam_lv_changed(GtkTreeView *list_view,
                            LTRFAMS_DETAIL_TV_START, range.start,
                            LTRFAMS_DETAIL_TV_END, range.end,
                            -1);
-        gt_hashmap_add(iter_hash,
-                       (void*) gt_feature_node_get_attribute(curnode, ATTR_RID),
+        global_parent = gt_feature_node_get_attribute(curnode, ATTR_RID);
+        gt_hashmap_add(iter_hash, (void*) global_parent,
                        (void*) gtk_tree_iter_copy(&iter));
       } else {
         GtkTreeIter *tmp_iter;
-        tmp_iter = (GtkTreeIter*) gt_hashmap_get(iter_hash,
-                      (void*) gt_feature_node_get_attribute(curnode,
-                                                            ATTR_PARENT));
+        const char *attr;
+        attr = gt_feature_node_get_attribute(curnode, ATTR_PARENT);
+        if (!attr)
+          attr = global_parent;
+        tmp_iter = (GtkTreeIter*) gt_hashmap_get(iter_hash, (void*) attr);
         if (tmp_iter) {
           GtkTreeIter child;
           const char *id;
