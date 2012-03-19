@@ -43,7 +43,8 @@ struct _ThreadData {
            save,
            save_as,
            open,
-           bakfile;
+           bakfile,
+           use_paramset;
   gchar *current_state,
         *filename,
         *tmp_filename,
@@ -56,7 +57,7 @@ struct _ThreadData {
   int had_err;
   unsigned long progress,
                 n_features,
-                last_id;
+                set_id;
 };
 
 struct _CandidateData
@@ -89,11 +90,11 @@ void          extract_project_settings(GUIData *ltrgui);
 GtArray*      create_region_nodes_from_node_array(GtArray *nodes);
 
 void          export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
-                                GtkWidget *toplevel, GError *err);
+                                GtkWidget *toplevel);
 
 void          export_sequences(GtArray *nodes, gchar *filen,
                                const gchar *indexname, gboolean flcands,
-                               GtkWidget *toplevel, GError *err);
+                               GtkWidget *toplevel);
 
 void          remove_node_from_array(GtArray *nodes, GtGenomeNode *gn);
 

@@ -82,13 +82,12 @@ static gint gtk_ltr_filter_remove_file_from_sqlite(GtkTreeRowReference *row_ref,
   return 0;
 }
 
-gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr)
+gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtRDB *rdb;
   GtRDBStmt *stmt;
-  GtError *err = gt_error_new();
   gboolean valid;
   gchar *pfile, query[BUFSIZ], *file;
   gint had_err = 0;
@@ -97,27 +96,14 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr)
   if (!pfile)
     return had_err;
   rdb = gt_rdb_sqlite_new(pfile, err);
-  if (!rdb) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
+  if (!rdb)
     return -1;
-  }
   had_err = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS filter_files "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                              "filename TEXT)",
                            -1, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -128,12 +114,6 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr)
                            -1, &stmt, err);
 
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -141,23 +121,15 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr)
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_all));
   valid = gtk_tree_model_get_iter_first(model, &iter);
-  if (!valid) {
-    gt_error_delete(err);
+  if (!valid)
     return 0;
-  }
 
   gtk_tree_model_get(model, &iter, LTR_FILTER_LV_FILE, &file, -1);
   g_snprintf(query, BUFSIZ,
              "INSERT INTO filter_files (filename) values (\"%s\")", file);
   had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
     g_free(file);
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -170,22 +142,14 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr)
                "INSERT INTO filter_files (filename) values (\"%s\")", file);
     had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
     if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-      g_set_error(&gerr,
-                  G_FILE_ERROR,
-                  0,
-                  "Could not save gui settings: %s",
-                  gt_error_get(err));
       g_free(file);
-      gt_error_delete(err);
       gt_rdb_delete(rdb);
       return -1;
     }
     g_free(file);
     gt_rdb_stmt_delete(stmt);
   }
-
   gt_rdb_delete(rdb);
-  gt_error_delete(err);
 
   return 0;
 }
@@ -249,40 +213,26 @@ static gint gtk_ltr_filter_add_file_to_sqlite(GtkLTRFilter *ltrfilt,
 }
 
 gint gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
-                                              GError *gerr)
+                                              GtError *err)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtScriptFilter *script_filter;
   GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
   GtStr *result;
   gboolean valid;
   gint had_err = 0;
   gchar *pfile;
-  err = gt_error_new();
 
   pfile = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
   rdb = gt_rdb_sqlite_new(pfile, err);
-  if (!rdb) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
+  if (!rdb)
     return -1;
-  }
   had_err = gt_rdb_prepare(rdb,
                            "SELECT filename FROM filter_files",
                            -1, &stmt, err);
   if (had_err) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -309,16 +259,9 @@ gint gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
   }
   gt_rdb_stmt_delete(stmt);
   if (had_err == -1) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return had_err;
   }
-  gt_error_delete(err);
   gt_rdb_delete(rdb);
 
   return 0;
@@ -425,7 +368,7 @@ static gboolean save_filter_file(GtkLTRFilter *ltrfilt)
       result = g_file_set_contents(ltrfilt->cur_filename, text, -1,
                                    &ltrfilt->gerr);
       if (!result)
-        error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
+        error_handle(GTK_WIDGET(ltrfilt), err);
       else
         gtk_text_buffer_set_modified(ltrfilt->text_buffer, FALSE);
     } else {
@@ -882,33 +825,18 @@ static void gtk_ltr_filter_lv_all_changed(GtkTreeView *list_view,
   gtk_tree_model_get(model, &iter, 0, &file, -1);
 
   script_filter = gt_script_filter_new(file, err);
-  if (!script_filter) {
-    ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                gt_error_get(err));
-    error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-    gt_error_unset(err);
-  } else {
+  if (!script_filter)
+    error_handle(GTK_WIDGET(ltrfilt), err);
+  else {
     author = gt_script_filter_get_author(script_filter, err);
-    if (gt_error_is_set(err)) {
-      ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                  gt_error_get(err));
-      error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-      gt_error_unset(err);
-    }
+    if (gt_error_is_set(err))
+      error_handle(GTK_WIDGET(ltrfilt), err);
     email = gt_script_filter_get_email(script_filter, err);
-    if (gt_error_is_set(err)) {
-      ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                  gt_error_get(err));
-      error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-      gt_error_unset(err);
-    }
+    if (gt_error_is_set(err))
+      error_handle(GTK_WIDGET(ltrfilt), err);
     descr = gt_script_filter_get_description(script_filter, err);
-    if (gt_error_is_set(err)) {
-      ltrfilt->gerr = g_error_new(G_FILE_ERROR, 0, "Script error: %s",
-                                  gt_error_get(err));
-      error_handle(GTK_WIDGET(ltrfilt), ltrfilt->gerr);
-      gt_error_unset(err);
-    }
+    if (gt_error_is_set(err))
+      error_handle(GTK_WIDGET(ltrfilt), err);
 
     gtk_label_set_text(GTK_LABEL(ltrfilt->label_email), email);
     gtk_label_set_text(GTK_LABEL(ltrfilt->label_author), author);

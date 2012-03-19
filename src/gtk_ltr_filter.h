@@ -93,10 +93,10 @@ void       gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt,
                                       GtkWidget *ltrfams);
 
 gint       gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
-                                                    GError *gerr);
+                                                    GtError *err);
 
 void       gtk_ltr_filter_set_range(GtkLTRFilter *ltrfilt, gint range);
 
-gint       gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GError *gerr);
+gint       gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err);
 
 #endif

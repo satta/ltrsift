@@ -265,7 +265,8 @@ ThreadData* threaddata_new()
   threaddata->had_err = 0;
   threaddata->progress = 0;
   threaddata->n_features = 0;
-  threaddata->last_id = 0;
+  threaddata->set_id = GT_UNDEF_ULONG;
+  threaddata->use_paramset = FALSE;
 
   return threaddata;
 }
@@ -417,7 +418,7 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
 }
 
 void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
-                       GtkWidget *toplevel, GError *gerr)
+                       GtkWidget *toplevel)
 {
   GtkWidget *dialog;
   GtArray *region_nodes,
@@ -504,12 +505,7 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
   if (had_err) {
     if (bakfile)
       g_rename(tmp_filename, filename);
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Error while exporting data: %s",
-                gt_error_get(err));
-   error_handle(toplevel, gerr);
+   error_handle(toplevel, err);
   }
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(gff3_out_stream);
@@ -521,7 +517,7 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
 }
 
 void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
-                      gboolean flcands, GtkWidget *toplevel, GError *gerr)
+                      gboolean flcands, GtkWidget *toplevel)
 {
   GtkWidget *dialog;
   GtStr *seqid;
@@ -619,12 +615,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
   if (had_err) {
     if (bakfile)
       g_rename(tmp_filename, filename);
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Error while exporting data: %s",
-                gt_error_get(err));
-    error_handle(toplevel, gerr);
+    error_handle(toplevel, err);
   }
   gt_error_delete(err);
 }

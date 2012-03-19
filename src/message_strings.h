@@ -11,6 +11,8 @@
 #define ESQ_PATTERN   ".esq"
 #define SQLITE_PATTERN ".sqlite"
 
+#define LTRSIFT_STYLE_ENV "LTRSIFT_STYLE_FILE"
+
 #define GFF3_FILTER_PATTERN "*.gff3"
 #define ESQ_FILTER_PATTERN  "*.esq"
 
@@ -126,6 +128,12 @@
 
 #define SEQFILE_FOR_REFSEQ "%s/tmp/fam_seqs_for_refseq_match.fas"
 
+#define NO_PROJECTFILE_FOR_PARAMS_DIALOG "The data has not been saved as a " \
+                                         "project. Therefore match parameter " \
+                                         "will not be saved and can not be " \
+                                         "reproduced. It is recommended to " \
+                                         "save the data first! Continue anyway?"
+
 /* gtk_ltr_filter.h */
 #define LTR_FILTER_TEMPLATE "name        = \"Name of the script here\"\n" \
                             "author      = \"Your name here\"\n" \
@@ -209,11 +217,13 @@
 #define STATUSBAR_MENU_HINT_QUIT     "Quit the program."
 #define STATUSBAR_MENU_HINT_SETTINGS "View settings for the current project."
 #define STATUSBAR_MENU_HINT_FILTER   "Apply filter to the current project."
+#define STATUSBAR_MENU_HINT_MATCH    "Match project data against reference " \
+                                     "sequences."
 #define STATUSBAR_MENU_HINT_COLUMNS  "Show/Hide feature columns."
 #define STATUSBAR_NUM_OF_CANDS       "Total number of candidates: %lu"
 
 /* Misc */
-#define DEFAULT_STYLE "../style/default.style"
+#define DEFAULT_STYLE "/usr/share/ltrsift/default.style"
 #define PREFIX_EXISTS "Prefix already exists.\nPlease choose a "\
                       "different one\nto avoid duplicate entries"
 #define START_CLASSIF "Starting classification"

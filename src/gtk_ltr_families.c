@@ -133,41 +133,26 @@ void gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
 
 /* "support" functions start */
 gint remove_refseq_params(const gchar *projectfile, unsigned long last_id,
-                          GError *gerr)
+                          GtError *err)
 {
   GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
   gchar query[BUFSIZ];
   gint had_err = 0;
   err = gt_error_new();
 
   rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not remove parameter: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
+  if (!rdb)
     return -1;
-  }
   g_snprintf(query, BUFSIZ,
-             "DELETE FROM refseq_match_params WHERE id = \"%lu\"", last_id);
+             "DELETE FROM refseq_match_params WHERE set_id = \"%lu\"", last_id);
   had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
 
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not remove parameter: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
-  gt_error_delete(err);
   gt_rdb_delete(rdb);
   return 0;
 }
@@ -176,29 +161,21 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
                         int gapextend, int penalty, int reward, int threads,
                         double xdrop, double identity, const char *moreblast,
                         double minlen, const char *projectfile,
-                        unsigned long *last_id, GError *gerr)
+                        unsigned long set_id, GtError *err)
 {
   GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
   gchar query[BUFSIZ];
   gint had_err = 0;
-  err = gt_error_new();
 
   rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save parameter: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
+  if (!rdb)
     return -1;
-  }
 
   had_err = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS refseq_match_params "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                            "set_id INTEGER, "
                             "evalue TEXT, "
                             "dust INTEGER, "
                             "gapopen TEXT, "
@@ -214,12 +191,7 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
                            -1, &stmt, err);
 
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save parameter: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
+    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -268,32 +240,24 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
 
   g_snprintf(query, BUFSIZ,
              "INSERT INTO refseq_match_params ("
-              "evalue, dust, gapopen, "
+              "set_id, evalue, dust, gapopen, "
               "gapextend, xdrop, penalty, reward, threads, wordsize, "
               "identity, moreblast, "
-              "minlen) values (\"%s\", "
+              "minlen) values (\"%lu\", \"%s\", "
               "\"%d\", \"%s\", \"%s\", "
               "\"%s\", \"%s\", \"%s\", "
               "\"%s\", \"%s\", \"%s\", \"%s\", "
-              "\"%.2f\")",
+              "\"%.2f\")", set_id,
              evalue_str, (dust ? 1 : 0), gapopen_str, gapextend_str, xdrop_str,
              penalty_str, reward_str, threads_str, wordsize_str, identity_str,
              moreblast, minlen);
   had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
 
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&gerr,
-                G_FILE_ERROR,
-                0,
-                "Could not save parameter: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
     gt_rdb_delete(rdb);
     return -1;
   }
-  *last_id = gt_rdb_last_inserted_id(rdb, "refseq_match_params", err);
   gt_rdb_stmt_delete(stmt);
-  gt_error_delete(err);
   gt_rdb_delete(rdb);
   return 0;
 }
@@ -750,13 +714,11 @@ static gboolean classify_nodes_finished(gpointer data)
       gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
       update_main_tab_label(threaddata->ltrfams);
     } else {
-      g_set_error(&threaddata->ltrfams->gerr,
-                  G_FILE_ERROR,
-                  0,
+      gt_error_set(threaddata->ltrfams->err,
                   "Could not classify the selected data: %s",
                   gt_error_get(threaddata->err));
       error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
-                   threaddata->ltrfams->gerr);
+                   threaddata->ltrfams->err);
     }
     threaddata_delete(threaddata);
     return FALSE;
@@ -1056,6 +1018,45 @@ static void on_drag_data_received(GtkWidget *widget,
 
 /* popupmenu related functions start*/
 static void
+gtk_ltr_families_notebook_list_view_pmenu_match_clicked(
+                                                  GT_UNUSED GtkWidget *menuitem,
+                                                        GtkLTRFamilies *ltrfams)
+{
+  GtkTreeView *list_view;
+  GtkTreeSelection *sel;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtkWidget *tab_child;
+  GtArray *nodes;
+  GtGenomeNode *gn;
+  GList *children, *rows, *tmp;
+  gint tab_no;
+
+  nodes = gt_array_new(sizeof (GtGenomeNode*));
+  tab_no = gtk_notebook_get_current_page(GTK_NOTEBOOK(ltrfams->nb_family));
+  tab_child = gtk_notebook_get_nth_page(GTK_NOTEBOOK(ltrfams->nb_family),
+                                        tab_no);
+  children = gtk_container_get_children(GTK_CONTAINER(tab_child));
+  list_view = GTK_TREE_VIEW(g_list_first(children)->data);
+  model = gtk_tree_view_get_model(list_view);
+  sel = gtk_tree_view_get_selection(list_view);
+  rows = gtk_tree_selection_get_selected_rows(sel, &model);
+  tmp = rows;
+  while (tmp != NULL) {
+    gtk_tree_model_get_iter(model, &iter, (GtkTreePath*) tmp->data);
+    gtk_tree_model_get(model, &iter,
+                       LTRFAMS_FAM_LV_NODE_ARRAY, &gn, -1);
+    gt_array_add(nodes, gn);
+    tmp = tmp->next;
+  }
+  gt_genome_nodes_sort_stable(nodes);
+  g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
+  g_list_free(rows);
+
+  gtk_ltr_families_refseq_match(nodes, ltrfams);
+}
+
+static void
 gtk_ltr_families_notebook_list_view_pmenu_filter_clicked(
                                                   GT_UNUSED GtkWidget *menuitem,
                                                         GtkLTRFamilies *ltrfams)
@@ -1200,16 +1201,22 @@ static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
 
   menu = gtk_menu_new();
 
+  menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
+  g_signal_connect(menuitem, "activate",
+           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_filter_clicked),
+                   ltrfams);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+  menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_MATCH_SELECTION);
+  g_signal_connect(menuitem, "activate",
+           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_match_clicked),
+                   ltrfams);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
   menuitem = gtk_menu_item_new_with_label((cur_tab_no == main_tab_no)
                                           ? DELETE_SELECTED : UNCLASS_SELECTED);
   g_signal_connect(menuitem, "activate",
                    G_CALLBACK(gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked),
-                   ltrfams);
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-
-  menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
-  g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_filter_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
@@ -1291,26 +1298,24 @@ static gboolean match_cands_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
 
   if (threaddata->had_err) {
-    if (threaddata->last_id != GT_UNDEF_ULONG) {
+    if (threaddata->set_id != GT_UNDEF_ULONG) {
       gint had_err;
       had_err = remove_refseq_params(threaddata->ltrfams->projectfile,
-                                     threaddata->last_id,
-                                     threaddata->ltrfams->gerr);
+                                     threaddata->set_id,
+                                     threaddata->ltrfams->err);
       if (!had_err) {
         gdk_threads_enter();
         error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
-                     threaddata->ltrfams->gerr);
+                     threaddata->ltrfams->err);
         gdk_threads_leave();
       }
     }
-    g_set_error(&threaddata->ltrfams->gerr,
-                G_FILE_ERROR,
-                0,
+    gt_error_set(threaddata->ltrfams->err,
                 "Could not match the selected data: %s",
                 gt_error_get(threaddata->err));
     gdk_threads_enter();
     error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
-                 threaddata->ltrfams->gerr);
+                 threaddata->ltrfams->err);
     gdk_threads_leave();
   } else
     gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
@@ -1355,41 +1360,56 @@ static gpointer match_cands_start(gpointer data)
      gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
                                                  threaddata->ltrfams->projset));
   if (threaddata->ltrfams->projectfile) {
+    gchar tmpdir[BUFSIZ];
+
     g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
                g_path_get_dirname(threaddata->ltrfams->projectfile));
-    threaddata->had_err = save_refseq_params(evalue, dust, wordsize, gapopen,
-                                             gapextend, penalty, reward,
-                                             threads, xdrop, seqid, moreblast,
-                                             match_len,
-                                             threaddata->ltrfams->projectfile,
-                                             &threaddata->last_id,
-                                             threaddata->ltrfams->gerr);
-  } else {
+    g_snprintf(tmpdir, BUFSIZ, "%s/tmp",
+               g_path_get_dirname(threaddata->ltrfams->projectfile));
+    if (!g_file_test(tmpdir, G_FILE_TEST_EXISTS))
+      threaddata->had_err = g_mkdir(tmpdir, 0755);
+    if (threaddata->had_err != 0) {
+      threaddata->had_err = -1;
+      gt_error_set(threaddata->err,
+                  "Could not make dir: %s",
+                  tmpdir);
+    }
+
+    if (!threaddata->had_err) {
+      if ((threaddata->set_id != GT_UNDEF_ULONG) && !threaddata->use_paramset) {
+        threaddata->had_err = save_refseq_params(evalue, dust, wordsize,
+                                                 gapopen, gapextend, penalty,
+                                                 reward, threads, xdrop, seqid,
+                                                 moreblast, match_len,
+                                               threaddata->ltrfams->projectfile,
+                                                 threaddata->set_id,
+                                                 threaddata->err);
+      }
+    }
+  } else
     g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
                g_get_home_dir());
-    threaddata->last_id = GT_UNDEF_ULONG;
+  if (!threaddata->had_err) {
+    gdk_threads_enter();
+    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                             NULL, threaddata->err);
+    refseq_match_stream = gt_ltr_refseq_match_stream_new(array_in_stream,
+                                                         indexname,
+                                                         refseq_file,
+                                                         seq_out_file,
+                                                         evalue, dust, wordsize,
+                                                         gapopen, gapextend,
+                                                         penalty, reward,
+                                                         threads, xdrop, seqid,
+                                                         moreblast, flcands,
+                                                         match_len,
+                                                         threaddata->set_id,
+                                                         GUI_NAME,
+                                                         threaddata->err);
+    threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
+                                              threaddata->err);
+    gdk_threads_leave();
   }
-
-  /* TODO: show dialog for continuing on error while saving params */
-
-  gdk_threads_enter();
-  array_in_stream = gt_array_in_stream_new(threaddata->nodes,
-                                           NULL, threaddata->err);
-  refseq_match_stream = ltrgui_refseq_match_stream_new(array_in_stream,
-                                                       indexname,
-                                                       refseq_file,
-                                                       seq_out_file,
-                                                       evalue, dust, wordsize,
-                                                       gapopen, gapextend,
-                                                       penalty, reward, threads,
-                                                       xdrop, seqid, moreblast,
-                                                       flcands, match_len,
-                                                       threaddata->last_id,
-                                                       GUI_NAME,
-                                                       threaddata->err);
-  threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
-                                            threaddata->err);
-  gdk_threads_leave();
   gt_node_stream_delete(refseq_match_stream);
   gt_node_stream_delete(array_in_stream);
   g_free(moreblast);
@@ -1402,7 +1422,7 @@ static void changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
 {
   GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
+  GtError *err = NULL;
   gint had_err = 0;
   gchar *param, query[BUFSIZ];
 
@@ -1415,7 +1435,8 @@ static void changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
     had_err = -1;
   if (!had_err) {
     g_snprintf(query, BUFSIZ,
-               "SELECT * FROM refseq_match_params WHERE id = \"%s\"", param);
+               "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
+               param);
     had_err = gt_rdb_prepare(rdb, query, -1, &stmt, NULL);
     if (!had_err) {
       had_err = gt_rdb_stmt_exec(stmt, err);
@@ -1425,83 +1446,88 @@ static void changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
         gdouble xdrop, evalue, seqid, mlen;
         gchar *moreblast;
 
-        gt_rdb_stmt_get_string(stmt, 1, result, err);
+        gt_rdb_stmt_get_string(stmt, 2, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           evalue = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &evalue);
         gt_str_delete(result);
-        gt_rdb_stmt_get_int(stmt, 2, &dust, err);
+        gt_rdb_stmt_get_int(stmt, 3, &dust, err);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 3, result, err);
+        gt_rdb_stmt_get_string(stmt, 4, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           gapopen = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &gapopen);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 4, result, err);
+        gt_rdb_stmt_get_string(stmt, 5, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           gapextend = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &gapextend);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 5, result, err);
+        gt_rdb_stmt_get_string(stmt, 6, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           xdrop = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &xdrop);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 6, result, err);
+        gt_rdb_stmt_get_string(stmt, 7, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           penalty = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &penalty);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 7, result, err);
+        gt_rdb_stmt_get_string(stmt, 8, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           reward = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &reward);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 8, result, err);
+        gt_rdb_stmt_get_string(stmt, 9, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           threads = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &threads);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 9, result, err);
+        gt_rdb_stmt_get_string(stmt, 10, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           wordsize = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &wordsize);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 10, result, err);
+        gt_rdb_stmt_get_string(stmt, 11, result, err);
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           seqid = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &seqid);
         gt_str_delete(result);
         result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 11, result, err);
+        gt_rdb_stmt_get_string(stmt, 12, result, err);
         moreblast = gt_cstr_dup(gt_str_get(result));
         gt_str_delete(result);
-        gt_rdb_stmt_get_double(stmt, 12, &mlen, err);
+        gt_rdb_stmt_get_double(stmt, 13, &mlen, err);
 
         gtk_blastn_params_refseq_set_paramset(GTK_BLASTN_PARAMS_REFSEQ(
                                                         ltrfams->blastn_params),
                                               evalue, dust, gapopen, gapextend,
                                               xdrop, penalty, reward, threads,
                                               wordsize, seqid, moreblast, mlen);
+        gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
       }
     }
   }
+  gt_rdb_stmt_delete(stmt);
+  gt_rdb_delete(rdb);
+  gt_error_delete(err);
 }
 
 static void toggled(GtkToggleButton *togglebutton,
@@ -1510,13 +1536,16 @@ static void toggled(GtkToggleButton *togglebutton,
   gboolean active;
   active = gtk_toggle_button_get_active(togglebutton);
   gtk_widget_set_sensitive(ltrfams->blastn_params_combob, active);
-  if (active)
+  if (active) {
     changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob), ltrfams);
+    gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
+  } else
+    gtk_blastn_params_refseq_set_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
 }
 
-static void
-gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
-                                                        GtkLTRFamilies *ltrfams)
+void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
 {
   ThreadData *threaddata;
   GtkWidget *dialog,
@@ -1526,28 +1555,34 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
             *hbox,
             *checkb,
             *combob;
-  GtkTreeSelection *sel;
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  GtArray *nodes, *tmpnodes;
-  GList *rows, *tmp;
   const gchar *indexname;
   gchar tmp_index[BUFSIZ];
+  unsigned long result;
 
-  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
-  if (gtk_tree_selection_count_selected_rows(sel) == 0)
-    return;
   toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+
+  if (!ltrfams->projectfile) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                     "%s",
+                                     NO_PROJECTFILE_FOR_PARAMS_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog);
+      return;
+    }
+    gtk_widget_destroy(dialog);
+  }
+
   ltrfams->blastn_params = blastn_params = gtk_blastn_params_refseq_new();
 
   hbox = gtk_hbox_new(FALSE, 1);
-  checkb = gtk_check_button_new_with_label("Use existing param set?");
+  checkb = gtk_check_button_new_with_label("Use existing parameter set?");
   ltrfams->blastn_params_combob = combob = gtk_combo_box_new_text();
   gtk_widget_set_sensitive(combob, FALSE);
-  g_signal_connect(G_OBJECT(checkb), "toggled",
-                   G_CALLBACK(toggled), ltrfams);
-  g_signal_connect(G_OBJECT(combob), "changed",
-                   G_CALLBACK(changed), ltrfams);
   if (ltrfams->projectfile) {
     GtRDB *rdb = NULL;
     GtRDBStmt *stmt;
@@ -1560,11 +1595,10 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
       had_err = -1;
     if (!had_err)
       had_err = gt_rdb_prepare(rdb,
-                               "SELECT id FROM refseq_match_params",
-                               -1, &stmt, NULL);
+                               "SELECT set_id FROM refseq_match_params "
+                               "ORDER by set_id",
+                               -1, &stmt, err);
     if (!had_err) {
-      unsigned long result;
-
       while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
         had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
         if (!had_err) {
@@ -1574,15 +1608,23 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
           gtk_combo_box_append_text(GTK_COMBO_BOX(combob), buffer);
         }
       }
+      gtk_combo_box_set_active(GTK_COMBO_BOX(combob), 0);
       gt_rdb_stmt_delete(stmt);
     }
+    if (!gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob)) &&
+        ltrfams->projectfile) {
+      result = 1;
+      gtk_widget_set_sensitive(checkb, FALSE);
+    } else if (ltrfams->projectfile)
+      result++;
+    else
+      result = GT_UNDEF_ULONG;
+
     if (had_err == -1) {
-      g_set_error(&ltrfams->gerr,
-                  G_FILE_ERROR,
-                  0,
+      gt_error_set(ltrfams->err,
                   "Could not retrieve parameter sets: %s",
                   gt_error_get(err));
-      error_handle(toplevel, ltrfams->gerr);
+      error_handle(toplevel, ltrfams->err);
     }
     gt_error_delete(err);
     gt_rdb_delete(rdb);
@@ -1590,6 +1632,10 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
     gtk_widget_set_sensitive(checkb, FALSE);
     gtk_widget_set_sensitive(combob, FALSE);
   }
+  g_signal_connect(G_OBJECT(combob), "changed",
+                   G_CALLBACK(changed), ltrfams);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(toggled), ltrfams);
   gtk_box_pack_start(GTK_BOX(hbox), checkb, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), combob, FALSE, FALSE, 1);
   gtk_blastn_params_refseq_set_extra_widget(GTK_BLASTN_PARAMS_REFSEQ(
@@ -1654,8 +1700,6 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
         gchar *tmpname, *tmp;
         tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog2));
         tmp = g_strndup(tmpname, strlen(tmpname) - 4);
-
-        gtk_widget_destroy(dialog2);
         gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(
                                                               ltrfams->projset),
                                               tmp);
@@ -1672,8 +1716,50 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
     }
   }
 
-  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
+  /* create thread for matching */
+  threaddata = threaddata_new();
+  threaddata->ltrfams = ltrfams;
+  threaddata->progressbar = ltrfams->progressbar;
+  threaddata->dialog = dialog;
+  threaddata->blastn_refseq = blastn_params;
+  threaddata->nodes = nodes;
+  threaddata->err = gt_error_new();
+
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkb))) {
+    gchar *tmp;
+
+    threaddata->use_paramset = TRUE;
+    tmp = gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob));
+    sscanf(tmp, "%lu", &threaddata->set_id);
+    g_free(tmp);
+  } else
+    threaddata->set_id = result;
+  progress_dialog_init(threaddata, toplevel);
+
+  if (!g_thread_create(match_cands_start, (gpointer) threaddata, FALSE,
+                       NULL)) {
+    gt_error_set(ltrfams->err,
+                "Could not create new thread.");
+    error_handle(toplevel, ltrfams->err);
+  }
+}
+
+static void
+gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
+                                                        GtkLTRFamilies *ltrfams)
+{
+  GtkTreeSelection *sel;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  GtArray *nodes, *tmpnodes;
+  GList *rows, *tmp;
+
+  sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(ltrfams->lv_families));
+  if (gtk_tree_selection_count_selected_rows(sel) == 0)
+    return;
+
   nodes = gt_array_new(sizeof (GtGenomeNode*));
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->lv_families));
   rows = gtk_tree_selection_get_selected_rows(sel, &model);
   tmp = rows;
   while (tmp != NULL) {
@@ -1685,22 +1771,6 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
     tmp = tmp->next;
   }
   gt_genome_nodes_sort_stable(nodes);
-
-  /* create thread for matching */
-  threaddata = threaddata_new();
-  threaddata->ltrfams = ltrfams;
-  threaddata->progressbar = ltrfams->progressbar;
-  threaddata->dialog = dialog;
-  threaddata->blastn_refseq = blastn_params;
-  threaddata->nodes = nodes;
-  threaddata->err = gt_error_new();
-
-  progress_dialog_init(threaddata,toplevel);
-
-  if (!g_thread_create(match_cands_start, (gpointer) threaddata, FALSE,
-                       &ltrfams->gerr)) {
-    error_handle(toplevel, ltrfams->gerr);
-  }
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(rows);
 }
@@ -1923,8 +1993,7 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     gt_genome_nodes_sort_stable(nodes);
     export_annotation(nodes, filename, flcands,
-                      gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
-                      ltrfams->gerr);
+                      gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
     gt_array_delete(nodes);
     g_free(filename);
   } else {
@@ -1942,8 +2011,7 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
       gt_genome_nodes_sort_stable(nodes);
       filen = g_strdup_printf("%s_%s", filename, famname);
       export_annotation(nodes, filename, flcands,
-                        gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
-                        ltrfams->gerr);
+                        gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
       g_free(famname);
       g_free(filen);
       tmp = tmp->next;
@@ -2085,8 +2153,7 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     gt_genome_nodes_sort_stable(nodes);
     export_sequences(nodes, filename, indexname, flcands,
-                     gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
-                     ltrfams->gerr);
+                     gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
     gt_array_delete(nodes);
     g_free(filename);
   } else {
@@ -2104,8 +2171,7 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
       gt_genome_nodes_sort_stable(nodes);
       filen = g_strdup_printf("%s_%s", filename, famname);
       export_sequences(nodes, filen, indexname, flcands,
-                       gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
-                       ltrfams->gerr);
+                       gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
       g_free(famname);
       g_free(filen);
       tmp = tmp->next;
@@ -2597,8 +2663,10 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
                        gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
 
   if (!g_thread_create(classify_nodes_start, (gpointer) threaddata, FALSE,
-                       &ltrfams->gerr)) {
-    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->gerr);
+                       NULL)) {
+    gt_error_set(ltrfams->err,
+                "Could not create new thread.");
+    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
   }
 
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
@@ -3925,7 +3993,8 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->err = gt_error_new();
   ltrfams->style = gt_style_new(ltrfams->err);
 
-  had_err = gt_style_load_file(ltrfams->style, DEFAULT_STYLE, ltrfams->err);
+  had_err = gt_style_load_file(ltrfams->style, ltrfams->style_file,
+                               ltrfams->err);
   if (had_err) {
     g_warning("%s", gt_error_get(ltrfams->err));
     gt_error_unset(ltrfams->err);
@@ -4137,7 +4206,8 @@ GType gtk_ltr_families_get_type(void)
 
 GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
                                 GtkWidget *progressbar,
-                                GtkWidget *projset)
+                                GtkWidget *projset,
+                                gchar *style_file)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
@@ -4153,6 +4223,7 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
   ltrfams->statusbar = statusbar;
   ltrfams->progressbar = progressbar;
   ltrfams->projset = projset;
+  ltrfams->style_file = style_file;
 
   return GTK_WIDGET(ltrfams);
 }

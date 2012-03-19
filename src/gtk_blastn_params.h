@@ -105,6 +105,10 @@ gdouble      gtk_blastn_params_get_seqid(GtkBlastnParams *blastpar);
 
 const gchar* gtk_blastn_params_get_moreblast(GtkBlastnParams *blastpar);
 
+void         gtk_blastn_params_set_sensitive(GtkBlastnParams *blastpar);
+
+void         gtk_blastn_params_unset_sensitive(GtkBlastnParams *blastpar);
+
 void         gtk_blastn_params_set_paramset(GtkBlastnParams *blastpar,
                                             gdouble evalue,
                                             gboolean dust,

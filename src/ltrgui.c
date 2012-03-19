@@ -24,6 +24,8 @@
 
 static void free_gui(GUIData *ltrgui)
 {
+  gt_error_delete(ltrgui->err);
+  g_free(ltrgui->style_file);
   g_slice_free(GUIData, ltrgui);
 }
 
@@ -84,12 +86,15 @@ static void init_gui(GUIData *ltrgui)
   ltrgui->projset = gtk_project_settings_new();
   ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
                                          ltrgui->progressbar,
-                                         ltrgui->projset);
+                                         ltrgui->projset,
+                                         ltrgui->style_file);
   gtk_box_pack_start(GTK_BOX(ltrgui->vbox), ltrgui->ltrfams, TRUE, TRUE, 0);
   ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
   gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
                                      ltrgui->ltrfilt);
   ltrgui->assistant = NULL;
+  ltrgui->err = gt_error_new();
+  ltrgui->refseq_paramsets = NULL;
   gtk_widget_show_all(ltrgui->main_window);
   gtk_widget_hide(ltrgui->progressbar);
 }
@@ -100,7 +105,6 @@ gint main(gint argc, gchar *argv[])
 
   /* allocate the memory needed by GUIData */
   ltrgui = g_slice_new(GUIData);
-  ltrgui->err = NULL;
   /* initialize libraries */
   if (!g_thread_supported())
     g_thread_init(NULL);
@@ -108,7 +112,15 @@ gint main(gint argc, gchar *argv[])
   gtk_init(&argc, &argv);
   gt_lib_init();
 
+  if (argc == 2) {
+    ltrgui->style_file = g_strdup(argv[1]);
+  } else {
+    ltrgui->style_file = getenv(LTRSIFT_STYLE_ENV);
+    if (!ltrgui->style_file)
+      ltrgui->style_file = g_strdup(DEFAULT_STYLE);
+  }
   init_gui(ltrgui);
+
   /* show the window */
   gtk_widget_show(ltrgui->main_window);
 

@@ -32,7 +32,6 @@
 #include "gtk_ltr_filter.h"
 #include "gtk_project_settings.h"
 #include "preprocess_stream.h"
-#include "refseq_match_stream.h"
 #include "script_filter_stream.h"
 
 typedef struct _GUIData GUIData;
@@ -55,7 +54,9 @@ struct _GUIData
   GtkWidget *main_window;
   GtkWidget *assistant;
   guint statusbar_context_id;
-  GError *err;
+  gchar *style_file;
+  GtError *err;
+  GtHashmap *refseq_paramsets;
 };
 
 #endif

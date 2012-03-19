@@ -37,6 +37,19 @@ gtk_blastn_params_refseq_get_flcands(GtkBlastnParamsRefseq *blastparref)
    gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(blastparref->checkb_flcands));
 }
 
+void gtk_blastn_params_refseq_set_sensitive(GtkBlastnParamsRefseq *blastparref)
+{
+  gtk_widget_set_sensitive(blastparref->spinb_mlen, TRUE);
+  gtk_blastn_params_set_sensitive(GTK_BLASTN_PARAMS(blastparref));
+}
+
+void
+gtk_blastn_params_refseq_unset_sensitive(GtkBlastnParamsRefseq *blastparref)
+{
+  gtk_widget_set_sensitive(blastparref->spinb_mlen, FALSE);
+  gtk_blastn_params_unset_sensitive(GTK_BLASTN_PARAMS(blastparref));
+}
+
 void gtk_blastn_params_refseq_set_paramset(GtkBlastnParamsRefseq *blastparref,
                                            gdouble evalue,
                                            gboolean dust,

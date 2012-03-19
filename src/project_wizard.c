@@ -34,9 +34,10 @@ static gboolean project_wizard_finished_job(gpointer data)
     gtk_widget_destroy(ltrfams);
     gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
     threaddata->ltrgui->ltrfams =
-                             gtk_ltr_families_new(threaddata->ltrgui->statusbar,
-                                                  threaddata->progressbar,
-                                                  threaddata->ltrgui->projset);
+                           gtk_ltr_families_new(threaddata->ltrgui->statusbar,
+                                                threaddata->progressbar,
+                                                threaddata->ltrgui->projset,
+                                                threaddata->ltrgui->style_file);
     ltrfams = threaddata->ltrgui->ltrfams;
     threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
     gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
@@ -63,13 +64,8 @@ static gboolean project_wizard_finished_job(gpointer data)
     create_recently_used_resource(threaddata->fullname);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
   } else {
-    g_set_error(&threaddata->ltrgui->err,
-                G_FILE_ERROR,
-                0,
-                "Error: %s",
-                gt_error_get(threaddata->err));
     gdk_threads_enter();
-    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+    error_handle(threaddata->ltrgui->main_window, threaddata->err);
     gdk_threads_leave();
   }
   threaddata_delete(threaddata);
@@ -171,12 +167,10 @@ static gpointer project_wizard_start_job(gpointer data)
       FILE *fp;
       fp = g_fopen(md5_file, "w");
       if (!fp) {
-        g_set_error(&threaddata->ltrgui->err,
-                    G_FILE_ERROR,
-                    0,
+        gt_error_set(threaddata->err,
                     "Could not create checksum file for matching: %s",
                     md5_file);
-        error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+        error_handle(threaddata->ltrgui->main_window, threaddata->err);
       } else
         fclose(fp);
       evalue = gtk_ltr_assistant_get_evalue(GTK_LTR_ASSISTANT(ltrassi));
@@ -367,9 +361,7 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
   if (!g_file_test(projecttmpdir, G_FILE_TEST_EXISTS))
     had_err = g_mkdir(projecttmpdir, 0755);
   if (had_err != 0) {
-    g_set_error(&ltrgui->err,
-                G_FILE_ERROR,
-                0,
+    gt_error_set(ltrgui->err,
                 "Could not make dir: %s",
                 projecttmpdir);
     error_handle(ltrgui->main_window, ltrgui->err);
@@ -389,7 +381,8 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
   progress_dialog_init(threaddata, ltrgui->main_window);
 
   if (!g_thread_create(project_wizard_start_job, (gpointer) threaddata, FALSE,
-                       &ltrgui->err)) {
+                       NULL)) {
+    gt_error_set(ltrgui->err, "Could not create new thread");
     error_handle(ltrgui->main_window, ltrgui->err);
   }
 }

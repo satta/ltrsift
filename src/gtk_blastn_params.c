@@ -98,6 +98,65 @@ const gchar* gtk_blastn_params_get_moreblast(GtkBlastnParams *blastpar)
   return gtk_label_get_text(GTK_LABEL(blastpar->label_moreblast));
 }
 
+void gtk_blastn_params_unset_sensitive(GtkBlastnParams *blastpar)
+{
+  gtk_widget_set_sensitive(blastpar->spinb_evalue, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_evalue, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_dust, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_gapopen, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_gapopen, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_gapextend, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_gapextend, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_xdrop, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_xdrop, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_penalty, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_penalty, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_reward, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_reward, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_threads, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_threads, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_words, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_words, FALSE);
+  gtk_widget_set_sensitive(blastpar->spinb_seqid, FALSE);
+  gtk_widget_set_sensitive(blastpar->checkb_seqid, FALSE);
+  gtk_widget_set_sensitive(blastpar->combob_blastparams, FALSE);
+  gtk_widget_set_sensitive(blastpar->entry_blastvalues, FALSE);
+  gtk_widget_set_sensitive(blastpar->button_addblastparam, FALSE);
+  gtk_widget_set_sensitive(blastpar->button_rmblastparam, FALSE);
+}
+
+void gtk_blastn_params_set_sensitive(GtkBlastnParams *blastpar)
+{
+  gtk_widget_set_sensitive(blastpar->checkb_evalue, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_dust, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_gapopen, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_gapextend, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_xdrop, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_penalty, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_reward, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_threads, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_words, TRUE);
+  gtk_widget_set_sensitive(blastpar->checkb_seqid, TRUE);
+  gtk_widget_set_sensitive(blastpar->combob_blastparams, TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_evalue),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_dust),
+                               FALSE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapopen),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_gapextend),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_xdrop), TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_penalty),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_reward),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_threads),
+                               TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_words), TRUE);
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_seqid), TRUE);
+}
+
 void gtk_blastn_params_set_paramset(GtkBlastnParams *blastpar, gdouble evalue,
                                     gboolean dust, gint gapopen, gint gapextend,
                                     gdouble xdrop, gint penalty, gint reward,
@@ -181,7 +240,33 @@ void gtk_blastn_params_set_paramset(GtkBlastnParams *blastpar, gdouble evalue,
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastpar->checkb_seqid),
                                  FALSE);
   }
+
+  g_hash_table_remove_all(blastpar->hasht_blastparams);
   gtk_label_set_text(GTK_LABEL(blastpar->label_moreblast), moreblast);
+  if (g_strcmp0(moreblast, "") != 0) {
+    gchar **arr;
+    guint i, len;
+
+    arr = g_strsplit(moreblast, " ", 0);
+    len = g_strv_length(arr);
+    i = 0;
+
+    while (i < len) {
+      if ((g_strcmp0(arr[i], BLASTN_NO_GREEDY) == 0) ||
+          (g_strcmp0(arr[i], BLASTN_UNGAPPED) == 0)) {
+        g_hash_table_insert(blastpar->hasht_blastparams,
+                            (gpointer) g_strdup(arr[i]),
+                            (gpointer) g_strdup(""));
+      } else if (g_strcmp0(arr[i], "") != 0) {
+        g_hash_table_insert(blastpar->hasht_blastparams,
+                            (gpointer) g_strdup(arr[i]),
+                            (gpointer) g_strdup(arr[i + 1]));
+        i++;
+      }
+      i++;
+    }
+    g_strfreev(arr);
+  }
 }
 
 static void checkb_evalue_toggled(GtkToggleButton *togglebutton,

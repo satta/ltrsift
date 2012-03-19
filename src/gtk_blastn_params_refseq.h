@@ -67,6 +67,10 @@ gboolean     gtk_blastn_params_refseq_get_flcands(GtkBlastnParamsRefseq*);
 void         gtk_blastn_params_refseq_set_extra_widget(GtkBlastnParamsRefseq*,
                                                        GtkWidget*, gint);
 
+void         gtk_blastn_params_refseq_set_sensitive(GtkBlastnParamsRefseq*);
+
+void         gtk_blastn_params_refseq_unset_sensitive(GtkBlastnParamsRefseq*);
+
 void         gtk_blastn_params_refseq_set_paramset(GtkBlastnParamsRefseq *blast,
                                                    gdouble evalue,
                                                    gboolean dust,

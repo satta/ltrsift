@@ -103,7 +103,6 @@ struct _GtkLTRFamilies
   GtkWidget *image_area;
   GtkWidget *hpaned;
   GtkWidget *vpaned;
-  GError *gerr;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
@@ -114,6 +113,7 @@ struct _GtkLTRFamilies
                 unclassified_cands;
   gboolean modified;
   gchar *projectfile;
+  gchar *style_file;
   GtkWidget *statusbar;
   GtkWidget *progressbar;
   GtkWidget *projset;
@@ -132,7 +132,8 @@ GType        gtk_ltr_families_get_type(void);
 
 GtkWidget*   gtk_ltr_families_new(GtkWidget *statusbar,
                                   GtkWidget *progressbar,
-                                  GtkWidget *projset);
+                                  GtkWidget *projset,
+                                  gchar *style_file);
 
 char*        double_underscores(const char *str);
 
@@ -199,4 +200,7 @@ void         gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
                                                      GtkTreeView *list_view,
                                                      GtArray *nodes,
                                                      GtkListStore *store);
+
+void         gtk_ltr_families_refseq_match(GtArray *nodes,
+                                           GtkLTRFamilies *ltrfams);
 #endif
