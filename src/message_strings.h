@@ -32,9 +32,10 @@
 #define ATTR_FULLLEN   "flcand"
 #define ATTR_LTRFAM    "ltrfam"
 #define ATTR_PARENT    "Parent"
+#define ATTR_TRNA      "trna"
 #define FNT_PROTEINM   "protein_match"
 #define FNT_LTR        "long_terminal_repeat"
-#define FNT_PPS        "primer_binding_site"
+#define FNT_PBS        "primer_binding_site"
 #define FNT_TSD        "target_site_duplication"
 #define FNT_PPT        "RR_tract"
 #define FNT_REPEATR    "repeat_region"
@@ -86,6 +87,7 @@
 #define LTRFAMS_LV_CAPTION_ELEMLEN "Element length"
 #define LTRFAMS_TV_CAPTION_INFO    "Attributes"
 #define LTRFAMS_TV_CAPTION_TYPE    "Feature"
+#define LTRFAMS_TV_CAPTION_SEQ     "Sequence"
 
 #define LTRFAM_DETINFO "Detailed Information"
 
@@ -164,6 +166,8 @@
 
 #define LTR_FILTER_AND "All filters have to match (logical AND)"
 #define LTR_FILTER_OR  "Any filter has to match (logical OR)"
+
+#define LTR_FILTER_APPLY "_Perform on %lu candidates"
 
 #define LUA_PATTERN        ".lua"
 #define LUA_FILTER_PATTERN "*.lua"

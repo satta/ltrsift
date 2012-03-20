@@ -1391,6 +1391,8 @@ void menubar_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (!had_err) {
     gtk_widget_destroy(ltrgui->ltrfams);
     gtk_widget_destroy(ltrgui->ltrfilt);
+    gtk_widget_destroy(ltrgui->projset);
+    ltrgui->projset = gtk_project_settings_new();
     ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
                                            ltrgui->progressbar,
                                            ltrgui->projset,
@@ -1804,8 +1806,14 @@ void menubar_project_settings_activate(GT_UNUSED GtkMenuItem *menuitem,
 void menubar_project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
                                      GUIData *ltrgui)
 {
+  GtArray *nodes;
+  gchar text[BUFSIZ];
+
+  nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  g_snprintf(text, BUFSIZ, LTR_FILTER_APPLY, gt_array_size(nodes));
   gtk_ltr_filter_set_range(GTK_LTR_FILTER(ltrgui->ltrfilt),
                            LTR_FILTER_RANGE_PROJECT);
+  gtk_ltr_filter_set_apply_text(GTK_LTR_FILTER(ltrgui->ltrfilt), text);
   gtk_widget_show(ltrgui->ltrfilt);
 }
 

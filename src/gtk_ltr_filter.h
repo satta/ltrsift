@@ -48,6 +48,7 @@ struct _GtkLTRFilter
   GtkWidget *edit_dialog;
   GtkWidget *filter_action;
   GtkWidget *filter_logic;
+  GtkWidget *apply;
   GtkWidget *ltrfams;
   GtkTextBuffer *text_buffer;
   GtScriptFilter *script_filter;
@@ -96,6 +97,9 @@ gint       gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
                                                     GtError *err);
 
 void       gtk_ltr_filter_set_range(GtkLTRFilter *ltrfilt, gint range);
+
+void       gtk_ltr_filter_set_apply_text(GtkLTRFilter *ltrfilt,
+                                         const gchar *text);
 
 gint       gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err);
 

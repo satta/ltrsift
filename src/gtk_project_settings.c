@@ -15,6 +15,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include <string.h>
 #include "gtk_project_settings.h"
 #include "message_strings.h"
 
@@ -174,6 +175,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
                 0,
                 "Could not apply gui settings: %s",
                 gt_error_get(err));
+    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -422,8 +424,60 @@ static void gtk_project_settings_delete_event(GtkWidget *widget,
   gtk_widget_hide(widget);
 }
 
-static void gtk_project_settings_button_clicked(GT_UNUSED GtkWidget *button,
-                                                GtkProjectSettings *projset)
+static void change_index_clicked(GT_UNUSED GtkWidget *button,
+                                 GtkProjectSettings *projset)
+{
+  GtkWidget *filechooser;
+  GtkFileFilter *esq_file_filter;
+
+  filechooser = gtk_file_chooser_dialog_new("Select indexname...",
+                                            GTK_WINDOW(projset),
+                                            GTK_FILE_CHOOSER_ACTION_SAVE,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL, GTK_STOCK_OK,
+                                            GTK_RESPONSE_ACCEPT, NULL);
+  esq_file_filter = gtk_file_filter_new();
+  gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
+  gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
+  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), esq_file_filter);
+  gtk_file_chooser_set_create_folders(GTK_FILE_CHOOSER(filechooser), FALSE);
+  if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
+    gchar *filename, *tmp;
+    const gchar *projectfile;
+    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+    tmp = g_strndup(filename, strlen(filename) - strlen(ESQ_PATTERN));
+    gtk_label_set_label(GTK_LABEL(projset->label_indexname), tmp);
+    g_free(filename);
+    g_free(tmp);
+
+    projectfile = gtk_label_get_text(GTK_LABEL(projset->label_projectfile));
+    if (g_strcmp0(projectfile, "") != 0) {
+      GtRDB *rdb = NULL;
+      GtRDBStmt *stmt;
+      GtError *err = gt_error_new();
+      gchar query[BUFSIZ];
+      gint had_err;
+
+      rdb = gt_rdb_sqlite_new(projectfile, err);
+      if (rdb) {
+        g_snprintf(query, BUFSIZ,
+                   "UPDATE project_settings SET indexname = \"%s\"",
+                   gtk_label_get_text(GTK_LABEL(projset->label_indexname)));
+        had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+        if (!had_err) {
+          had_err = gt_rdb_stmt_exec(stmt, err);
+          gt_rdb_stmt_delete(stmt);
+        }
+        gt_rdb_delete(rdb);
+      }
+      gt_error_delete(err);
+    }
+  }
+  gtk_widget_destroy(filechooser);
+}
+
+static void close_clicked(GT_UNUSED GtkWidget *button,
+                          GtkProjectSettings *projset)
 {
   gtk_widget_hide(GTK_WIDGET(projset));
 }
@@ -461,6 +515,10 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
+  button = gtk_button_new_with_mnemonic("_Change/Set indexname");
+  g_signal_connect(G_OBJECT(button), "clicked",
+                   G_CALLBACK(change_index_clicked), projset);
+  gtk_box_pack_start(GTK_BOX(vbox1), button, FALSE, FALSE, 1);
   vbox2 = gtk_vbox_new(FALSE, 5);
   label = projset->label_projectfile = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
@@ -679,7 +737,7 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   gtk_box_pack_start(GTK_BOX(vbox), projset->notebook, TRUE, TRUE, 1);
   button = gtk_button_new_with_mnemonic("_Close");
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_project_settings_button_clicked), projset);
+                   G_CALLBACK(close_clicked), projset);
 
   align = gtk_alignment_new(1.0, 0.5, 0.3, 0.0);
   gtk_container_add(GTK_CONTAINER(align), button);

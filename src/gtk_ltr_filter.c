@@ -25,6 +25,11 @@ void gtk_ltr_filter_set_range(GtkLTRFilter *ltrfilt, gint range)
   ltrfilt->range = range;
 }
 
+void gtk_ltr_filter_set_apply_text(GtkLTRFilter *ltrfilt, const gchar *text)
+{
+  gtk_button_set_label(GTK_BUTTON(ltrfilt->apply), text);
+}
+
 static gint gtk_ltr_filter_remove_file_from_sqlite(GtkTreeRowReference *row_ref,
                                                    GtkLTRFilter *ltrfilt)
 {
@@ -268,11 +273,13 @@ gint gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
 }
 
 static void gtk_ltr_filter_delete_from_family(CandidateData *cdata,
-                                              GtGenomeNode *gn)
+                                              GtGenomeNode *gn,
+                                              GtkNotebook *notebook)
 {
   GtkTreePath *path;
   GtkTreeModel *model;
   GtkTreeIter iter;
+  GtkWidget *tab_label;
   GtArray *tmp_nodes;
   gboolean valid;
   gchar *old_name, cur_name[BUFSIZ];
@@ -286,9 +293,16 @@ static void gtk_ltr_filter_delete_from_family(CandidateData *cdata,
     gtk_tree_model_get(model, &iter,
                        LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
                        LTRFAMS_FAM_LV_OLDNAME, &old_name,
+                       LTRFAMS_FAM_LV_TAB_LABEL, &tab_label,
                        -1);
     remove_node_from_array(tmp_nodes, gn);
     if (gt_array_size(tmp_nodes) == 0) {
+      if (tab_label) {
+        gtk_notebook_remove_page(notebook,
+                                GPOINTER_TO_INT(gtk_label_close_get_button_data(
+                                                  GTKLABELCLOSE(tab_label),
+                                                  "nbpage")));
+      }
       remove_row(cdata->fam_ref);
       gt_array_delete(tmp_nodes);
     } else {
@@ -688,17 +702,16 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
         for (i = 0; i < gt_array_size(filtered_nodes); i++) {
           gn = *(GtGenomeNode**) gt_array_get(filtered_nodes, i);
           cdata = (CandidateData*) gt_genome_node_get_user_data(gn, "cdata");
-          if (!cdata) {
-            g_warning("%s", "Get user data filter - Programming error!");
+          if (!cdata)
             return;
-          }
           if (cdata->fam_ref) {
             GtkWidget *main_tab;
             GtkNotebook *noteb;
             GList *children;
             gint main_tab_no;
 
-            gtk_ltr_filter_delete_from_family(cdata, gn);
+            gtk_ltr_filter_delete_from_family(cdata, gn,
+                   gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrfilt->ltrfams)));
             unclassified_candidates++;
             noteb = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
             main_tab_no = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(noteb),
@@ -759,7 +772,8 @@ static void gtk_ltr_filter_apply_clicked(GT_UNUSED GtkButton *button,
             return;
           }
           if (cdata->fam_ref)
-            gtk_ltr_filter_delete_from_family(cdata, gn);
+            gtk_ltr_filter_delete_from_family(cdata, gn,
+                   gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrfilt->ltrfams)));
           if (cdata->cand_ref) {
             remove_row(cdata->cand_ref);
             cdata->cand_ref = NULL;
@@ -1106,8 +1120,7 @@ static void lv_all_cell_data_func(GT_UNUSED GtkTreeViewColumn *tree_column,
 
 static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
 {
-  GtkWidget *apply,
-            *cancel,
+  GtkWidget *cancel,
             *vbox,
             *vbox2,
             *hbox,
@@ -1300,13 +1313,13 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
   hbox = gtk_hbox_new(FALSE, 0);
-  apply = gtk_button_new_with_mnemonic("_Apply");
-  g_signal_connect(G_OBJECT(apply), "clicked",
+  ltrfilt->apply = gtk_button_new_with_mnemonic("_Apply");
+  g_signal_connect(G_OBJECT(ltrfilt->apply), "clicked",
                    G_CALLBACK(gtk_ltr_filter_apply_clicked), ltrfilt);
   cancel = gtk_button_new_with_mnemonic("_Cancel");
   g_signal_connect(G_OBJECT(cancel), "clicked",
                    G_CALLBACK(gtk_ltr_filter_cancel_clicked), ltrfilt);
-  gtk_box_pack_start(GTK_BOX(hbox), apply, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), ltrfilt->apply, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), cancel, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 1);
 

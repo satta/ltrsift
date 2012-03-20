@@ -617,6 +617,8 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
       g_rename(tmp_filename, filename);
     error_handle(toplevel, err);
   }
+  gt_encseq_delete(encseq);
+  gt_encseq_loader_delete(el);
   gt_error_delete(err);
 }
 

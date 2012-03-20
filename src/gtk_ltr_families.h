@@ -58,6 +58,7 @@ enum {
   LTRFAMS_DETAIL_TV_TYPE,
   LTRFAMS_DETAIL_TV_START,
   LTRFAMS_DETAIL_TV_END,
+  LTRFAMS_DETAIL_TV_SEQ,
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
@@ -120,6 +121,7 @@ struct _GtkLTRFamilies
   GtkWidget *blastn_params;
   GtkWidget *blastn_params_combob;
   GtkWidget *ltrfilt;
+  gulong sig_handler;
 };
 
 struct _GtkLTRFamiliesClass
