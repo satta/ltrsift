@@ -34,6 +34,9 @@
 #define ATTR_PARENT    "Parent"
 #define FNT_PROTEINM   "protein_match"
 #define FNT_LTR        "long_terminal_repeat"
+#define FNT_PPS        "primer_binding_site"
+#define FNT_TSD        "target_site_duplication"
+#define FNT_PPT        "RR_tract"
 #define FNT_REPEATR    "repeat_region"
 #define FNT_LLTR       "lLTR"
 #define FNT_RLTR       "rLTR"
@@ -77,12 +80,12 @@
 /* gtk_ltr_families.h */
 #define LTRFAMS_LV_CAPTION_SEQID   "SeqID"
 #define LTRFAMS_LV_CAPTION_STRAND  "S"
-#define LTRFAMS_LV_CAPTION_START   "Start"
-#define LTRFAMS_LV_CAPTION_END     "End"
+#define LTRFAMS_LV_CAPTION_START   "From"
+#define LTRFAMS_LV_CAPTION_END     "To"
 #define LTRFAMS_LV_CAPTION_LLTRLEN "lLTR length"
 #define LTRFAMS_LV_CAPTION_ELEMLEN "Element length"
 #define LTRFAMS_TV_CAPTION_INFO    "Attributes"
-#define LTRFAMS_TV_CAPTION_TYPE    "Feature name"
+#define LTRFAMS_TV_CAPTION_TYPE    "Feature"
 
 #define LTRFAM_DETINFO "Detailed Information"
 

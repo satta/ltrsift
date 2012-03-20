@@ -99,7 +99,7 @@ struct _GtkLTRFamilies
   GtkWidget *tb_nb_family;
   GtkToolItem *new_fam;
   GtkToolItem *fl_cands;
-  GtkWidget *tv_details;
+  GtkWidget *tree_view_details;
   GtkWidget *image_area;
   GtkWidget *hpaned;
   GtkWidget *vpaned;
