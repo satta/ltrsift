@@ -1016,6 +1016,465 @@ static void on_drag_data_received(GtkWidget *widget,
 }
 /* drag'n'drop related functions end */
 
+/* RefSeqMatch related functions start */
+static gboolean refseq_match_cands_finished(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+
+  g_source_remove(GPOINTER_TO_INT(
+                               g_object_get_data(G_OBJECT(threaddata->window),
+                                                 "source_id")));
+  gtk_widget_destroy(threaddata->window);
+  reset_progressbar(threaddata->progressbar);
+
+  if (threaddata->had_err) {
+    if (threaddata->set_id != GT_UNDEF_ULONG) {
+      gint had_err;
+      had_err = remove_refseq_params(threaddata->ltrfams->projectfile,
+                                     threaddata->set_id,
+                                     threaddata->ltrfams->err);
+      if (!had_err) {
+        gdk_threads_enter();
+        error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
+                     threaddata->ltrfams->err);
+        gdk_threads_leave();
+      }
+    }
+    gt_error_set(threaddata->ltrfams->err,
+                "Could not match the selected data: %s",
+                gt_error_get(threaddata->err));
+    gdk_threads_enter();
+    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
+                 threaddata->ltrfams->err);
+    gdk_threads_leave();
+  } else
+    gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
+  gt_array_delete(threaddata->nodes);
+  threaddata_delete(threaddata);
+  return FALSE;
+}
+
+static gpointer refseq_match_cands_start(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+  GtkWidget *blastn_params = threaddata->blastn_refseq;
+  GtNodeStream *array_in_stream = NULL,
+               *refseq_match_stream = NULL;
+  gdouble evalue, xdrop, seqid, match_len;
+  gboolean dust, flcands;
+  gint gapopen, gapextend, penalty, reward, threads, wordsize;
+  const gchar *indexname;
+  gchar seq_out_file[BUFSIZ], *moreblast, *refseq_file;
+
+  evalue = gtk_blastn_params_get_evalue(GTK_BLASTN_PARAMS(blastn_params));
+  dust = gtk_blastn_params_get_dust(GTK_BLASTN_PARAMS(blastn_params));
+  gapopen = gtk_blastn_params_get_gapopen(GTK_BLASTN_PARAMS(blastn_params));
+  gapextend = gtk_blastn_params_get_gapextend(GTK_BLASTN_PARAMS(blastn_params));
+  xdrop = gtk_blastn_params_get_xdrop(GTK_BLASTN_PARAMS(blastn_params));
+  penalty = gtk_blastn_params_get_penalty(GTK_BLASTN_PARAMS(blastn_params));
+  reward = gtk_blastn_params_get_reward(GTK_BLASTN_PARAMS(blastn_params));
+  threads = gtk_blastn_params_get_threads(GTK_BLASTN_PARAMS(blastn_params));
+  wordsize = gtk_blastn_params_get_wordsize(GTK_BLASTN_PARAMS(blastn_params));
+  seqid = gtk_blastn_params_get_seqid(GTK_BLASTN_PARAMS(blastn_params));
+  moreblast =
+    g_strdup(gtk_blastn_params_get_moreblast(GTK_BLASTN_PARAMS(blastn_params)));
+  refseq_file = g_strdup(gtk_blastn_params_refseq_get_refseq_file(
+                                      GTK_BLASTN_PARAMS_REFSEQ(blastn_params)));
+  match_len = gtk_blastn_params_refseq_get_match_len(
+                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+  flcands = gtk_blastn_params_refseq_get_flcands(
+                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
+  gtk_widget_destroy(threaddata->dialog);
+
+  indexname =
+     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
+                                                 threaddata->ltrfams->projset));
+  if (threaddata->ltrfams->projectfile) {
+    gchar tmpdir[BUFSIZ];
+
+    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
+               g_path_get_dirname(threaddata->ltrfams->projectfile));
+    g_snprintf(tmpdir, BUFSIZ, "%s/tmp",
+               g_path_get_dirname(threaddata->ltrfams->projectfile));
+    if (!g_file_test(tmpdir, G_FILE_TEST_EXISTS))
+      threaddata->had_err = g_mkdir(tmpdir, 0755);
+    if (threaddata->had_err != 0) {
+      threaddata->had_err = -1;
+      gt_error_set(threaddata->err,
+                  "Could not make dir: %s",
+                  tmpdir);
+    }
+
+    if (!threaddata->had_err) {
+      if ((threaddata->set_id != GT_UNDEF_ULONG) && !threaddata->use_paramset) {
+        threaddata->had_err = save_refseq_params(evalue, dust, wordsize,
+                                                 gapopen, gapextend, penalty,
+                                                 reward, threads, xdrop, seqid,
+                                                 moreblast, match_len,
+                                               threaddata->ltrfams->projectfile,
+                                                 threaddata->set_id,
+                                                 threaddata->err);
+      }
+    }
+  } else
+    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
+               g_get_home_dir());
+  if (!threaddata->had_err) {
+    gdk_threads_enter();
+    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                             NULL, threaddata->err);
+    refseq_match_stream = gt_ltr_refseq_match_stream_new(array_in_stream,
+                                                         indexname,
+                                                         refseq_file,
+                                                         seq_out_file,
+                                                         evalue, dust, wordsize,
+                                                         gapopen, gapextend,
+                                                         penalty, reward,
+                                                         threads, xdrop, seqid,
+                                                         moreblast, flcands,
+                                                         match_len,
+                                                         threaddata->set_id,
+                                                         GUI_NAME,
+                                                         threaddata->err);
+    threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
+                                              threaddata->err);
+    gdk_threads_leave();
+  }
+  gt_node_stream_delete(refseq_match_stream);
+  gt_node_stream_delete(array_in_stream);
+  g_free(moreblast);
+  g_free(refseq_file);
+  g_idle_add(refseq_match_cands_finished, data);
+  return NULL;
+}
+
+static void refseq_match_changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
+{
+  GtRDB *rdb = NULL;
+  GtRDBStmt *stmt;
+  GtError *err = NULL;
+  gint had_err = 0;
+  gchar *param, query[BUFSIZ];
+
+  param = gtk_combo_box_get_active_text(combob);
+  if (!param || (g_strcmp0(param, "") == 0))
+    return;
+  err = gt_error_new();
+  rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
+  if (!rdb)
+    had_err = -1;
+  if (!had_err) {
+    g_snprintf(query, BUFSIZ,
+               "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
+               param);
+    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, NULL);
+    if (!had_err) {
+      had_err = gt_rdb_stmt_exec(stmt, err);
+      if (!(had_err < 0)) {
+        GtStr *result = gt_str_new();
+        gint dust, gapopen, gapextend, penalty, reward, threads, wordsize;
+        gdouble xdrop, evalue, seqid, mlen;
+        gchar *moreblast;
+
+        gt_rdb_stmt_get_string(stmt, 2, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          evalue = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &evalue);
+        gt_str_delete(result);
+        gt_rdb_stmt_get_int(stmt, 3, &dust, err);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 4, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          gapopen = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &gapopen);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 5, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          gapextend = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &gapextend);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 6, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          xdrop = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &xdrop);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 7, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          penalty = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &penalty);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 8, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          reward = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &reward);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 9, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          threads = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &threads);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 10, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          wordsize = GT_UNDEF_INT;
+        else
+          sscanf(gt_str_get(result), "%d", &wordsize);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 11, result, err);
+        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
+          seqid = GT_UNDEF_DOUBLE;
+        else
+          sscanf(gt_str_get(result), "%lf", &seqid);
+        gt_str_delete(result);
+        result = gt_str_new();
+        gt_rdb_stmt_get_string(stmt, 12, result, err);
+        moreblast = gt_cstr_dup(gt_str_get(result));
+        gt_str_delete(result);
+        gt_rdb_stmt_get_double(stmt, 13, &mlen, err);
+
+        gtk_blastn_params_refseq_set_paramset(GTK_BLASTN_PARAMS_REFSEQ(
+                                                        ltrfams->blastn_params),
+                                              evalue, dust, gapopen, gapextend,
+                                              xdrop, penalty, reward, threads,
+                                              wordsize, seqid, moreblast, mlen);
+        gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
+      }
+    }
+  }
+  gt_rdb_stmt_delete(stmt);
+  gt_rdb_delete(rdb);
+  gt_error_delete(err);
+}
+
+static void refseq_match_toggled(GtkToggleButton *togglebutton,
+                                 GtkLTRFamilies *ltrfams)
+{
+  gboolean active;
+  active = gtk_toggle_button_get_active(togglebutton);
+  gtk_widget_set_sensitive(ltrfams->blastn_params_combob, active);
+  if (active) {
+    refseq_match_changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob), ltrfams);
+    gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
+  } else
+    gtk_blastn_params_refseq_set_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+                                                       ltrfams->blastn_params));
+}
+
+void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
+{
+  ThreadData *threaddata;
+  GtkWidget *dialog,
+            *dialog2,
+            *blastn_params,
+            *toplevel,
+            *hbox,
+            *checkb,
+            *combob;
+  const gchar *indexname;
+  gchar tmp_index[BUFSIZ];
+  unsigned long result;
+
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+
+  if (!ltrfams->projectfile) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                     "%s",
+                                     NO_PROJECTFILE_FOR_PARAMS_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog);
+      return;
+    }
+    gtk_widget_destroy(dialog);
+  }
+
+  ltrfams->blastn_params = blastn_params = gtk_blastn_params_refseq_new();
+
+  hbox = gtk_hbox_new(FALSE, 1);
+  checkb = gtk_check_button_new_with_label("Use existing parameter set?");
+  ltrfams->blastn_params_combob = combob = gtk_combo_box_new_text();
+  gtk_widget_set_sensitive(combob, FALSE);
+  if (ltrfams->projectfile) {
+    GtRDB *rdb = NULL;
+    GtRDBStmt *stmt;
+    GtError *err;
+    gint had_err = 0;
+
+    err = gt_error_new();
+    rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
+    if (!rdb)
+      had_err = -1;
+    if (!had_err)
+      had_err = gt_rdb_prepare(rdb,
+                               "SELECT set_id FROM refseq_match_params "
+                               "ORDER by set_id",
+                               -1, &stmt, err);
+    if (!had_err) {
+      while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
+        had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
+        if (!had_err) {
+          gchar buffer[BUFSIZ];
+
+          g_snprintf(buffer, BUFSIZ, "%lu", result);
+          gtk_combo_box_append_text(GTK_COMBO_BOX(combob), buffer);
+        }
+      }
+      gtk_combo_box_set_active(GTK_COMBO_BOX(combob), 0);
+      gt_rdb_stmt_delete(stmt);
+    }
+    if (!gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob)) &&
+        ltrfams->projectfile) {
+      result = 1;
+      gtk_widget_set_sensitive(checkb, FALSE);
+    } else if (ltrfams->projectfile)
+      result++;
+    else
+      result = GT_UNDEF_ULONG;
+
+    if (had_err == -1) {
+      gt_error_set(ltrfams->err,
+                  "Could not retrieve parameter sets: %s",
+                  gt_error_get(err));
+      error_handle(toplevel, ltrfams->err);
+    }
+    gt_error_delete(err);
+    gt_rdb_delete(rdb);
+  } else {
+    gtk_widget_set_sensitive(checkb, FALSE);
+    gtk_widget_set_sensitive(combob, FALSE);
+  }
+  g_signal_connect(G_OBJECT(combob), "changed",
+                   G_CALLBACK(refseq_match_changed), ltrfams);
+  g_signal_connect(G_OBJECT(checkb), "toggled",
+                   G_CALLBACK(refseq_match_toggled), ltrfams);
+  gtk_box_pack_start(GTK_BOX(hbox), checkb, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(hbox), combob, FALSE, FALSE, 1);
+  gtk_blastn_params_refseq_set_extra_widget(GTK_BLASTN_PARAMS_REFSEQ(
+                                                                 blastn_params),
+                                     hbox, 3);
+
+  dialog = gtk_dialog_new_with_buttons(MATCH_DIALOG,
+                                       GTK_WINDOW(toplevel),
+                                       GTK_DIALOG_MODAL |
+                                       GTK_DIALOG_DESTROY_WITH_PARENT,
+                                       GTK_STOCK_APPLY,
+                                       GTK_RESPONSE_ACCEPT,
+                                       GTK_STOCK_CANCEL,
+                                       GTK_RESPONSE_REJECT,
+                                       NULL);
+
+  gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), blastn_params);
+  gtk_widget_show_all(dialog);
+  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT) {
+    gtk_widget_destroy(dialog);
+    return;
+  }
+  gtk_widget_hide(dialog);
+  indexname =
+     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(ltrfams->projset));
+  g_snprintf(tmp_index, BUFSIZ, "%s%s", indexname, ESQ_PATTERN);
+  if ((g_strcmp0(indexname, "") == 0) ||
+      !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
+    dialog2 = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                     "%s",
+                                     NO_INDEX_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog2), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog2), GTK_WIN_POS_CENTER_ALWAYS);
+    if (gtk_dialog_run(GTK_DIALOG(dialog2)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog2);
+      gtk_widget_destroy(dialog);
+      return;
+    } else {
+      gtk_widget_destroy(dialog2);
+
+      dialog2 = gtk_file_chooser_dialog_new(SELECT_INDEX,
+                                            GTK_WINDOW(toplevel),
+                                            GTK_FILE_CHOOSER_ACTION_SAVE,
+                                            GTK_STOCK_CANCEL,
+                                            GTK_RESPONSE_CANCEL, "Sele_ct",
+                                            GTK_RESPONSE_ACCEPT, NULL);
+      if (ltrfams->projectfile != NULL)
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
+                                      g_path_get_dirname(ltrfams->projectfile));
+      else
+        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
+                                            g_get_home_dir());
+      GtkFileFilter *esq_file_filter;
+      esq_file_filter = gtk_file_filter_new();
+      gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
+      gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
+      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog2), esq_file_filter);
+      if (gtk_dialog_run(GTK_DIALOG(dialog2)) == GTK_RESPONSE_ACCEPT) {
+        gchar *tmpname, *tmp;
+        tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog2));
+        tmp = g_strndup(tmpname, strlen(tmpname) - 4);
+        gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(
+                                                              ltrfams->projset),
+                                              tmp);
+        gtk_ltr_families_set_modified(ltrfams, TRUE);
+        g_free(tmp);
+        g_free(tmpname);
+
+      } else {
+        gtk_widget_destroy(dialog2);
+        gtk_widget_destroy(dialog);
+        return;
+      }
+      gtk_widget_destroy(dialog2);
+    }
+  }
+
+  /* create thread for matching */
+  threaddata = threaddata_new();
+  threaddata->ltrfams = ltrfams;
+  threaddata->progressbar = ltrfams->progressbar;
+  threaddata->dialog = dialog;
+  threaddata->blastn_refseq = blastn_params;
+  threaddata->nodes = nodes;
+  threaddata->err = gt_error_new();
+
+  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkb))) {
+    gchar *tmp;
+
+    threaddata->use_paramset = TRUE;
+    tmp = gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob));
+    sscanf(tmp, "%lu", &threaddata->set_id);
+    g_free(tmp);
+  } else
+    threaddata->set_id = result;
+  progress_dialog_init(threaddata, toplevel);
+
+  if (!g_thread_create(refseq_match_cands_start, (gpointer) threaddata, FALSE,
+                       NULL)) {
+    gt_error_set(ltrfams->err,
+                "Could not create new thread.");
+    error_handle(toplevel, ltrfams->err);
+  }
+}
+/* RefSeqMatch related functions end */
+
 /* popupmenu related functions start*/
 static void
 gtk_ltr_families_notebook_list_view_pmenu_match_clicked(
@@ -1285,463 +1744,6 @@ gtk_ltr_families_lv_fams_pmenu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
   path = gtk_tree_model_get_path(model, &iter);
   gtk_tree_view_set_cursor(tree_view, path, column, TRUE);
   gtk_tree_path_free(path);
-}
-
-static gboolean match_cands_finished(gpointer data)
-{
-  ThreadData *threaddata = (ThreadData*) data;
-
-  g_source_remove(GPOINTER_TO_INT(
-                               g_object_get_data(G_OBJECT(threaddata->window),
-                                                 "source_id")));
-  gtk_widget_destroy(threaddata->window);
-  reset_progressbar(threaddata->progressbar);
-
-  if (threaddata->had_err) {
-    if (threaddata->set_id != GT_UNDEF_ULONG) {
-      gint had_err;
-      had_err = remove_refseq_params(threaddata->ltrfams->projectfile,
-                                     threaddata->set_id,
-                                     threaddata->ltrfams->err);
-      if (!had_err) {
-        gdk_threads_enter();
-        error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
-                     threaddata->ltrfams->err);
-        gdk_threads_leave();
-      }
-    }
-    gt_error_set(threaddata->ltrfams->err,
-                "Could not match the selected data: %s",
-                gt_error_get(threaddata->err));
-    gdk_threads_enter();
-    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
-                 threaddata->ltrfams->err);
-    gdk_threads_leave();
-  } else
-    gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
-  gt_array_delete(threaddata->nodes);
-  threaddata_delete(threaddata);
-  return FALSE;
-}
-
-static gpointer match_cands_start(gpointer data)
-{
-  ThreadData *threaddata = (ThreadData*) data;
-  GtkWidget *blastn_params = threaddata->blastn_refseq;
-  GtNodeStream *array_in_stream = NULL,
-               *refseq_match_stream = NULL;
-  gdouble evalue, xdrop, seqid, match_len;
-  gboolean dust, flcands;
-  gint gapopen, gapextend, penalty, reward, threads, wordsize;
-  const gchar *indexname;
-  gchar seq_out_file[BUFSIZ], *moreblast, *refseq_file;
-
-  evalue = gtk_blastn_params_get_evalue(GTK_BLASTN_PARAMS(blastn_params));
-  dust = gtk_blastn_params_get_dust(GTK_BLASTN_PARAMS(blastn_params));
-  gapopen = gtk_blastn_params_get_gapopen(GTK_BLASTN_PARAMS(blastn_params));
-  gapextend = gtk_blastn_params_get_gapextend(GTK_BLASTN_PARAMS(blastn_params));
-  xdrop = gtk_blastn_params_get_xdrop(GTK_BLASTN_PARAMS(blastn_params));
-  penalty = gtk_blastn_params_get_penalty(GTK_BLASTN_PARAMS(blastn_params));
-  reward = gtk_blastn_params_get_reward(GTK_BLASTN_PARAMS(blastn_params));
-  threads = gtk_blastn_params_get_threads(GTK_BLASTN_PARAMS(blastn_params));
-  wordsize = gtk_blastn_params_get_wordsize(GTK_BLASTN_PARAMS(blastn_params));
-  seqid = gtk_blastn_params_get_seqid(GTK_BLASTN_PARAMS(blastn_params));
-  moreblast =
-    g_strdup(gtk_blastn_params_get_moreblast(GTK_BLASTN_PARAMS(blastn_params)));
-  refseq_file = g_strdup(gtk_blastn_params_refseq_get_refseq_file(
-                                      GTK_BLASTN_PARAMS_REFSEQ(blastn_params)));
-  match_len = gtk_blastn_params_refseq_get_match_len(
-                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
-  flcands = gtk_blastn_params_refseq_get_flcands(
-                                       GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
-  gtk_widget_destroy(threaddata->dialog);
-
-  indexname =
-     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
-                                                 threaddata->ltrfams->projset));
-  if (threaddata->ltrfams->projectfile) {
-    gchar tmpdir[BUFSIZ];
-
-    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
-               g_path_get_dirname(threaddata->ltrfams->projectfile));
-    g_snprintf(tmpdir, BUFSIZ, "%s/tmp",
-               g_path_get_dirname(threaddata->ltrfams->projectfile));
-    if (!g_file_test(tmpdir, G_FILE_TEST_EXISTS))
-      threaddata->had_err = g_mkdir(tmpdir, 0755);
-    if (threaddata->had_err != 0) {
-      threaddata->had_err = -1;
-      gt_error_set(threaddata->err,
-                  "Could not make dir: %s",
-                  tmpdir);
-    }
-
-    if (!threaddata->had_err) {
-      if ((threaddata->set_id != GT_UNDEF_ULONG) && !threaddata->use_paramset) {
-        threaddata->had_err = save_refseq_params(evalue, dust, wordsize,
-                                                 gapopen, gapextend, penalty,
-                                                 reward, threads, xdrop, seqid,
-                                                 moreblast, match_len,
-                                               threaddata->ltrfams->projectfile,
-                                                 threaddata->set_id,
-                                                 threaddata->err);
-      }
-    }
-  } else
-    g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
-               g_get_home_dir());
-  if (!threaddata->had_err) {
-    gdk_threads_enter();
-    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
-                                             NULL, threaddata->err);
-    refseq_match_stream = gt_ltr_refseq_match_stream_new(array_in_stream,
-                                                         indexname,
-                                                         refseq_file,
-                                                         seq_out_file,
-                                                         evalue, dust, wordsize,
-                                                         gapopen, gapextend,
-                                                         penalty, reward,
-                                                         threads, xdrop, seqid,
-                                                         moreblast, flcands,
-                                                         match_len,
-                                                         threaddata->set_id,
-                                                         GUI_NAME,
-                                                         threaddata->err);
-    threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
-                                              threaddata->err);
-    gdk_threads_leave();
-  }
-  gt_node_stream_delete(refseq_match_stream);
-  gt_node_stream_delete(array_in_stream);
-  g_free(moreblast);
-  g_free(refseq_file);
-  g_idle_add(match_cands_finished, data);
-  return NULL;
-}
-
-static void changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
-{
-  GtRDB *rdb = NULL;
-  GtRDBStmt *stmt;
-  GtError *err = NULL;
-  gint had_err = 0;
-  gchar *param, query[BUFSIZ];
-
-  param = gtk_combo_box_get_active_text(combob);
-  if (!param || (g_strcmp0(param, "") == 0))
-    return;
-  err = gt_error_new();
-  rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
-  if (!rdb)
-    had_err = -1;
-  if (!had_err) {
-    g_snprintf(query, BUFSIZ,
-               "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
-               param);
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, NULL);
-    if (!had_err) {
-      had_err = gt_rdb_stmt_exec(stmt, err);
-      if (!(had_err < 0)) {
-        GtStr *result = gt_str_new();
-        gint dust, gapopen, gapextend, penalty, reward, threads, wordsize;
-        gdouble xdrop, evalue, seqid, mlen;
-        gchar *moreblast;
-
-        gt_rdb_stmt_get_string(stmt, 2, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          evalue = GT_UNDEF_DOUBLE;
-        else
-          sscanf(gt_str_get(result), "%lf", &evalue);
-        gt_str_delete(result);
-        gt_rdb_stmt_get_int(stmt, 3, &dust, err);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 4, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          gapopen = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &gapopen);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 5, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          gapextend = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &gapextend);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 6, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          xdrop = GT_UNDEF_DOUBLE;
-        else
-          sscanf(gt_str_get(result), "%lf", &xdrop);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 7, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          penalty = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &penalty);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 8, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          reward = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &reward);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 9, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          threads = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &threads);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 10, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          wordsize = GT_UNDEF_INT;
-        else
-          sscanf(gt_str_get(result), "%d", &wordsize);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 11, result, err);
-        if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
-          seqid = GT_UNDEF_DOUBLE;
-        else
-          sscanf(gt_str_get(result), "%lf", &seqid);
-        gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 12, result, err);
-        moreblast = gt_cstr_dup(gt_str_get(result));
-        gt_str_delete(result);
-        gt_rdb_stmt_get_double(stmt, 13, &mlen, err);
-
-        gtk_blastn_params_refseq_set_paramset(GTK_BLASTN_PARAMS_REFSEQ(
-                                                        ltrfams->blastn_params),
-                                              evalue, dust, gapopen, gapextend,
-                                              xdrop, penalty, reward, threads,
-                                              wordsize, seqid, moreblast, mlen);
-        gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
-                                                       ltrfams->blastn_params));
-      }
-    }
-  }
-  gt_rdb_stmt_delete(stmt);
-  gt_rdb_delete(rdb);
-  gt_error_delete(err);
-}
-
-static void toggled(GtkToggleButton *togglebutton,
-                    GtkLTRFamilies *ltrfams)
-{
-  gboolean active;
-  active = gtk_toggle_button_get_active(togglebutton);
-  gtk_widget_set_sensitive(ltrfams->blastn_params_combob, active);
-  if (active) {
-    changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob), ltrfams);
-    gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
-                                                       ltrfams->blastn_params));
-  } else
-    gtk_blastn_params_refseq_set_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
-                                                       ltrfams->blastn_params));
-}
-
-void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
-{
-  ThreadData *threaddata;
-  GtkWidget *dialog,
-            *dialog2,
-            *blastn_params,
-            *toplevel,
-            *hbox,
-            *checkb,
-            *combob;
-  const gchar *indexname;
-  gchar tmp_index[BUFSIZ];
-  unsigned long result;
-
-  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
-
-  if (!ltrfams->projectfile) {
-    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                     GTK_DIALOG_MODAL ||
-                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                     "%s",
-                                     NO_PROJECTFILE_FOR_PARAMS_DIALOG);
-    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
-    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
-      gtk_widget_destroy(dialog);
-      return;
-    }
-    gtk_widget_destroy(dialog);
-  }
-
-  ltrfams->blastn_params = blastn_params = gtk_blastn_params_refseq_new();
-
-  hbox = gtk_hbox_new(FALSE, 1);
-  checkb = gtk_check_button_new_with_label("Use existing parameter set?");
-  ltrfams->blastn_params_combob = combob = gtk_combo_box_new_text();
-  gtk_widget_set_sensitive(combob, FALSE);
-  if (ltrfams->projectfile) {
-    GtRDB *rdb = NULL;
-    GtRDBStmt *stmt;
-    GtError *err;
-    gint had_err = 0;
-
-    err = gt_error_new();
-    rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
-    if (!rdb)
-      had_err = -1;
-    if (!had_err)
-      had_err = gt_rdb_prepare(rdb,
-                               "SELECT set_id FROM refseq_match_params "
-                               "ORDER by set_id",
-                               -1, &stmt, err);
-    if (!had_err) {
-      while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
-        had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
-        if (!had_err) {
-          gchar buffer[BUFSIZ];
-
-          g_snprintf(buffer, BUFSIZ, "%lu", result);
-          gtk_combo_box_append_text(GTK_COMBO_BOX(combob), buffer);
-        }
-      }
-      gtk_combo_box_set_active(GTK_COMBO_BOX(combob), 0);
-      gt_rdb_stmt_delete(stmt);
-    }
-    if (!gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob)) &&
-        ltrfams->projectfile) {
-      result = 1;
-      gtk_widget_set_sensitive(checkb, FALSE);
-    } else if (ltrfams->projectfile)
-      result++;
-    else
-      result = GT_UNDEF_ULONG;
-
-    if (had_err == -1) {
-      gt_error_set(ltrfams->err,
-                  "Could not retrieve parameter sets: %s",
-                  gt_error_get(err));
-      error_handle(toplevel, ltrfams->err);
-    }
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-  } else {
-    gtk_widget_set_sensitive(checkb, FALSE);
-    gtk_widget_set_sensitive(combob, FALSE);
-  }
-  g_signal_connect(G_OBJECT(combob), "changed",
-                   G_CALLBACK(changed), ltrfams);
-  g_signal_connect(G_OBJECT(checkb), "toggled",
-                   G_CALLBACK(toggled), ltrfams);
-  gtk_box_pack_start(GTK_BOX(hbox), checkb, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(hbox), combob, FALSE, FALSE, 1);
-  gtk_blastn_params_refseq_set_extra_widget(GTK_BLASTN_PARAMS_REFSEQ(
-                                                                 blastn_params),
-                                     hbox, 3);
-
-  dialog = gtk_dialog_new_with_buttons(MATCH_DIALOG,
-                                       GTK_WINDOW(toplevel),
-                                       GTK_DIALOG_MODAL |
-                                       GTK_DIALOG_DESTROY_WITH_PARENT,
-                                       GTK_STOCK_APPLY,
-                                       GTK_RESPONSE_ACCEPT,
-                                       GTK_STOCK_CANCEL,
-                                       GTK_RESPONSE_REJECT,
-                                       NULL);
-
-  gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), blastn_params);
-  gtk_widget_show_all(dialog);
-  if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_ACCEPT) {
-    gtk_widget_destroy(dialog);
-    return;
-  }
-  gtk_widget_hide(dialog);
-  indexname =
-     gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(ltrfams->projset));
-  g_snprintf(tmp_index, BUFSIZ, "%s%s", indexname, ESQ_PATTERN);
-  if ((g_strcmp0(indexname, "") == 0) ||
-      !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
-    dialog2 = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                     GTK_DIALOG_MODAL ||
-                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                     "%s",
-                                     NO_INDEX_DIALOG);
-    gtk_window_set_title(GTK_WINDOW(dialog2), "Information!");
-    gtk_window_set_position(GTK_WINDOW(dialog2), GTK_WIN_POS_CENTER_ALWAYS);
-    if (gtk_dialog_run(GTK_DIALOG(dialog2)) != GTK_RESPONSE_YES) {
-      gtk_widget_destroy(dialog2);
-      gtk_widget_destroy(dialog);
-      return;
-    } else {
-      gtk_widget_destroy(dialog2);
-
-      dialog2 = gtk_file_chooser_dialog_new(SELECT_INDEX,
-                                            GTK_WINDOW(toplevel),
-                                            GTK_FILE_CHOOSER_ACTION_SAVE,
-                                            GTK_STOCK_CANCEL,
-                                            GTK_RESPONSE_CANCEL, "Sele_ct",
-                                            GTK_RESPONSE_ACCEPT, NULL);
-      if (ltrfams->projectfile != NULL)
-        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
-                                      g_path_get_dirname(ltrfams->projectfile));
-      else
-        gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog2),
-                                            g_get_home_dir());
-      GtkFileFilter *esq_file_filter;
-      esq_file_filter = gtk_file_filter_new();
-      gtk_file_filter_set_name(esq_file_filter, ESQ_FILTER_PATTERN);
-      gtk_file_filter_add_pattern(esq_file_filter, ESQ_FILTER_PATTERN);
-      gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog2), esq_file_filter);
-      if (gtk_dialog_run(GTK_DIALOG(dialog2)) == GTK_RESPONSE_ACCEPT) {
-        gchar *tmpname, *tmp;
-        tmpname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog2));
-        tmp = g_strndup(tmpname, strlen(tmpname) - 4);
-        gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(
-                                                              ltrfams->projset),
-                                              tmp);
-        gtk_ltr_families_set_modified(ltrfams, TRUE);
-        g_free(tmp);
-        g_free(tmpname);
-
-      } else {
-        gtk_widget_destroy(dialog2);
-        gtk_widget_destroy(dialog);
-        return;
-      }
-      gtk_widget_destroy(dialog2);
-    }
-  }
-
-  /* create thread for matching */
-  threaddata = threaddata_new();
-  threaddata->ltrfams = ltrfams;
-  threaddata->progressbar = ltrfams->progressbar;
-  threaddata->dialog = dialog;
-  threaddata->blastn_refseq = blastn_params;
-  threaddata->nodes = nodes;
-  threaddata->err = gt_error_new();
-
-  if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkb))) {
-    gchar *tmp;
-
-    threaddata->use_paramset = TRUE;
-    tmp = gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob));
-    sscanf(tmp, "%lu", &threaddata->set_id);
-    g_free(tmp);
-  } else
-    threaddata->set_id = result;
-  progress_dialog_init(threaddata, toplevel);
-
-  if (!g_thread_create(match_cands_start, (gpointer) threaddata, FALSE,
-                       NULL)) {
-    gt_error_set(ltrfams->err,
-                "Could not create new thread.");
-    error_handle(toplevel, ltrfams->err);
-  }
 }
 
 static void
