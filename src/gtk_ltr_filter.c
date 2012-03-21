@@ -473,7 +473,7 @@ gtk_ltr_filter_edit_dialog_save_clicked(GT_UNUSED GtkWidget *button,
   if (ltrfilt->cur_filename == NULL)
     gtk_ltr_filter_edit_dialog_save_as_clicked(NULL, ltrfilt);
   else {
-    gboolean saved;
+    GT_UNUSED gboolean saved;
     saved = save_filter_file(ltrfilt);
   }
 }
@@ -500,9 +500,11 @@ static void create_edit_dialog(GtkLTRFilter *ltrfilt)
     gboolean result;
     gchar *text;
     result = g_file_get_contents(ltrfilt->cur_filename, &text, NULL, NULL);
-    gtk_text_buffer_set_text(ltrfilt->text_buffer, text, -1);
-    gtk_text_buffer_set_modified(ltrfilt->text_buffer, FALSE);
-    g_free(text);
+    if (result) {
+      gtk_text_buffer_set_text(ltrfilt->text_buffer, text, -1);
+      gtk_text_buffer_set_modified(ltrfilt->text_buffer, FALSE);
+      g_free(text);
+    }
   }
   sw = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw),

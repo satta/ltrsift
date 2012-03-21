@@ -85,7 +85,8 @@
 #define LTRFAMS_LV_CAPTION_END     "To"
 #define LTRFAMS_LV_CAPTION_LLTRLEN "lLTR length"
 #define LTRFAMS_LV_CAPTION_ELEMLEN "Element length"
-#define LTRFAMS_TV_CAPTION_INFO    "Attributes"
+#define LTRFAMS_TV_CAPTION_ATTR    "Attributes"
+#define LTRFAMS_TV_CAPTION_SCORE   "Score"
 #define LTRFAMS_TV_CAPTION_TYPE    "Feature"
 #define LTRFAMS_TV_CAPTION_SEQ     "Sequence"
 

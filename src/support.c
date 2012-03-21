@@ -492,7 +492,7 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
   }
 
   for (i = 0; i < gt_array_size(export_nodes); i++) {
-    GtGenomeNode *gn;
+    GT_UNUSED GtGenomeNode *gn;
     gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(export_nodes, i));
   }
 

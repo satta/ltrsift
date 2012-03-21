@@ -70,7 +70,6 @@ static gint extract_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
     gt_error_set(ltrgui->err, "Could not retrieve parameter sets: %s",
                  gt_error_get(err));
     gt_error_delete(err);
-    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -204,7 +203,6 @@ static gint save_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
     gt_error_set(ltrgui->err, "Could not save parameter sets: %s",
                  gt_error_get(err));
     gt_error_delete(err);
-    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -908,7 +906,7 @@ static gpointer menubar_save_project_data_start(gpointer data)
   if (!threaddata->had_err) {
     threaddata->nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfams));
     for (i = 0; i < gt_array_size(threaddata->nodes); i++) {
-      GtGenomeNode *gn;
+      GT_UNUSED GtGenomeNode *gn;
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(threaddata->nodes,
                                                              i));
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(threaddata->nodes,
@@ -988,7 +986,7 @@ static gpointer menubar_open_project_data_start(gpointer data)
     n_features = LTRFAMS_LV_N_COLUMS;
 
     for (i = 0; i < gt_array_size(nodes); i++) {
-      GtGenomeNode *gn;
+      GT_UNUSED GtGenomeNode *gn;
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
     array_in_stream = gt_array_in_stream_new(nodes, NULL, threaddata->err);

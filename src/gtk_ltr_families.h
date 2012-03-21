@@ -58,7 +58,9 @@ enum {
   LTRFAMS_DETAIL_TV_TYPE,
   LTRFAMS_DETAIL_TV_START,
   LTRFAMS_DETAIL_TV_END,
+  LTRFAMS_DETAIL_TV_SCORE,
   LTRFAMS_DETAIL_TV_SEQ,
+  LTRFAMS_DETAIL_TV_ATTR,
   LTRFAMS_DETAIL_TV_N_COLUMS
 };
 
@@ -93,7 +95,7 @@ struct _GtkLTRFamilies
 {
   GtkHPaned hpane;
 
-  GtkWidget *lv_families;
+  GtkWidget *list_view_families;
   GtkCellRenderer *lv_fams_renderer;
   GtkWidget *tb_lv_families;
   GtkWidget *nb_family;
@@ -104,11 +106,14 @@ struct _GtkLTRFamilies
   GtkWidget *image_area;
   GtkWidget *hpaned;
   GtkWidget *vpaned;
+  /*GtRDB *rdb;
+  GtAnnoDBSchema *adb;
+  GtFeatureIndex *fi;*/
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
-  GtHashmap *features;
-  GtHashmap *colors;
+  GtHashmap *features,
+            *colors;
   GtError *err;
   unsigned long n_features,
                 unclassified_cands;

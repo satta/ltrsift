@@ -25,7 +25,6 @@
 static void free_gui(GUIData *ltrgui)
 {
   gt_error_delete(ltrgui->err);
-  g_free(ltrgui->style_file);
   g_slice_free(GUIData, ltrgui);
 }
 
@@ -113,11 +112,11 @@ gint main(gint argc, gchar *argv[])
   gt_lib_init();
 
   if (argc == 2) {
-    ltrgui->style_file = g_strdup(argv[1]);
+    ltrgui->style_file = argv[1];
   } else {
     ltrgui->style_file = getenv(LTRSIFT_STYLE_ENV);
     if (!ltrgui->style_file)
-      ltrgui->style_file = g_strdup(DEFAULT_STYLE);
+      ltrgui->style_file = DEFAULT_STYLE;
   }
   init_gui(ltrgui);
 

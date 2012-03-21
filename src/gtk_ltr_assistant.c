@@ -284,12 +284,14 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
                                                    err);
   had_err = gt_node_stream_pull(preprocess_stream, err);
 
-  gtk_list_store_clear(GTK_LIST_STORE(
-                         gtk_tree_view_get_model(
-                                        GTK_TREE_VIEW(
+  if (!had_err) {
+    gtk_list_store_clear(GTK_LIST_STORE(
+                           gtk_tree_view_get_model(
+                                          GTK_TREE_VIEW(
                                                 ltrassi->list_view_features))));
-  gt_hashmap_foreach(features, fill_feature_list,
-                     (void*) ltrassi->list_view_features, err);
+    gt_hashmap_foreach(features, fill_feature_list,
+                       (void*) ltrassi->list_view_features, err);
+  }
 
   gt_error_delete(err);
   gt_hashmap_delete(features);
