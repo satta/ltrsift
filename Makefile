@@ -1,6 +1,8 @@
 CC = gcc
 CFLAGS = -g -Wall -Wunused-parameter -Werror
-GT_FLAGS = -lgenometools -I$(gt_prefix)/include/genometools -L$(gt_prefix)/lib
+GT_FLAGS = -I$(gt_prefix)/include/genometools
+GT_FLAGS_STATIC := $(GT_FLAGS) -lbz2
+GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
 GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0` -export-dynamic
 SOURCES := $(wildcard src/*.c)
 OBJECTS := $(SOURCES:%.c=obj/%.o)
@@ -15,6 +17,10 @@ else
   ifeq ($(MACHINE),x86_64)
     m32=yes
   endif
+endif
+
+ifeq ($(static),yes)
+  STATICBIN := bin/ltrsift_static
 endif
 
 ifeq ($(m32),yes)
@@ -38,7 +44,7 @@ data_prefix ?= /usr/share
 
 .PHONY: all clean cleanup dirs install
 
-all: dirs bin/ltrsift
+all: dirs bin/ltrsift $(STATICBIN)
 
 dirs: bin obj obj/src
 
@@ -49,6 +55,10 @@ obj/%.o: %.c
 bin/ltrsift: $(OBJECTS)
 	@echo "[linking $@]"
 	@$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
+
+bin/ltrsift_static: $(OBJECTS) $(gt_prefix)/lib/libgenometools.a
+	@echo "[linking $@]"
+	@$(CC) $(OBJECTS) $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS_STATIC)
 
 bin obj obj/src:
 	@echo '[create $(@)]'
