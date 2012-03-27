@@ -19,7 +19,7 @@
 
 void error_handle(GtkWidget *toplevel, GtError *err)
 {
-  if (err != NULL) {
+  if ((err != NULL) && gt_error_is_set(err)) {
     GtkWidget *dialog;
 
     /* create an error message dialog and display modally to the user */

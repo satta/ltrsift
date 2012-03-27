@@ -106,9 +106,9 @@ struct _GtkLTRFamilies
   GtkWidget *image_area;
   GtkWidget *hpaned;
   GtkWidget *vpaned;
-  /*GtRDB *rdb;
+  GtRDB *rdb;
   GtAnnoDBSchema *adb;
-  GtFeatureIndex *fi;*/
+  GtFeatureIndex *fi;
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
@@ -135,79 +135,93 @@ struct _GtkLTRFamiliesClass
   void (* gtk_ltr_families) (GtkLTRFamilies *ltrfams);
 };
 
-GType        gtk_ltr_families_get_type(void);
+GType           gtk_ltr_families_get_type(void);
 
-GtkWidget*   gtk_ltr_families_new(GtkWidget *statusbar,
-                                  GtkWidget *progressbar,
-                                  GtkWidget *projset,
-                                  gchar *style_file);
+GtFeatureIndex* gtk_ltr_families_get_fi(GtkLTRFamilies *ltrfams);
 
-char*        double_underscores(const char *str);
+GtRDB*          gtk_ltr_families_get_rdb(GtkLTRFamilies *ltrfams);
 
-void         gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
-                                             GtArray *nodes,
-                                             GtHashmap *features,
-                                             unsigned long noc);
+GtAnnoDBSchema* gtk_ltr_families_get_adb(GtkLTRFamilies *ltrfams);
 
-void         gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
-                                                 gfloat ltrtolerance,
-                                                 gfloat lentolerance);
+void            gtk_ltr_families_set_rdb(GtRDB *rdb, GtkLTRFamilies *ltrfams);
 
-GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_set_adb(GtAnnoDBSchema *adb,
+                                         GtkLTRFamilies *ltrfams);
 
-GtArray*     gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_set_fi(GtFeatureIndex *fi,
+                                        GtkLTRFamilies *ltrfams);
 
-gboolean     gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
+                                                GtArray *nodes,
+                                                GtHashmap *features,
+                                                unsigned long noc);
 
-gchar*       gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
+                                                    gfloat ltrtolerance,
+                                                    gfloat lentolerance);
 
-void         gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
-                                              gchar *projectfile);
+GtkNotebook*    gtk_ltr_families_get_notebook(GtkLTRFamilies *ltrfams);
 
-void         gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams,
+GtArray*        gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+
+gboolean        gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
+
+gchar*          gtk_ltr_families_get_projectfile(GtkLTRFamilies *ltrfams);
+
+void            gtk_ltr_families_set_projectfile(GtkLTRFamilies *ltrfams,
+                                                 gchar *projectfile);
+
+void            gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams,
                                            gboolean modified);
 
-GtkTreeView* gtk_ltr_families_get_list_view_families(GtkLTRFamilies *ltrfams);
+GtkTreeView*    gtk_ltr_families_get_list_view_families(GtkLTRFamilies *ltrf);
 
-gint         gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
+gint            gtk_ltr_families_get_position(GtkLTRFamilies *ltrfams);
 
-gint         gtk_ltr_families_get_hpaned_position(GtkLTRFamilies *ltrfams);
+gint            gtk_ltr_families_get_hpaned_position(GtkLTRFamilies *ltrfams);
 
-gint         gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams);
+gint            gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams);
 
-void         gtk_ltr_families_set_position(GtkLTRFamilies *ltrfams, gint pos);
+void            gtk_ltr_families_set_position(GtkLTRFamilies *ltrfams,
+                                              gint pos);
 
-void         gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
-                                                  gint pos);
+void            gtk_ltr_families_set_hpaned_position(GtkLTRFamilies *ltrfams,
+                                                     gint pos);
 
-void         gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
-                                                  gint pos);
+void            gtk_ltr_families_set_vpaned_position(GtkLTRFamilies *ltrfams,
+                                                     gint pos);
 
-void         gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
-                                                GtkWidget *ltrfilt);
+void            gtk_ltr_families_set_filter_widget(GtkLTRFamilies *ltrfams,
+                                                   GtkWidget *ltrfilt);
 
-void         gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
-                                                   long int amount);
+void            gtk_ltr_families_update_unclassified_cands(GtkLTRFamilies *ltrf,
+                                                           long int amount);
 
-void         gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
-                                             GtkTreeIter *iter,
-                                             GtArray *nodes,
-                                             gboolean load,
-                                             GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_notebook_add_tab(GtkTreeModel *model,
+                                                GtkTreeIter *iter,
+                                                GtArray *nodes,
+                                                gboolean load,
+                                                GtkLTRFamilies *ltrfams);
 
-void         gtk_ltr_families_nb_fam_lv_append_gn(GtkLTRFamilies *ltrfams,
-                                                  GtkTreeView *list_view,
-                                                  GtGenomeNode *gn,
-                                                  GtkTreeRowReference *rowref,
-                                                  GtkListStore *store,
-                                                  GtStyle *style,
-                                                  GtHashmap *colors);
+void            gtk_ltr_families_notebook_list_view_append_gn(GtkLTRFamilies *l,
+                                                              GtkTreeView *lv,
+                                                              GtGenomeNode *gn,
+                                                         GtkTreeRowReference *r,
+                                                              GtkListStore *s,
+                                                              GtStyle *style,
+                                                              GtHashmap *c);
 
-void         gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
-                                                     GtkTreeView *list_view,
-                                                     GtArray *nodes,
-                                                     GtkListStore *store);
+void            gtk_ltr_families_notebook_list_view_append_array(
+                                                              GtkLTRFamilies *l,
+                                                                GtkTreeView *lv,
+                                                                 GtArray *nodes,
+                                                               GtkListStore *s);
 
-void         gtk_ltr_families_refseq_match(GtArray *nodes,
-                                           GtkLTRFamilies *ltrfams);
+void            gtk_ltr_families_refseq_match(GtArray *nodes,
+                                              GtkLTRFamilies *ltrfams);
+
+GtkWidget*      gtk_ltr_families_new(GtkWidget *statusbar,
+                                     GtkWidget *progressbar, GtkWidget *projset,
+                                     gchar *style_file, GtError *err);
+
 #endif

@@ -18,16 +18,13 @@
 #ifndef MENUBAR_H
 #define MENUBAR_H
 
-#include "ltrgui.h"
+#include "ltrsift.h"
 
-void menubar_init(GUIData *ltrgui);
+void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
+                           const gchar *projectfile);
 
 void menubar_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
 
-void menubar_save_as_activate(GtkMenuItem *menuitem, GUIData *ltrgui);
-
-void menubar_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
-                                      GtError *err, gboolean sqlt);
-void menubar_activate_menuitems(GUIData *ltrgui);
+void menubar_init(GUIData *ltrgui);
 
 #endif

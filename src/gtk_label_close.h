@@ -22,17 +22,17 @@
 #include <glib-object.h>
 #include <gtk/gtk.h>
 
-#define GTKLABELCLOSE_TYPE\
+#define GTK_LABEL_CLOSE_TYPE\
         gtk_label_close_get_type()
-#define GTKLABELCLOSE(obj)\
-        G_TYPE_CHECK_INSTANCE_CAST((obj), GTKLABELCLOSE_TYPE, GtkLabelClose)
-#define GTKLABELCLOSE_CLASS(klass)\
+#define GTK_LABEL_CLOSE(obj)\
+        G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_LABEL_CLOSE_TYPE, GtkLabelClose)
+#define GTK_LABEL_CLOSE_CLASS(klass)\
         G_TYPE_CHECK_CLASS_CAST((klass),\
-                                GTKLTRLABELCLOSE_TYPE, GtkLabelCloseClass)
-#define IS_GTKLABELCLOSE(obj)\
-        G_TYPE_CHECK_INSTANCE_TYPE((obj), GTKLABELCLOSE_TYPE)
-#define IS_GTKLABELCLOSE_CLASS(klass)\
-        G_TYPE_CHECK_CLASS_TYPE((klass), GTKLABELCLOSE_TYPE)
+                                GTK_LABEL_CLOSE_TYPE, GtkLabelCloseClass)
+#define IS_GTK_LABEL_CLOSE(obj)\
+        G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_LABEL_CLOSE_TYPE)
+#define IS_GTK_LABEL_CLOSE_CLASS(klass)\
+        G_TYPE_CHECK_CLASS_TYPE((klass), GTK_LABEL_CLOSE_TYPE)
 
 typedef struct _GtkLabelClose GtkLabelClose;
 typedef struct _GtkLabelCloseClass GtkLabelCloseClass;
@@ -50,23 +50,23 @@ struct _GtkLabelCloseClass
   void (* gtk_label_close) (GtkLabelClose *labelclose);
 };
 
-GType gtk_label_close_get_type(void);
-GtkWidget* gtk_label_close_new(const gchar *text,
-                               GCallback signal_func,
-                               gpointer user_data);
-void gtk_label_close_set_text(GtkLabelClose *labelclose, gchar *text);
+GType        gtk_label_close_get_type(void);
+
+void         gtk_label_close_set_text(GtkLabelClose *labelclose, gchar *text);
 
 const gchar* gtk_label_close_get_text(GtkLabelClose *labelclose);
 
-void gtk_label_close_show_close(GtkLabelClose *labelclose);
+void         gtk_label_close_show_close(GtkLabelClose *labelclose);
 
-void gtk_label_close_hide_close(GtkLabelClose *labelclose);
+void         gtk_label_close_hide_close(GtkLabelClose *labelclose);
 
-gpointer gtk_label_close_get_button_data(GtkLabelClose *labelclose,
-                                         const char *type);
+gpointer     gtk_label_close_get_button_data(GtkLabelClose *labelclose,
+                                             const char *type);
 
-void gtk_label_close_set_button_data(GtkLabelClose *labelclose,
-                                     const char *type,
-                                     gpointer data);
+void         gtk_label_close_set_button_data(GtkLabelClose *labelclose,
+                                             const char *type, gpointer data);
+
+GtkWidget* gtk_label_close_new(const gchar *text, GCallback signal_func,
+                               gpointer user_data);
 
 #endif

@@ -40,7 +40,6 @@ typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
 
 typedef enum {
-  /*PAGE_INTRODUCTION = 0,*/
   PAGE_GENERAL = 0,
   PAGE_CLUSTERING,
   PAGE_CLASSIFICATION,
@@ -127,12 +126,9 @@ struct _GtkLTRAssistantClass
 
 GType        gtk_ltr_assistant_get_type(void);
 
-GtkWidget*   gtk_ltr_assistant_new();
-
 const gchar* gtk_ltr_assistant_get_projectfile(GtkLTRAssistant *ltrassi);
 
-GtkTreeView* gtk_ltr_assistant_get_list_view_gff3files(
-                                                      GtkLTRAssistant *ltrassi);
+GtkTreeView* gtk_ltr_assistant_get_list_view_gff3files( GtkLTRAssistant *ltra);
 
 const gchar* gtk_ltr_assistant_get_indexname(GtkLTRAssistant *ltrassi);
 
@@ -175,5 +171,7 @@ const gchar* gtk_ltr_assistant_get_fam_prefix(GtkLTRAssistant *ltrassi);
 GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi);
 
 gchar*       gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi);
+
+GtkWidget*   gtk_ltr_assistant_new();
 
 #endif

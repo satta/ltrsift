@@ -31,38 +31,18 @@ static gboolean project_wizard_finished_job(gpointer data)
   gtk_widget_destroy(threaddata->window);
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
-    gtk_widget_destroy(ltrfams);
-    gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
-    threaddata->ltrgui->ltrfams =
-                           gtk_ltr_families_new(threaddata->ltrgui->statusbar,
-                                                threaddata->progressbar,
-                                                threaddata->ltrgui->projset,
-                                                threaddata->ltrgui->style_file);
-    ltrfams = threaddata->ltrgui->ltrfams;
-    threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
-    gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
-                                       threaddata->ltrgui->ltrfilt);
-    gtk_box_pack_start(GTK_BOX(threaddata->ltrgui->vbox), ltrfams,
-                       TRUE, TRUE, 0);
-    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
-                                    threaddata->nodes,
-                                    threaddata->features,
-                                    threaddata->n_features);
+    gtk_widget_destroy(threaddata->ltrgui->projset);
+    threaddata->ltrgui->projset = gtk_project_settings_new(NULL);
     if (gtk_ltr_assistant_get_classification(
                             GTK_LTR_ASSISTANT(threaddata->ltrgui->assistant))) {
       gtk_ltr_families_determine_fl_cands(GTK_LTR_FAMILIES(ltrfams),
                                           threaddata->ltrtolerance,
                                           threaddata->lentolerance);
     }
-    menubar_view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
-                                     threaddata->err, FALSE);
-    menubar_activate_menuitems(threaddata->ltrgui);
-    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
-                                     g_strdup(threaddata->fullname));
     extract_project_settings(threaddata->ltrgui);
-    menubar_save_activate(NULL, threaddata->ltrgui);
+    first_save_and_reload(threaddata->ltrgui, threaddata->nodes,
+                          threaddata->fullname);
     create_recently_used_resource(threaddata->fullname);
-    gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
   } else {
     gdk_threads_enter();
     error_handle(threaddata->ltrgui->main_window, threaddata->err);
@@ -88,13 +68,11 @@ static gpointer project_wizard_start_job(gpointer data)
                *gff3_in_stream = NULL,
                *ltr_cluster_stream = NULL,
                *ltr_classify_stream = NULL,
-               *preprocess_stream = NULL,
-               *ltrgui_array_out_stream = NULL;
+               *array_out_stream = NULL;
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
   GtArray *nodes;
-  GtHashmap *features,
-            *sel_features = NULL;
+  GtHashmap *sel_features = NULL;
   gint psmall,
        plarge,
        gapopen,
@@ -276,30 +254,21 @@ static gpointer project_wizard_start_job(gpointer data)
   }
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));
-    features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-    last_stream = preprocess_stream = ltrgui_preprocess_stream_new(last_stream,
-                                                                   features,
-                                                        &threaddata->n_features,
-                                                                   FALSE,
-                                                               threaddata->err);
-    last_stream = ltrgui_array_out_stream = gt_array_out_stream_new(last_stream,
-                                                                    nodes,
-                                                               threaddata->err);
+    last_stream = array_out_stream = gt_array_out_stream_new(last_stream, nodes,
+                                                             threaddata->err);
   }
-  if (!ltrgui_array_out_stream)
+  if (!array_out_stream)
     threaddata->had_err = -1;
   if (!threaddata->had_err)
     threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
 
   if (!threaddata->had_err) {
     threaddata->nodes = nodes;
-    threaddata->features = features;
   }
   gt_node_stream_delete(ltr_classify_stream);
   gt_node_stream_delete(ltr_cluster_stream);
   gt_node_stream_delete(gff3_in_stream);
-  gt_node_stream_delete(ltrgui_array_out_stream);
-  gt_node_stream_delete(preprocess_stream);
+  gt_node_stream_delete(array_out_stream);
   gt_encseq_loader_delete(el);
   gt_encseq_delete(encseq);
   gt_hashmap_delete(sel_features);

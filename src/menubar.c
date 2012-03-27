@@ -23,15 +23,146 @@
 #include "statusbar.h"
 #include "support.h"
 
-static void reorder_tabs(gpointer key, gpointer value, gpointer user_data)
+static int get_keys(void *key, GT_UNUSED void *values, void *cptns,
+                    GT_UNUSED GtError *err)
 {
+  GtStrArray *captions = (GtStrArray*) cptns;
+  const char *caption = (const char*) key;
 
-  gtk_notebook_reorder_child((GtkNotebook*) user_data,
-                             (GtkWidget*) key,
-                             GPOINTER_TO_INT(value));
+  gt_str_array_add_cstr(captions, caption);
+
+  return 0;
 }
 
-static int
+static void activate_menuitems(GUIData *ltrgui)
+{
+  gtk_widget_set_sensitive(ltrgui->menubar_save, TRUE);
+  gtk_widget_set_sensitive(ltrgui->menubar_save_as, TRUE);
+  gtk_widget_set_sensitive(ltrgui->menubar_export, TRUE);
+  gtk_widget_set_sensitive(ltrgui->menubar_close, TRUE);
+  gtk_widget_set_sensitive(ltrgui->menubar_view_columns, TRUE);
+  gtk_widget_set_sensitive(ltrgui->menubar_project, TRUE);
+}
+
+static void view_columns_toggled(GtkCheckMenuItem *menuitem,
+                                 gpointer user_data)
+{
+  GtkWidget *sw;
+  GtkTreeView *list_view;
+  GtkTreeViewColumn *column;
+  GtkNotebook *notebook;
+  GList *children,
+        *columns;
+  const gchar *caption;
+  gchar *file;
+  gint i, j, nop;
+  guint noc;
+
+  caption =
+           double_underscores(gtk_menu_item_get_label(GTK_MENU_ITEM(menuitem)));
+  notebook = gtk_ltr_families_get_notebook(GTK_LTR_FAMILIES(user_data));
+  nop = gtk_notebook_get_n_pages(notebook);
+  for (i = 0; i < nop; i++) {
+    sw = gtk_notebook_get_nth_page(notebook, i);
+    children = gtk_container_get_children(GTK_CONTAINER(sw));
+    list_view = GTK_TREE_VIEW(g_list_first(children)->data);
+    columns = gtk_tree_view_get_columns(list_view);
+    noc = g_list_length(columns);
+    for (j = 0; j < noc; j++) {
+      column = gtk_tree_view_get_column(list_view, j);
+      if (g_strcmp0(caption, gtk_tree_view_column_get_title(column)) == 0)
+        gtk_tree_view_column_set_visible(column,
+                                      gtk_check_menu_item_get_active(menuitem));
+    }
+    g_list_free(children);
+    g_list_free(columns);
+  }
+  file = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(user_data));
+   if (file) {
+    GtRDB *rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(user_data));
+    GtRDBStmt *stmt = NULL;
+    GtError *err = gt_error_new();
+    gint had_err = 0;
+    gchar query[BUFSIZ];
+
+    if (!gtk_check_menu_item_get_active(menuitem)) {
+      g_snprintf(query, BUFSIZ,
+                 "INSERT INTO invisible_columns (name) values (\"%s\")",
+                 caption);
+      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+    } else {
+      g_snprintf(query, BUFSIZ,
+                 "DELETE FROM invisible_columns WHERE name = \"%s\"", caption);
+      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+      if (!had_err)
+        had_err = gt_rdb_stmt_exec(stmt, err);
+    }
+    if (had_err == -1)
+      error_handle(gtk_widget_get_toplevel(GTK_WIDGET(user_data)), err);
+    gt_rdb_stmt_delete(stmt);
+    gt_error_delete(err);
+  }
+}
+
+static void view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
+                                     GtRDB *rdb, GtError *err, gboolean sqlt)
+{
+  GtkWidget *menu,
+            *menuitem;
+  GtStrArray *captions;
+  GtRDBStmt *stmt;
+  gchar buffer[BUFSIZ];
+  gint had_err = 0;
+  unsigned long i;
+
+  captions = gt_str_array_new();
+  menu = gtk_menu_new();
+
+  gt_hashmap_foreach(features, get_keys, (void*) captions, err);
+
+  for (i = 0; i < gt_str_array_size(captions); i++) {
+    menuitem = gtk_check_menu_item_new_with_label(gt_str_array_get(captions,
+                                                                   i));
+    if (sqlt && rdb) {
+      g_signal_connect(G_OBJECT(menuitem), "toggled",
+                       G_CALLBACK(view_columns_toggled),
+                       ltrgui->ltrfams);
+      g_snprintf(buffer, BUFSIZ,
+                 "SELECT name FROM invisible_columns WHERE name = \"%s\"",
+                 double_underscores(gt_str_array_get(captions, i)));
+      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
+      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+        error_handle(ltrgui->main_window, err);
+      } else if (had_err == 0) {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), FALSE);
+        gt_rdb_stmt_delete(stmt);
+      } else {
+        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+      }
+    } else {
+      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
+      g_signal_connect(G_OBJECT(menuitem), "toggled",
+                       G_CALLBACK(view_columns_toggled),
+                       ltrgui->ltrfams);
+    }
+    if (g_strcmp0(gt_str_array_get(captions, i), FNT_LLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 0);
+    else if (g_strcmp0(gt_str_array_get(captions, i), FNT_RLTR) == 0)
+      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 1);
+    else
+      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  }
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->menubar_view_columns), menu);
+  gtk_widget_show_all(menu);
+  gtk_widget_set_sensitive(ltrgui->menubar_view_columns, TRUE);
+  gt_str_array_delete(captions);
+}
+
+/*static int
 insert_param_set(GT_UNUSED void *key, void *val, void *r, GtError *err)
 {
   GtRDB *rdb = (GtRDB*) r;
@@ -46,9 +177,10 @@ insert_param_set(GT_UNUSED void *key, void *val, void *r, GtError *err)
   }
   gt_rdb_stmt_delete(stmt);
   return 0;
-}
+}*/
 
-static gint extract_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
+/*static gint extract_match_param_sets(GUIData *ltrgui,
+                                       const gchar *projectfile)
 {
   GtRDB *rdb;
   GtRDBStmt *stmt;
@@ -161,9 +293,9 @@ static gint extract_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
   gt_rdb_stmt_delete(stmt);
   gt_rdb_delete(rdb);
   return 0;
-}
+}*/
 
-static gint save_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
+/*static gint save_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
 {
   GtRDB *rdb;
   GtRDBStmt *stmt;
@@ -221,509 +353,9 @@ static gint save_match_param_sets(GUIData *ltrgui, const gchar *projectfile)
       return -1;
   else
     return 0;
-}
+}*/
 
-static gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
-{
-  GtkWidget *sw,
-            *label_close;
-  GtkNotebook *notebook;
-  GtkTreeView *list_view;
-  GtkTreeViewColumn *column;
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  GtRDB *rdb;
-  GtRDBStmt *stmt;
-  GtArray *nodes;
-  GtError *err;
-  GList *children,
-        *columns;
-  gboolean valid;
-  gchar *name,
-        query[BUFSIZ];
-  gint width,
-       height,
-       x, y, z, i, nop, had_err = 0;
-  guint noc;
-
-  err = gt_error_new();
-  rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    return -1;
-  }
-
-  had_err = gt_rdb_prepare(rdb,
-                           "CREATE TABLE IF NOT EXISTS gui_settings "
-                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            "height INTEGER NOT NULL, "
-                            "width INTEGER NOT NULL, "
-                            "ltrfam INTEGER NOT NULL, "
-                            "hpaned INTEGER NOT NULL, "
-                            "vpaned INTEGER NOT NULL)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "DELETE FROM gui_settings",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "CREATE TABLE IF NOT EXISTS empty_families "
-                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                             "name TEXT)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "DELETE FROM empty_families",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "CREATE TABLE IF NOT EXISTS invisible_columns "
-                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "DELETE FROM invisible_columns",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-
-  had_err = gt_rdb_prepare(rdb,
-                           "CREATE TABLE IF NOT EXISTS notebook_tabs "
-                           "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            "name TEXT, "
-                            "position INTEGER NOT NULL)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "CREATE UNIQUE INDEX nbtabs ON notebook_tabs (name)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "DELETE FROM notebook_tabs",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  gtk_window_get_size(GTK_WINDOW(ltrgui->main_window), &width, &height);
-  x = gtk_ltr_families_get_position(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  y =
-   gtk_ltr_families_get_hpaned_position(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  z =
-   gtk_ltr_families_get_vpaned_position(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-
-  g_snprintf(query, BUFSIZ,
-             "INSERT INTO gui_settings "
-             "(height, width, ltrfam, hpaned, vpaned) "
-             "values (%d, %d, %d, %d, %d)",
-             height,
-             width,
-             x, y, z);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  notebook = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  sw = gtk_notebook_get_nth_page(notebook, 0);
-  children = gtk_container_get_children(GTK_CONTAINER(sw));
-  list_view = GTK_TREE_VIEW(g_list_first(children)->data);
-  columns = gtk_tree_view_get_columns(list_view);
-  noc = g_list_length(columns);
-  for (i = 0; i < noc; i++) {
-    column = gtk_tree_view_get_column(list_view, i);
-    if (!gtk_tree_view_column_get_visible(column)) {
-      g_snprintf(query, BUFSIZ,
-                 "INSERT INTO invisible_columns (name) values (\"%s\")",
-                 gtk_tree_view_column_get_title(column));
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-        gt_error_set(ltrgui->err,
-                    "Could not save gui settings: %s",
-                    gt_error_get(err));
-        gt_error_delete(err);
-        g_list_free(children);
-        g_list_free(columns);
-        gt_rdb_delete(rdb);
-        return -1;
-      }
-      gt_rdb_stmt_delete(stmt);
-    }
-  }
-  g_list_free(children);
-  g_list_free(columns);
-
-  nop = gtk_notebook_get_n_pages(notebook);
-  for (i = 0; i < nop; i++) {
-    sw = gtk_notebook_get_nth_page(notebook, i);
-    label_close = gtk_notebook_get_tab_label(notebook, sw);
-    g_snprintf(query, BUFSIZ,
-               "INSERT INTO notebook_tabs (name, position) values (\"%s\", %d)",
-               gtk_label_close_get_text(GTKLABELCLOSE(label_close)),
-               i);
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-    if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-      gt_error_set(ltrgui->err,
-                  "Could not save gui settings: %s",
-                  gt_error_get(err));
-      gt_error_delete(err);
-      gt_rdb_delete(rdb);
-      return -1;
-    }
-    gt_rdb_stmt_delete(stmt);
-  }
-
-  list_view = gtk_ltr_families_get_list_view_families(
-                                             GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  model = gtk_tree_view_get_model(list_view);
-
-  valid = gtk_tree_model_get_iter_first(model, &iter);
-  if (valid) {
-    gtk_tree_model_get(model, &iter,
-                       LTRFAMS_FAM_LV_NODE_ARRAY, &nodes,
-                       LTRFAMS_FAM_LV_OLDNAME, &name,
-                       -1);
-    if (gt_array_size(nodes) == 0) {
-      g_snprintf(query, BUFSIZ,
-                 "INSERT INTO empty_families (name) values (\"%s\")",
-                 name);
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-        gt_error_set(ltrgui->err,
-                    "Could not save gui settings: %s",
-                    gt_error_get(err));
-        g_free(name);
-        gt_error_delete(err);
-        gt_rdb_delete(rdb);
-        return -1;
-      }
-      gt_rdb_stmt_delete(stmt);
-    }
-    g_free(name);
-    while (gtk_tree_model_iter_next(model, &iter)) {
-      gtk_tree_model_get(model, &iter,
-                         LTRFAMS_FAM_LV_NODE_ARRAY, &nodes,
-                         LTRFAMS_FAM_LV_OLDNAME, &name,
-                         -1);
-      if (gt_array_size(nodes) == 0) {
-        g_snprintf(query, BUFSIZ,
-                   "INSERT INTO empty_families (name) values (\"%s\")",
-                   name);
-        had_err = gt_rdb_prepare(rdb,
-                                 query,
-                                 -1, &stmt, err);
-        if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-          gt_error_set(ltrgui->err,
-                      "Could not save gui settings: %s",
-                      gt_error_get(err));
-          g_free(name);
-          gt_error_delete(err);
-          gt_rdb_delete(rdb);
-          return -1;
-        }
-        gt_rdb_stmt_delete(stmt);
-      }
-      g_free(name);
-    }
-  }
-  gt_rdb_delete(rdb);
-  gt_error_delete(err);
-
-  return 0;
-}
-
-static gint apply_gui_settings(GUIData *ltrgui, const gchar *projectfile)
-{
-  GtRDB *rdb;
-  GtRDBStmt *stmt = NULL;
-  GtkWidget *sw,
-            *label_close;
-  GtkNotebook *nb;
-  GtkTreeView *list_view;
-  GtkTreeModel *model;
-  GtkTreeIter iter;
-  GtkTreePath *path;
-  GtArray *nodes;
-  GtStr *result;
-  GHashTable *hash;
-  gboolean valid;
-  gchar *name,
-        buffer[BUFSIZ];
-  gint had_err = 0, nop, i;
-  GtError *err;
-  err = gt_error_new();
-
-  rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    return -1;
-  }
-
-  had_err = gt_rdb_prepare(rdb,
-                           "SELECT height, width, ltrfam, hpaned, "
-                           "vpaned FROM gui_settings",
-                           -1,
-                           &stmt,
-                           err);
-
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-
-  if (!had_err) {
-    gint height, width, ltrfam, hpaned, vpaned;
-    had_err = gt_rdb_stmt_get_int(stmt, 0, &height, err);
-    had_err = gt_rdb_stmt_get_int(stmt, 1, &width, err);
-    if (!had_err)
-      gtk_window_resize(GTK_WINDOW(ltrgui->main_window), width, height);
-      had_err = gt_rdb_stmt_get_int(stmt, 2, &ltrfam, err);
-      had_err = gt_rdb_stmt_get_int(stmt, 3, &hpaned, err);
-      had_err = gt_rdb_stmt_get_int(stmt, 4, &vpaned, err);
-    if (!had_err) {
-
-      gtk_ltr_families_set_position(GTK_LTR_FAMILIES(ltrgui->ltrfams),
-                                    ltrfam);
-      gtk_ltr_families_set_hpaned_position(GTK_LTR_FAMILIES(ltrgui->ltrfams),
-                                           hpaned);
-      gtk_ltr_families_set_vpaned_position(GTK_LTR_FAMILIES(ltrgui->ltrfams),
-                                           vpaned);
-    }
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  had_err = gt_rdb_prepare(rdb,
-                           "SELECT name FROM empty_families",
-                           -1, &stmt, NULL);
-  if (!had_err) {
-    list_view = gtk_ltr_families_get_list_view_families(
-                                             GTK_LTR_FAMILIES(ltrgui->ltrfams));
-    model = gtk_tree_view_get_model(list_view);
-    while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
-      result = gt_str_new();
-      nodes = gt_array_new(sizeof(GtGenomeNode*));
-      had_err = gt_rdb_stmt_get_string(stmt, 0, result, err);
-      if (!had_err) {
-        g_snprintf(buffer, BUFSIZ, "%s (0)", gt_str_get(result));
-        gtk_tree_store_append(GTK_TREE_STORE(model), &iter, NULL);
-        gtk_tree_store_set(GTK_TREE_STORE(model), &iter,
-                           LTRFAMS_FAM_LV_NODE_ARRAY, nodes,
-                           LTRFAMS_FAM_LV_TAB_CHILD, NULL,
-                           LTRFAMS_FAM_LV_TAB_LABEL, NULL,
-                           LTRFAMS_FAM_LV_OLDNAME, gt_str_get(result),
-                           LTRFAMS_FAM_LV_CURNAME, buffer,
-                           -1);
-      }
-      gt_str_delete(result);
-    }
-    gt_rdb_stmt_delete(stmt);
-  }
-  if (had_err == -1) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return had_err;
-  }
-
-  valid = gtk_tree_model_get_iter_first(model, &iter);
-  if (valid) {
-    GtArray *tmp_nodes;
-    gtk_tree_model_get(model, &iter,
-                       LTRFAMS_FAM_LV_OLDNAME, &name,
-                       -1);
-    g_snprintf(buffer, BUFSIZ,
-               "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
-               name);
-    g_free(name);
-    had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-    if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-      gt_error_set(ltrgui->err,
-                  "Could not save gui settings: %s",
-                  gt_error_get(err));
-      gt_error_delete(err);
-      gt_rdb_delete(rdb);
-      return had_err;
-    }
-    if (!had_err) {
-      gtk_tree_model_get(model, &iter,
-                         LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
-                         -1);
-      path = gtk_tree_model_get_path(model, &iter);
-      gtk_ltr_families_nb_fam_add_tab(model, &iter, tmp_nodes, TRUE,
-                                      GTK_LTR_FAMILIES(ltrgui->ltrfams));
-      gtk_tree_path_free(path);
-    }
-    gt_rdb_stmt_delete(stmt);
-    while (gtk_tree_model_iter_next(model, &iter)) {
-      gtk_tree_model_get(model, &iter,
-                         LTRFAMS_FAM_LV_OLDNAME, &name,
-                         -1);
-      g_snprintf(buffer, BUFSIZ,
-                 "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
-                 name);
-      g_free(name);
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-        gt_error_set(ltrgui->err,
-                    "Could not save gui settings: %s",
-                    gt_error_get(err));
-        gt_error_delete(err);
-        gt_rdb_delete(rdb);
-        return -1;
-      }
-      if (!had_err) {
-        path = gtk_tree_model_get_path(model, &iter);
-        gtk_tree_model_get(model, &iter,
-                           LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
-                           -1);
-        gtk_ltr_families_nb_fam_add_tab(model, &iter, tmp_nodes, TRUE,
-                                        GTK_LTR_FAMILIES(ltrgui->ltrfams));
-        gtk_tree_path_free(path);
-      }
-      gt_rdb_stmt_delete(stmt);
-    }
-  }
-
-  had_err = 0;
-  nb = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  nop = gtk_notebook_get_n_pages(nb);
-  if (nop > 1) {
-    gint tab_pos;
-    hash = g_hash_table_new(NULL, NULL);
-    for (i = 0; i < nop; i++) {
-      sw = gtk_notebook_get_nth_page(nb, i);
-      label_close = gtk_notebook_get_tab_label(nb, sw);
-      g_snprintf(buffer, BUFSIZ,
-                 "SELECT position FROM notebook_tabs WHERE name = \"%s\"",
-                 gtk_label_close_get_text(GTKLABELCLOSE(label_close)));
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-        gt_error_set(ltrgui->err,
-                    "Could not save gui settings: %s",
-                    gt_error_get(err));
-        gt_error_delete(err);
-        gt_rdb_delete(rdb);
-        return -1;
-      }
-      if (!had_err) {
-        had_err = gt_rdb_stmt_get_int(stmt, 0, &tab_pos, err);
-        if (!had_err)
-          g_hash_table_insert(hash, (gpointer) sw, GINT_TO_POINTER(tab_pos));
-      }
-      gt_rdb_stmt_delete(stmt);
-    }
-    if (!had_err)
-      g_hash_table_foreach(hash, (GHFunc) reorder_tabs, (gpointer) nb);
-    g_hash_table_destroy(hash);
-  }
-  if (had_err) {
-    gt_error_set(ltrgui->err,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_error_delete(err);
-  gt_rdb_delete(rdb);
-
-  return 0;
-}
-
-static gboolean mb_save_project_data_finished(gpointer data)
+static gboolean save_project_data_finished(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
@@ -734,19 +366,20 @@ static gboolean mb_save_project_data_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
   if (!threaddata->had_err) {
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
-    threaddata->had_err = save_gui_settings(threaddata->ltrgui,
-                                            threaddata->filename);
-    if (!threaddata->had_err)
+    /*threaddata->had_err = save_gui_settings(threaddata->ltrgui,
+                                            threaddata->filename);*/
+    /* if (!threaddata->had_err)
       threaddata->had_err =
                   gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(
                                                   threaddata->ltrgui->projset));
-    if (!threaddata->had_err)
+    */
+    /*if (!threaddata->had_err)
       threaddata->had_err = gtk_ltr_filter_save_data(
                                     GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
-                                                     threaddata->ltrgui->err);
-    if (!threaddata->had_err)
+                                                     threaddata->ltrgui->err);*/
+    /*if (!threaddata->had_err)
       threaddata->had_err = save_match_param_sets(threaddata->ltrgui,
-                                                  threaddata->filename);
+                                                  threaddata->filename);*/
   } else
     g_rename(threaddata->tmp_filename, threaddata->filename);
   if (threaddata->had_err) {
@@ -760,7 +393,7 @@ static gboolean mb_save_project_data_finished(gpointer data)
   return FALSE;
 }
 
-gboolean mb_save_as_project_data_finished(gpointer data)
+gboolean save_as_project_data_finished(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams,
@@ -777,24 +410,25 @@ gboolean mb_save_as_project_data_finished(gpointer data)
                 gt_error_get(threaddata->err));
   }
   if (!threaddata->had_err) {
-    threaddata->had_err = save_gui_settings(threaddata->ltrgui,
-                                            threaddata->filename);
+    /*threaddata->had_err = save_gui_settings(threaddata->ltrgui,
+                                            threaddata->filename);*/
     gtk_project_settings_update_projectfile(GTK_PROJECT_SETTINGS(projset),
                                             threaddata->filename);
-    if (!threaddata->had_err)
+    /* if (!threaddata->had_err)
       threaddata->had_err =
                   gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(projset));
+    */
 
-    if (!threaddata->had_err)
+    /*if (!threaddata->had_err)
       threaddata->had_err = save_match_param_sets(threaddata->ltrgui,
-                                                  threaddata->filename);
+                                                  threaddata->filename);*/
   }
   if (!threaddata->had_err) {
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      threaddata->filename);
-    threaddata->had_err = gtk_ltr_filter_save_data(
+    /*threaddata->had_err = gtk_ltr_filter_save_data(
                                     GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
-                                                   threaddata->ltrgui->err);
+                                                   threaddata->ltrgui->err);*/
     if (threaddata->had_err) {
       gdk_threads_enter();
       error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
@@ -815,7 +449,7 @@ gboolean mb_save_as_project_data_finished(gpointer data)
   return FALSE;
 }
 
-static gboolean mb_open_project_data_finished(gpointer data)
+static gboolean open_project_data_finished(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
@@ -828,12 +462,18 @@ static gboolean mb_open_project_data_finished(gpointer data)
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
     gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
+    gtk_widget_destroy(threaddata->ltrgui->projset);
+    threaddata->ltrgui->projset = gtk_project_settings_new(threaddata->rdb);
     threaddata->ltrgui->ltrfams =
                            gtk_ltr_families_new(threaddata->ltrgui->statusbar,
                                                 threaddata->progressbar,
                                                 threaddata->ltrgui->projset,
-                                                threaddata->ltrgui->style_file);
+                                                threaddata->ltrgui->style_file,
+                                                threaddata->ltrgui->err);
     ltrfams = threaddata->ltrgui->ltrfams;
+    gtk_ltr_families_set_rdb(threaddata->rdb, GTK_LTR_FAMILIES(ltrfams));
+    gtk_ltr_families_set_adb(threaddata->adb, GTK_LTR_FAMILIES(ltrfams));
+    gtk_ltr_families_set_fi(threaddata->fi, GTK_LTR_FAMILIES(ltrfams));
     threaddata->ltrgui->ltrfilt = gtk_ltr_filter_new(ltrfams);
     gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrfams),
                                        threaddata->ltrgui->ltrfilt);
@@ -845,26 +485,25 @@ static gboolean mb_open_project_data_finished(gpointer data)
                                     threaddata->n_features);
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      threaddata->filename);
-    gtk_project_settings_set_data_from_sqlite(GTK_PROJECT_SETTINGS(
+    threaddata->had_err = gtk_project_settings_set_data_from_sqlite(
+                                                           GTK_PROJECT_SETTINGS(
                                                    threaddata->ltrgui->projset),
-                                              threaddata->filename);
-    threaddata->had_err = gtk_ltr_filter_get_filter_files_from_sql(
-                                  GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
-                                  threaddata->ltrgui->err);
-    menubar_view_columns_set_submenu(threaddata->ltrgui,
-                                     threaddata->features,
-                                     threaddata->err, TRUE);
-    menubar_activate_menuitems(threaddata->ltrgui);
+                                                   threaddata->filename,
+                                                   threaddata->ltrgui->err);
+    if (!threaddata->had_err)
+      threaddata->had_err = gtk_ltr_filter_get_filter_files_from_sql(
+                                    GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
+                                    threaddata->ltrgui->err);
+    view_columns_set_submenu(threaddata->ltrgui, threaddata->features,
+                             threaddata->rdb, threaddata->err, TRUE);
+    activate_menuitems(threaddata->ltrgui);
     gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
     create_recently_used_resource(threaddata->filename);
-  } else {
-    gt_error_set(threaddata->ltrgui->err,
-                "Error while opening data: %s",
-                gt_error_get(threaddata->err));
   }
-  if (!threaddata->had_err)
-    threaddata->had_err = apply_gui_settings(threaddata->ltrgui,
-                                             threaddata->filename);
+  if (!threaddata->had_err) {
+    threaddata->had_err = apply_gui_settings(threaddata->ltrgui);
+  }
+
   if (threaddata->had_err) {
     gdk_threads_enter();
     error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
@@ -876,7 +515,7 @@ static gboolean mb_open_project_data_finished(gpointer data)
   return FALSE;
 }
 
-static gpointer menubar_save_project_data_start(gpointer data)
+static gpointer save_project_data_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
@@ -889,12 +528,13 @@ static gpointer menubar_save_project_data_start(gpointer data)
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Saving data");
-  (void) extract_match_param_sets(threaddata->ltrgui, threaddata->tmp_filename);
+  /*(void) extract_match_param_sets(threaddata->ltrgui,
+ threaddata->tmp_filename);*/
   rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->err);
   if (!rdb)
     threaddata->had_err = -1;
   if (!threaddata->had_err) {
-    adb = gt_anno_db_gfflike_new(/* (GtRDBSqlite*) rdb, threaddata->err */);
+    adb = gt_anno_db_gfflike_new();
     if (!adb)
       threaddata->had_err = -1;
   }
@@ -926,13 +566,13 @@ static gpointer menubar_save_project_data_start(gpointer data)
   gt_anno_db_schema_delete(adb);
   gt_rdb_delete(rdb);
   if (threaddata->save_as)
-    g_idle_add(mb_save_as_project_data_finished, data);
+    g_idle_add(save_as_project_data_finished, data);
   else
-    g_idle_add(mb_save_project_data_finished, data);
+    g_idle_add(save_project_data_finished, data);
   return NULL;
 }
 
-static gpointer menubar_open_project_data_start(gpointer data)
+static gpointer open_project_data_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtNodeStream *preprocess_stream = NULL,
@@ -940,35 +580,36 @@ static gpointer menubar_open_project_data_start(gpointer data)
   GtHashmap *features;
   GtArray *nodes,
           *tmp_nodes;
-  GtFeatureIndex *fi = NULL;
-  GtRDB *rdb;
-  GtAnnoDBSchema *adb;
   GtStrArray *seqids = NULL;
   unsigned long i, n_features;
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Reading data from file");
-  rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->err);
-  if (!rdb)
+  threaddata->rdb = gt_rdb_sqlite_new(threaddata->filename,
+                                      threaddata->ltrgui->err);
+  if (!threaddata->rdb)
     threaddata->had_err = -1;
   if (!threaddata->had_err) {
-    adb = gt_anno_db_gfflike_new();
-    if (!adb)
+    threaddata->adb = gt_anno_db_gfflike_new();
+    if (!threaddata->adb)
       threaddata->had_err = -1;
   }
   if (!threaddata->had_err) {
-    fi = gt_anno_db_schema_get_feature_index(adb, rdb, threaddata->err);
-    threaddata->had_err = fi ? 0 : -1;
+    threaddata->fi = gt_anno_db_schema_get_feature_index(threaddata->adb,
+                                                         threaddata->rdb,
+                                                       threaddata->ltrgui->err);
+    threaddata->had_err = threaddata->fi ? 0 : -1;
   }
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtFeatureNode*));
-    seqids = gt_feature_index_get_seqids(fi, threaddata->err);
+    seqids = gt_feature_index_get_seqids(threaddata->fi,
+                                         threaddata->ltrgui->err);
     if (seqids) {
       for (i = 0; i < gt_str_array_size(seqids); i++) {
         tmp_nodes =
-            gt_feature_index_get_features_for_seqid(fi,
+            gt_feature_index_get_features_for_seqid(threaddata->fi,
                                                     gt_str_array_get(seqids, i),
-                                                    threaddata->err);
+                                                    threaddata->ltrgui->err);
         gt_array_add_array(nodes, tmp_nodes);
         gt_array_delete(tmp_nodes);
         tmp_nodes = NULL;
@@ -976,10 +617,8 @@ static gpointer menubar_open_project_data_start(gpointer data)
       gt_str_array_delete(seqids);
     }
   }
-  gt_rdb_delete(rdb);
-  gt_anno_db_schema_delete(adb);
-  gdk_threads_enter();
   if (!threaddata->had_err) {
+    gdk_threads_enter();
     gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                               "Preprocessing candidates");
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
@@ -989,82 +628,195 @@ static gpointer menubar_open_project_data_start(gpointer data)
       GT_UNUSED GtGenomeNode *gn;
       gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
     }
-    array_in_stream = gt_array_in_stream_new(nodes, NULL, threaddata->err);
+    array_in_stream = gt_array_in_stream_new(nodes, NULL,
+                                             threaddata->ltrgui->err);
     preprocess_stream = ltrgui_preprocess_stream_new(array_in_stream, features,
                                                      &n_features, FALSE,
-                                                     threaddata->err);
+                                                     threaddata->ltrgui->err);
     threaddata->had_err = gt_node_stream_pull(preprocess_stream,
-                                              threaddata->err);
+                                              threaddata->ltrgui->err);
+    gdk_threads_leave();
   }
-  gdk_threads_leave();
-
   threaddata->nodes = nodes;
   threaddata->features = features;
   threaddata->n_features = n_features;
 
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(preprocess_stream);
-  /* gt_feature_index_delete(fi); */
-  g_idle_add(mb_open_project_data_finished, data);
+  g_idle_add(open_project_data_finished, data);
   return NULL;
 }
 
-void menubar_activate_menuitems(GUIData *ltrgui)
+static gpointer save_and_reload_data_start(gpointer data)
 {
-  gtk_widget_set_sensitive(ltrgui->menubar_save, TRUE);
-  gtk_widget_set_sensitive(ltrgui->menubar_save_as, TRUE);
-  gtk_widget_set_sensitive(ltrgui->menubar_export, TRUE);
-  gtk_widget_set_sensitive(ltrgui->menubar_close, TRUE);
-  gtk_widget_set_sensitive(ltrgui->menubar_view_columns, TRUE);
-  gtk_widget_set_sensitive(ltrgui->menubar_project, TRUE);
+  ThreadData *threaddata = (ThreadData*) data;
+  GT_UNUSED GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
+  GtNodeStream *array_in_stream = NULL,
+               *feature_stream = NULL;
+  GtRDB *rdb = NULL;
+  GtAnnoDBSchema *adb = NULL;
+  GtFeatureIndex *fi = NULL;
+  GT_UNUSED unsigned long i;
+
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            "Saving data");
+  rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->ltrgui->err);
+  if (!rdb)
+    threaddata->had_err = -1;
+  if (!threaddata->had_err) {
+    adb = gt_anno_db_gfflike_new();
+    if (!adb)
+      threaddata->had_err = -1;
+  }
+  if (!threaddata->had_err) {
+    fi = gt_anno_db_schema_get_feature_index(adb, rdb, threaddata->ltrgui->err);
+    if (!fi)
+      threaddata->had_err = -1;
+  }
+  if (!threaddata->had_err) {
+    /*for (i = 0; i < gt_array_size(threaddata->nodes); i++) {
+      GT_UNUSED GtGenomeNode *gn;
+      gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(threaddata->nodes,
+                                                             i));
+      gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(threaddata->nodes,
+                                                             i));
+    }*/
+    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                             &threaddata->progress,
+                                             threaddata->ltrgui->err);
+    gt_assert(array_in_stream);
+
+    feature_stream = gt_feature_stream_new(array_in_stream, fi);
+    gdk_threads_enter();
+    threaddata->had_err = gt_node_stream_pull(feature_stream,
+                                              threaddata->ltrgui->err);
+    gdk_threads_leave();
+  }
+  gt_node_stream_delete(feature_stream);
+  gt_node_stream_delete(array_in_stream);
+  gt_feature_index_delete(fi);
+  gt_anno_db_schema_delete(adb);
+  gt_rdb_delete(rdb);
+  gt_array_delete(threaddata->nodes);
+  rdb = NULL;
+  fi = NULL;
+  adb = NULL;
+
+  if (!threaddata->had_err) {
+    GtNodeStream *preprocess_stream = NULL,
+                 *array_in_stream = NULL;
+    GtHashmap *features;
+    GtArray *nodes,
+            *tmp_nodes;
+    GtStrArray *seqids = NULL;
+    unsigned long i, n_features;
+
+    threaddata->had_err =
+                  gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(
+                                                   threaddata->ltrgui->projset),
+                                                 threaddata->ltrgui->err);
+    if (!threaddata->had_err)
+      threaddata->had_err = save_gui_settings(threaddata->ltrgui,
+                                              threaddata->filename);
+    if (!threaddata->had_err) {
+      gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                                "Reloading data from database");
+      threaddata->rdb = gt_rdb_sqlite_new(threaddata->filename,
+                                          threaddata->ltrgui->err);
+    }
+    if (!threaddata->rdb)
+      threaddata->had_err = -1;
+    if (!threaddata->had_err) {
+      threaddata->adb = gt_anno_db_gfflike_new();
+      if (!threaddata->adb)
+        threaddata->had_err = -1;
+    }
+    if (!threaddata->had_err) {
+      threaddata->fi = gt_anno_db_schema_get_feature_index(threaddata->adb,
+                                                           threaddata->rdb,
+                                                       threaddata->ltrgui->err);
+      threaddata->had_err = threaddata->fi ? 0 : -1;
+    }
+    if (!threaddata->had_err) {
+      nodes = gt_array_new(sizeof(GtFeatureNode*));
+      seqids = gt_feature_index_get_seqids(threaddata->fi,
+                                           threaddata->ltrgui->err);
+      if (seqids) {
+        for (i = 0; i < gt_str_array_size(seqids); i++) {
+          tmp_nodes = gt_feature_index_get_features_for_seqid(threaddata->fi,
+                                                        gt_str_array_get(seqids,
+                                                                         i),
+                                                       threaddata->ltrgui->err);
+          gt_array_add_array(nodes, tmp_nodes);
+          gt_array_delete(tmp_nodes);
+          tmp_nodes = NULL;
+        }
+        gt_str_array_delete(seqids);
+      }
+    }
+    if (!threaddata->had_err) {
+      gdk_threads_enter();
+      gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                                "Preprocessing candidates");
+      features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
+      n_features = LTRFAMS_LV_N_COLUMS;
+
+      for (i = 0; i < gt_array_size(nodes); i++) {
+        GT_UNUSED GtGenomeNode *gn;
+        gn = gt_genome_node_ref(*(GtGenomeNode**) gt_array_get(nodes, i));
+      }
+      array_in_stream = gt_array_in_stream_new(nodes, NULL,
+                                               threaddata->ltrgui->err);
+      preprocess_stream = ltrgui_preprocess_stream_new(array_in_stream,
+                                                       features, &n_features,
+                                                       FALSE,
+                                                       threaddata->ltrgui->err);
+      threaddata->had_err = gt_node_stream_pull(preprocess_stream,
+                                                threaddata->ltrgui->err);
+      gdk_threads_leave();
+    }
+    threaddata->nodes = nodes;
+    threaddata->features = features;
+    threaddata->n_features = n_features;
+
+    gt_node_stream_delete(array_in_stream);
+    gt_node_stream_delete(preprocess_stream);
+  } else
+    if (g_file_test(threaddata->tmp_filename, G_FILE_TEST_EXISTS))
+      g_rename(threaddata->tmp_filename, threaddata->filename);
+  gt_free(threaddata->tmp_filename);
+
+  g_idle_add(open_project_data_finished, data);
+  return NULL;
 }
 
-static int get_keys(void *key, GT_UNUSED void *values, void *cptns,
-                         GT_UNUSED GtError *err)
-{
-  GtStrArray *captions = (GtStrArray*) cptns;
-  const char *caption = (const char*) key;
-
-  gt_str_array_add_cstr(captions, caption);
-
-  return 0;
-}
-
-void menubar_save_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                GUIData *ltrgui)
+void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
+                           const gchar *projectfile)
 {
   ThreadData *threaddata;
-  gchar *projectfile;
 
-  projectfile =
-       gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-  if (projectfile == NULL) {
-    menubar_save_as_activate(NULL, ltrgui);
-    return;
-  } else {
-    threaddata = threaddata_new();
-    threaddata->filename = projectfile;
-    threaddata->tmp_filename =  g_strdup_printf("%s.bak", projectfile);
-    threaddata->ltrgui = ltrgui;
-    threaddata->progressbar = ltrgui->progressbar;
-    threaddata->save = TRUE;
-    threaddata->err = gt_error_new();
-    threaddata->progress = 0;
-    threaddata->had_err = 0;
-    g_rename(projectfile, threaddata->tmp_filename);
-    progress_dialog_init(threaddata, ltrgui->main_window);
+  threaddata = threaddata_new();
+  threaddata->filename = g_strdup(projectfile);
+  if (g_file_test(threaddata->filename, G_FILE_TEST_EXISTS)) {
+    threaddata->tmp_filename = g_strdup_printf("%s.bak", threaddata->filename);
+    g_rename(threaddata->filename, threaddata->tmp_filename);
+  }
+  threaddata->ltrgui = ltrgui;
+  threaddata->progressbar = ltrgui->progressbar;
+  threaddata->progress = 0;
+  threaddata->had_err = 0;
+  threaddata->nodes = nodes;
+  progress_dialog_init(threaddata, ltrgui->main_window);
 
-    if (!g_thread_create(menubar_save_project_data_start, (gpointer) threaddata,
-                         FALSE, NULL)) {
-      gt_error_set(ltrgui->err,
-                  "Could not create new thread.");
-      error_handle(ltrgui->main_window, ltrgui->err);
-    }
+  if (!g_thread_create(save_and_reload_data_start, (gpointer) threaddata,
+                       FALSE, NULL)) {
+    gt_error_set(ltrgui->err,
+                "Could not create new thread.");
+    error_handle(ltrgui->main_window, ltrgui->err);
   }
 }
 
-void menubar_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                      GUIData *ltrgui)
+static void save_as_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   ThreadData *threaddata;
   GtkWidget *filechooser,
@@ -1141,7 +893,7 @@ void menubar_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->had_err = 0;
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  if (!g_thread_create(menubar_save_project_data_start, (gpointer) threaddata,
+  if (!g_thread_create(save_project_data_start, (gpointer) threaddata,
                        FALSE, NULL)) {
     gt_error_set(ltrgui->err,
                 "Could not create new thread.");
@@ -1149,8 +901,40 @@ void menubar_save_as_activate(GT_UNUSED GtkMenuItem *menuitem,
   }
 }
 
-void menubar_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                       GUIData *ltrgui)
+void menubar_save_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
+{
+  ThreadData *threaddata;
+  gchar *projectfile;
+
+  projectfile =
+       gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  if (projectfile == NULL) {
+    save_as_activate(NULL, ltrgui);
+    return;
+  } else {
+    threaddata = threaddata_new();
+    threaddata->filename = projectfile;
+    threaddata->tmp_filename =  g_strdup_printf("%s.bak", projectfile);
+    threaddata->ltrgui = ltrgui;
+    threaddata->progressbar = ltrgui->progressbar;
+    threaddata->save = TRUE;
+    threaddata->err = gt_error_new();
+    threaddata->progress = 0;
+    threaddata->had_err = 0;
+    g_rename(projectfile, threaddata->tmp_filename);
+    progress_dialog_init(threaddata, ltrgui->main_window);
+
+    if (!g_thread_create(save_project_data_start, (gpointer) threaddata,
+                         FALSE, NULL)) {
+      gt_error_set(ltrgui->err,
+                  "Could not create new thread.");
+      error_handle(ltrgui->main_window, ltrgui->err);
+    }
+  }
+}
+
+static void export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                 GUIData *ltrgui)
 {
   GtkWidget *dialog;
   GtArray *nodes;
@@ -1184,139 +968,7 @@ void menubar_export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
     gtk_widget_destroy(dialog);
 }
 
-static void menubar_view_columns_toggled(GtkCheckMenuItem *menuitem,
-                                         gpointer user_data)
-{
-  GtkWidget *sw;
-  GtkTreeView *list_view;
-  GtkTreeViewColumn *column;
-  GtkNotebook *notebook;
-  GList *children,
-        *columns;
-  const gchar *caption;
-  gchar *file;
-  gint i, j, nop;
-  guint noc;
-
-  caption =
-           double_underscores(gtk_menu_item_get_label(GTK_MENU_ITEM(menuitem)));
-  notebook = gtk_ltr_families_get_nb(GTK_LTR_FAMILIES(user_data));
-  nop = gtk_notebook_get_n_pages(notebook);
-  for (i = 0; i < nop; i++) {
-    sw = gtk_notebook_get_nth_page(notebook, i);
-    children = gtk_container_get_children(GTK_CONTAINER(sw));
-    list_view = GTK_TREE_VIEW(g_list_first(children)->data);
-    columns = gtk_tree_view_get_columns(list_view);
-    noc = g_list_length(columns);
-    for (j = 0; j < noc; j++) {
-      column = gtk_tree_view_get_column(list_view, j);
-      if (g_strcmp0(caption, gtk_tree_view_column_get_title(column)) == 0)
-        gtk_tree_view_column_set_visible(column,
-                                      gtk_check_menu_item_get_active(menuitem));
-    }
-    g_list_free(children);
-    g_list_free(columns);
-  }
-  file = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(user_data));
-   if (file) {
-    GtRDB *rdb = NULL;
-    GtRDBStmt *stmt = NULL;
-    GtError *err = gt_error_new();
-    gint had_err = 0;
-    gchar query[BUFSIZ];
-
-    rdb = gt_rdb_sqlite_new(file, err);
-    if (!rdb)
-      return;
-    if (!gtk_check_menu_item_get_active(menuitem)) {
-      g_snprintf(query, BUFSIZ,
-                 "INSERT INTO invisible_columns (name) values (\"%s\")",
-                 caption);
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (!had_err)
-        had_err = gt_rdb_stmt_exec(stmt, err);
-    } else {
-      g_snprintf(query, BUFSIZ,
-                 "DELETE FROM invisible_columns WHERE name = \"%s\"", caption);
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (!had_err)
-        had_err = gt_rdb_stmt_exec(stmt, err);
-    }
-    gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
-  }
-}
-
-void menubar_view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
-                                      GtError *err, gboolean sqlt)
-{
-  GtkWidget *menu,
-            *menuitem;
-  GtStrArray *captions;
-  GtRDB *rdb = NULL;
-  GtRDBStmt *stmt;
-  gchar buffer[BUFSIZ];
-  const gchar *projectfile;
-  gint had_err = 0;
-  unsigned long i;
-
-  captions = gt_str_array_new();
-  menu = gtk_menu_new();
-
-  gt_hashmap_foreach(features, get_keys, (void*) captions, err);
-
-  if (sqlt) {
-    projectfile =
-       gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrgui->ltrfams));
-    if (projectfile)
-      rdb = gt_rdb_sqlite_new(projectfile, err);
-   }
-
-  for (i = 0; i < gt_str_array_size(captions); i++) {
-    menuitem = gtk_check_menu_item_new_with_label(gt_str_array_get(captions,
-                                                                   i));
-    if (sqlt && rdb) {
-      g_signal_connect(G_OBJECT(menuitem), "toggled",
-                       G_CALLBACK(menubar_view_columns_toggled),
-                       ltrgui->ltrfams);
-      g_snprintf(buffer, BUFSIZ,
-                 "SELECT name FROM invisible_columns WHERE name = \"%s\"",
-                 double_underscores(gt_str_array_get(captions, i)));
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-        gt_rdb_delete(rdb);
-        rdb = NULL;
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-      } else if (had_err == 0) {
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), FALSE);
-        gt_rdb_stmt_delete(stmt);
-      } else {
-        gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-      }
-    } else {
-      gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
-      g_signal_connect(G_OBJECT(menuitem), "toggled",
-                       G_CALLBACK(menubar_view_columns_toggled),
-                       ltrgui->ltrfams);
-    }
-    if (g_strcmp0(gt_str_array_get(captions, i), FNT_LLTR) == 0)
-      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 0);
-    else if (g_strcmp0(gt_str_array_get(captions, i), FNT_RLTR) == 0)
-      gtk_menu_shell_insert(GTK_MENU_SHELL(menu), menuitem, 1);
-    else
-      gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
-  }
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(ltrgui->menubar_view_columns), menu);
-  gtk_widget_show_all(menu);
-  gtk_widget_set_sensitive(ltrgui->menubar_view_columns, TRUE);
-  if (rdb)
-    gt_rdb_delete(rdb);
-  gt_str_array_delete(captions);
-}
-
-void menubar_import_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                  GUIData *ltrgui)
+static void import_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   GtkWidget *filechooser, *dialog;
   GtkFileFilter *gff3_file_filter;
@@ -1390,11 +1042,12 @@ void menubar_import_activate(GT_UNUSED GtkMenuItem *menuitem,
     gtk_widget_destroy(ltrgui->ltrfams);
     gtk_widget_destroy(ltrgui->ltrfilt);
     gtk_widget_destroy(ltrgui->projset);
-    ltrgui->projset = gtk_project_settings_new();
+    ltrgui->projset = gtk_project_settings_new(NULL);
     ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
                                            ltrgui->progressbar,
                                            ltrgui->projset,
-                                           ltrgui->style_file);
+                                           ltrgui->style_file,
+                                           ltrgui->err);
     ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
     gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
                                        ltrgui->ltrfilt);
@@ -1403,8 +1056,8 @@ void menubar_import_activate(GT_UNUSED GtkMenuItem *menuitem,
                                     nodes,
                                     features,
                                     n_features);
-    menubar_view_columns_set_submenu(ltrgui, features, err, FALSE);
-    menubar_activate_menuitems(ltrgui);
+    view_columns_set_submenu(ltrgui, features, NULL, err, FALSE);
+    activate_menuitems(ltrgui);
   } else {
     gt_error_set(ltrgui->err,
                 "Could not import data: %s",
@@ -1417,8 +1070,7 @@ void menubar_import_activate(GT_UNUSED GtkMenuItem *menuitem,
   gt_error_delete(err);
 }
 
-void menubar_open_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                GUIData *ltrgui)
+static void open_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   ThreadData *threaddata;
   GtkWidget *filechooser,
@@ -1475,10 +1127,9 @@ void menubar_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   threaddata->ltrgui = ltrgui;
   threaddata->progressbar = ltrgui->progressbar;
   threaddata->filename = filename;
-  threaddata->err = gt_error_new();
   threaddata->open = TRUE;
   progress_dialog_init(threaddata, ltrgui->main_window);
-  if (!g_thread_create(menubar_open_project_data_start, (gpointer) threaddata,
+  if (!g_thread_create(open_project_data_start, (gpointer) threaddata,
                        FALSE, NULL)) {
     gt_error_set(ltrgui->err,
                 "Could not create new thread.");
@@ -1486,7 +1137,7 @@ void menubar_open_activate(GT_UNUSED GtkMenuItem *menuitem,
   }
 }
 
-void menubar_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
+static void new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   GtkWidget *dialog;
   gint response = 0;
@@ -1528,8 +1179,7 @@ void menubar_new_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   gtk_widget_show(ltrgui->assistant);
 }
 
-void menubar_close_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                 GUIData *ltrgui)
+static void close_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   GtkWidget *dialog;
   gint response = GTK_RESPONSE_REJECT;
@@ -1561,10 +1211,13 @@ void menubar_close_activate(GT_UNUSED GtkMenuItem *menuitem,
       gtk_widget_set_sensitive(ltrgui->menubar_project, FALSE);
       gtk_window_set_title(GTK_WINDOW(ltrgui->main_window), GUI_NAME);
       gtk_widget_destroy(ltrgui->ltrfams);
+      gtk_widget_destroy(ltrgui->projset);
+      ltrgui->projset = gtk_project_settings_new(NULL);
       ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
                                              ltrgui->progressbar,
                                              ltrgui->projset,
-                                             ltrgui->style_file);
+                                             ltrgui->style_file,
+                                             ltrgui->err);
       gtk_widget_destroy(ltrgui->ltrfilt);
       ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
       gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
@@ -1576,8 +1229,8 @@ void menubar_close_activate(GT_UNUSED GtkMenuItem *menuitem,
   }
 }
 
-void menubar_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,
-                                 GUIData *ltrgui)
+static void help_about_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                GUIData *ltrgui)
 {
   GtkWidget *dialog;
   GdkPixbuf *logo;
@@ -1613,8 +1266,7 @@ void menubar_help_about_activate(GT_UNUSED GtkMenuItem *menutiem,
   gtk_widget_destroy(dialog);
 }
 
-static void menubar_open_recent_activated(GtkRecentChooser *rc,
-                                               GUIData *ltrgui)
+static void open_recent_activated(GtkRecentChooser *rc, GUIData *ltrgui)
 {
   ThreadData *threaddata;
   GtkWidget *dialog;
@@ -1656,11 +1308,10 @@ static void menubar_open_recent_activated(GtkRecentChooser *rc,
   threaddata->ltrgui = ltrgui;
   threaddata->progressbar = ltrgui->progressbar;
   threaddata->filename = filename;
-  threaddata->err = gt_error_new();
   threaddata->open = TRUE;
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  if (!g_thread_create(menubar_open_project_data_start, (gpointer) threaddata,
+  if (!g_thread_create(open_project_data_start, (gpointer) threaddata,
                        FALSE, NULL)) {
     gt_error_set(ltrgui->err,
                 "Could not create new thread.");
@@ -1668,8 +1319,7 @@ static void menubar_open_recent_activated(GtkRecentChooser *rc,
   }
 }
 
-void menubar_quit_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                GUIData *ltrgui)
+static void quit_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   GtkWidget *dialog;
   gint response = GTK_RESPONSE_REJECT;
@@ -1704,8 +1354,8 @@ void menubar_quit_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_main_quit();
 }
 
-void menubar_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                        GUIData *ltrgui)
+static void export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                  GUIData *ltrgui)
 {
   GtkWidget *dialog,
             *projset = ltrgui->projset;
@@ -1795,14 +1445,14 @@ void menubar_export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
     gtk_widget_destroy(dialog);
 }
 
-void menubar_project_settings_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                       GUIData *ltrgui)
+static void project_settings_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                      GUIData *ltrgui)
 {
   gtk_widget_show(ltrgui->projset);
 }
 
-void menubar_project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                     GUIData *ltrgui)
+static void project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                    GUIData *ltrgui)
 {
   GtArray *nodes;
   gchar text[BUFSIZ];
@@ -1815,8 +1465,8 @@ void menubar_project_filter_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_widget_show(ltrgui->ltrfilt);
 }
 
-void menubar_project_match_activate(GT_UNUSED GtkMenuItem *menuitem,
-                                    GUIData *ltrgui)
+static void project_match_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                   GUIData *ltrgui)
 {
   GtArray *nodes;
 
@@ -1850,7 +1500,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_new_activate), ltrgui);
+                   G_CALLBACK(new_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_image_menu_item_new_from_stock(GTK_STOCK_OPEN, accelgroup);
@@ -1862,13 +1512,13 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_open_activate), ltrgui);
+                   G_CALLBACK(open_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_mnemonic("Open _Recent");
   rc = gtk_recent_chooser_menu_new();
   g_signal_connect(G_OBJECT(rc), "item-activated",
-                   G_CALLBACK(menubar_open_recent_activated), ltrgui);
+                   G_CALLBACK(open_recent_activated), ltrgui);
   rf = gtk_recent_filter_new();
   gtk_recent_filter_add_group(rf, GUI_RECENT_GROUP);
   gtk_recent_chooser_add_filter(GTK_RECENT_CHOOSER(rc), rf);
@@ -1894,7 +1544,8 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(ltrgui->menubar_save), "activate",
                    G_CALLBACK(menubar_save_activate), ltrgui);
   gtk_widget_set_sensitive(ltrgui->menubar_save, FALSE);
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save);
+  /* temporary deactivated (ask Sascha) */
+  /* gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save); */
 
   ltrgui->menubar_save_as =
               gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE_AS, accelgroup);
@@ -1906,14 +1557,15 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(ltrgui->menubar_save_as), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(ltrgui->menubar_save_as), "activate",
-                   G_CALLBACK(menubar_save_as_activate), ltrgui);
+                   G_CALLBACK(save_as_activate), ltrgui);
   gtk_menu_item_set_label(GTK_MENU_ITEM(ltrgui->menubar_save_as),
                           "Save _As...");
   gtk_widget_set_sensitive(ltrgui->menubar_save_as, FALSE);
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save_as);
+  /* temporary deactivated (ask Sascha) */
+  /* gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save_as); */
 
-  menuitem = gtk_separator_menu_item_new();
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  /* menuitem = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
 
   menuitem = gtk_menu_item_new_with_mnemonic("_Import...");
   g_object_set_data(G_OBJECT(menuitem),
@@ -1923,11 +1575,12 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_import_activate), ltrgui);
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+                   G_CALLBACK(import_activate), ltrgui);
+  /* temporary deactivated (ask Sascha) */
+  /* gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
 
-  menuitem = gtk_separator_menu_item_new();
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  /* menuitem = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
 
   ltrgui->menubar_export = gtk_menu_item_new_with_mnemonic("E_xport");
   gtk_widget_set_sensitive(ltrgui->menubar_export, FALSE);
@@ -1942,7 +1595,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_export_fasta_activate), ltrgui);
+                   G_CALLBACK(export_fasta_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), menuitem);
   menuitem = gtk_menu_item_new_with_mnemonic("Annotation as GFF_3...");
   g_object_set_data(G_OBJECT(menuitem),
@@ -1952,7 +1605,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_export_gff3_activate), ltrgui);
+                   G_CALLBACK(export_gff3_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(submenu), menuitem);
 
   menuitem = gtk_separator_menu_item_new();
@@ -1968,7 +1621,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(ltrgui->menubar_close), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(ltrgui->menubar_close), "activate",
-                   G_CALLBACK(menubar_close_activate), ltrgui);
+                   G_CALLBACK(close_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_close);
 
   menuitem = gtk_image_menu_item_new_from_stock(GTK_STOCK_QUIT, accelgroup);
@@ -1979,7 +1632,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_quit_activate), ltrgui);
+                   G_CALLBACK(quit_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   /* Project menu */
@@ -1998,7 +1651,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_project_filter_activate), ltrgui);
+                   G_CALLBACK(project_filter_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_mnemonic("_Match...");
@@ -2010,7 +1663,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_project_match_activate), ltrgui);
+                   G_CALLBACK(project_match_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_mnemonic("_Settings...");
@@ -2022,7 +1675,7 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_project_settings_activate), ltrgui);
+                   G_CALLBACK(project_settings_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   /* View menu */
@@ -2051,7 +1704,7 @@ void menubar_init(GUIData *ltrgui)
   menuitem = gtk_image_menu_item_new_from_stock(GTK_STOCK_ABOUT, accelgroup);
   gtk_menu_item_set_label(GTK_MENU_ITEM(menuitem), "_About...");
   g_signal_connect(G_OBJECT(menuitem), "activate",
-                   G_CALLBACK(menubar_help_about_activate), ltrgui);
+                   G_CALLBACK(help_about_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   gtk_widget_show_all(ltrgui->menubar);

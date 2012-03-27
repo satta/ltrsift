@@ -64,7 +64,7 @@ struct _GtkProjectSettings
   GtkWidget *label_candtolerance;
   GtkWidget *label_usedfeatures;
   GtkWidget *notebook;
-  GError *err;
+  GtRDB *rdb;
 };
 
 struct _GtkProjectSettingsClass
@@ -75,20 +75,17 @@ struct _GtkProjectSettingsClass
 
 GType        gtk_project_settings_get_type(void);
 
-GtkWidget*   gtk_project_settings_new();
-
 const gchar* gtk_project_settings_get_indexname(GtkProjectSettings *projset);
 
 void         gtk_project_settings_update_indexname(GtkProjectSettings *projset,
                                                    const gchar *indexname);
 
-void         gtk_project_settings_update_projectfile(
-                                                    GtkProjectSettings *projset,
+void         gtk_project_settings_update_projectfile(GtkProjectSettings *projs,
                                                      const gchar *projectfile);
 
-gint         gtk_project_settings_set_data_from_sqlite(
-                                                    GtkProjectSettings *projset,
-                                                      const gchar *projectfile);
+gint         gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *proj,
+                                                       const gchar *projectfile,
+                                                       GtError *err);
 
 void         gtk_project_settings_set_data(GtkProjectSettings *projset,
                                            const gchar *projectfile,
@@ -113,6 +110,9 @@ void         gtk_project_settings_set_data(GtkProjectSettings *projset,
                                            gdouble candtol,
                                            gchar **features);
 
-gint         gtk_project_settings_save_data(GtkProjectSettings *projset);
+gint         gtk_project_settings_save_data(GtkProjectSettings *projset,
+                                            GtError *err);
+
+GtkWidget*   gtk_project_settings_new(GtRDB *rdb);
 
 #endif

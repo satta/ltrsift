@@ -83,9 +83,8 @@ gtk_blastn_params_refseq_set_extra_widget(GtkBlastnParamsRefseq *blastparref,
   gtk_widget_show_all(widget);
 }
 
-static void
-gtk_blastn_params_refseq_browse_clicked(GT_UNUSED GtkWidget *button,
-                                        GtkBlastnParamsRefseq *blastparref)
+static void browse_refseq_clicked(GT_UNUSED GtkWidget *button,
+                                  GtkBlastnParamsRefseq *blastparref)
 {
   GtkWidget *fc;
   gchar *filename;
@@ -113,7 +112,6 @@ gtk_blastn_params_refseq_browse_clicked(GT_UNUSED GtkWidget *button,
     blastparref->last_dir = g_path_get_dirname(filename);
     g_free(filename);
   }
-
   gtk_widget_destroy(fc);
 }
 
@@ -143,8 +141,7 @@ static void gtk_blastn_params_refseq_init(GtkBlastnParamsRefseq *blastparref)
   blastparref->label_refseq = gtk_label_new("");
   gtk_misc_set_alignment(GTK_MISC(blastparref->label_refseq), 0.0, 0.5);
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_blastn_params_refseq_browse_clicked),
-                   blastparref);
+                   G_CALLBACK(browse_refseq_clicked), blastparref);
   gtk_box_pack_start(GTK_BOX(hbox), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), blastparref->label_refseq, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(blastparref), hbox, FALSE, FALSE, 1);

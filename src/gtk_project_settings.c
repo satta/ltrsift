@@ -16,6 +16,7 @@
 */
 
 #include <string.h>
+#include "error.h"
 #include "gtk_project_settings.h"
 #include "message_strings.h"
 
@@ -27,7 +28,26 @@ const gchar* gtk_project_settings_get_indexname(GtkProjectSettings *projset)
 void gtk_project_settings_update_indexname(GtkProjectSettings *projset,
                                            const gchar *indexname)
 {
+  GtRDBStmt *stmt = NULL;
+  GtError *err;
+  gchar query[BUFSIZ];
+  gint had_err = 0;
+
   gtk_label_set_text(GTK_LABEL(projset->label_indexname), indexname);
+  if (projset->rdb != NULL) {
+    err = gt_error_new();
+    g_snprintf(query, BUFSIZ,
+               "UPDATE project_settings SET indexname = \"%s\"",
+               gtk_label_get_text(GTK_LABEL(projset->label_indexname)));
+    had_err = gt_rdb_prepare(projset->rdb, query, -1, &stmt, err);
+    if (!had_err) {
+      had_err = gt_rdb_stmt_exec(stmt, err);
+      gt_rdb_stmt_delete(stmt);
+    }
+    if (had_err == -1)
+      error_handle(GTK_WIDGET(projset), err);
+    gt_error_delete(err);
+  }
 }
 
 void gtk_project_settings_update_projectfile(GtkProjectSettings *projset,
@@ -140,176 +160,256 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
 }
 
 gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
-                                               const gchar *projectfile)
+                                               const gchar *projectfile,
+                                               GtError *err)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
   GtStr *result;
   gint had_err = 0;
-  err = gt_error_new();
 
   gtk_label_set_text(GTK_LABEL(projset->label_projectfile), projectfile);
 
-  rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
-    gt_error_delete(err);
-    return -1;
-  }
-
-  had_err = gt_rdb_prepare(rdb,
+  had_err = gt_rdb_prepare(projset->rdb,
                            "SELECT gff3files, indexname, clustering, evalue, "
                             "dust, gapopen, gapextend, xdrop, penalty, reward, "
                             "threads, wordsize, seq_identity, psmall, plarge, "
                             "classification, ltr_tolerance, cand_tolerance, "
                             "features, moreblast FROM project_settings",
                            -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
+  if (had_err)
+    return -1;
+  if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
     return -1;
   }
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 0, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_gff3files), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 1, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_indexname), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 2, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_didclustering),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 3, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_evalue), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 4, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_dust), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 5, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_gapopen), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 6, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_gapextend), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 7, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_xdrop), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 8, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_penalty), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 9, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_reward), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 10, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_threads), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 11, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_wordsize), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 12, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_seqidentity),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 13, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_psmall), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 14, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_plarge), gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 15, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_didclassification),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 16, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_ltrtolerance),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 17, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_candtolerance),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 18, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_usedfeatures),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 19, result, err);
   if (!had_err)
     gtk_label_set_text(GTK_LABEL(projset->label_moreblast),
                        gt_str_get(result));
+  else {
+    gt_rdb_stmt_delete(stmt);
+    gt_str_delete(result);
+    return -1;
+  }
   gt_str_delete(result);
   gt_rdb_stmt_delete(stmt);
-  gt_rdb_delete(rdb);
 
-  return had_err;
+  return 0;
 }
 
-gint gtk_project_settings_save_data(GtkProjectSettings *projset)
+gint gtk_project_settings_save_data(GtkProjectSettings *projset,
+                                    GtError *err)
 {
   GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err;
+  GtError *tmp_err;
   gchar query[BUFSIZ];
   gint had_err = 0;
-  err = gt_error_new();
+  tmp_err = gt_error_new();
 
   rdb =
     gt_rdb_sqlite_new(gtk_label_get_text(GTK_LABEL(projset->label_projectfile)),
-                      err);
+                      tmp_err);
   if (!rdb) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not save gui settings: %s",
-                gt_error_get(err));
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
     gt_error_delete(err);
     return -1;
   }
@@ -338,31 +438,40 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
                             "ltr_tolerance TEXT, "
                             "cand_tolerance TEXT, "
                             "features TEXT)",
-                           -1, &stmt, err);
+                           -1, &stmt, tmp_err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
+  if (had_err) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
     gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
+    gt_error_delete(err);
+    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb,
-                           "DELETE FROM project_settings",
-                           -1, &stmt, err);
+  had_err = gt_rdb_prepare(rdb, "DELETE FROM project_settings",
+                           -1, &stmt, tmp_err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
+  if (had_err) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
     gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
+    gt_error_delete(err);
+    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -399,15 +508,20 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
              gtk_label_get_text(GTK_LABEL(projset->label_ltrtolerance)),
              gtk_label_get_text(GTK_LABEL(projset->label_candtolerance)),
              gtk_label_get_text(GTK_LABEL(projset->label_usedfeatures)));
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, tmp_err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    g_set_error(&projset->err,
-                G_FILE_ERROR,
-                0,
-                "Could not apply gui settings: %s",
-                gt_error_get(err));
+  if (had_err) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
     gt_error_delete(err);
+    gt_rdb_delete(rdb);
+    return -1;
+  }
+  if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
+    gt_error_set(err, "Could not save projekt settings: %s",
+                 gt_error_get(tmp_err));
+    gt_error_delete(err);
+    gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
@@ -417,9 +531,8 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset)
   return 0;
 }
 
-static void gtk_project_settings_delete_event(GtkWidget *widget,
-                                              GT_UNUSED GdkEvent *event,
-                                              GT_UNUSED gboolean user_data)
+static void delete_event(GtkWidget *widget, GT_UNUSED GdkEvent *event,
+                         GT_UNUSED gboolean user_data)
 {
   gtk_widget_hide(widget);
 }
@@ -445,6 +558,7 @@ static void change_index_clicked(GT_UNUSED GtkWidget *button,
     gchar *filename, *tmp;
     const gchar *projectfile;
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
+    gtk_widget_destroy(filechooser);
     tmp = g_strndup(filename, strlen(filename) - strlen(ESQ_PATTERN));
     gtk_label_set_label(GTK_LABEL(projset->label_indexname), tmp);
     g_free(filename);
@@ -452,28 +566,26 @@ static void change_index_clicked(GT_UNUSED GtkWidget *button,
 
     projectfile = gtk_label_get_text(GTK_LABEL(projset->label_projectfile));
     if (g_strcmp0(projectfile, "") != 0) {
-      GtRDB *rdb = NULL;
       GtRDBStmt *stmt;
       GtError *err = gt_error_new();
       gchar query[BUFSIZ];
       gint had_err;
 
-      rdb = gt_rdb_sqlite_new(projectfile, err);
-      if (rdb) {
+      if (projset->rdb != NULL) {
         g_snprintf(query, BUFSIZ,
                    "UPDATE project_settings SET indexname = \"%s\"",
                    gtk_label_get_text(GTK_LABEL(projset->label_indexname)));
-        had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+        had_err = gt_rdb_prepare(projset->rdb, query, -1, &stmt, err);
         if (!had_err) {
           had_err = gt_rdb_stmt_exec(stmt, err);
           gt_rdb_stmt_delete(stmt);
         }
-        gt_rdb_delete(rdb);
+        if (had_err == -1)
+          error_handle(GTK_WIDGET(projset), err);
       }
       gt_error_delete(err);
     }
   }
-  gtk_widget_destroy(filechooser);
 }
 
 static void close_clicked(GT_UNUSED GtkWidget *button,
@@ -771,19 +883,20 @@ GType gtk_project_settings_get_type(void)
   return project_settings_type;
 }
 
-GtkWidget* gtk_project_settings_new()
+GtkWidget* gtk_project_settings_new(GtRDB *rdb)
 {
   GtkProjectSettings *projset;
   gchar title[BUFSIZ];
 
   projset = gtk_type_new(GTK_PROJECT_SETTINGS_TYPE);
   g_signal_connect(G_OBJECT(projset), "delete_event",
-                   G_CALLBACK(gtk_project_settings_delete_event), NULL);
+                   G_CALLBACK(delete_event), NULL);
   gtk_window_set_position(GTK_WINDOW(projset), GTK_WIN_POS_CENTER_ALWAYS);
   gtk_window_set_modal(GTK_WINDOW(projset), TRUE);
   g_snprintf(title, BUFSIZ, PROJSET_WINDOW_TITLE, GUI_NAME);
   gtk_window_set_title(GTK_WINDOW(projset), title);
   gtk_container_set_border_width(GTK_CONTAINER(projset), 5);
+  projset->rdb = rdb;
 
   return GTK_WIDGET(projset);
 }

@@ -267,6 +267,9 @@ ThreadData* threaddata_new()
   threaddata->n_features = 0;
   threaddata->set_id = GT_UNDEF_ULONG;
   threaddata->use_paramset = FALSE;
+  threaddata->rdb = NULL;
+  threaddata->adb = NULL;
+  threaddata->fi = NULL;
 
   return threaddata;
 }
@@ -801,4 +804,16 @@ unsigned long determine_full_length_candidates(GtArray *nodes,
   gt_array_delete(fl_cands);
 
   return flcands;
+}
+
+gchar* double_underscores(const gchar *str)
+{
+  gchar **arr;
+  gchar *ret;
+
+  arr = g_strsplit(str, "_", 0);
+  ret = g_strjoinv("__", arr);
+  g_strfreev(arr);
+
+  return ret;
 }

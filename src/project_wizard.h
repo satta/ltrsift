@@ -15,7 +15,7 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include "ltrgui.h"
+#include "ltrsift.h"
 
 #ifndef PROJECT_WIZARD_H
 #define PROJECT_WIZARD_H

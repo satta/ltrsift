@@ -15,8 +15,8 @@
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef LTRGUI_H
-#define LTRGUI_H
+#ifndef LTRSIFT_H
+#define LTRSIFT_H
 
 #include <gtk/gtk.h>
 #include <glib.h>
@@ -58,5 +58,9 @@ struct _GUIData
   GtError *err;
   GtHashmap *refseq_paramsets;
 };
+
+gint apply_gui_settings(GUIData *ltrgui);
+
+gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile);
 
 #endif

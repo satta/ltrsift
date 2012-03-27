@@ -23,17 +23,30 @@
 #include "support.h"
 
 /* function prototypes start */
-static gint nb_fam_lv_sort_function(GtkTreeModel*,
-                                    GtkTreeIter*,
-                                    GtkTreeIter*,
-                                    gpointer);
+static gint notebook_list_view_sort_function(GtkTreeModel*, GtkTreeIter*,
+                                             GtkTreeIter*, gpointer);
 
 static void tree_view_details_clear_on_equal_nodes(GtkLTRFamilies*,
                                                    GtGenomeNode*);
 /* function prototypes end */
 
 /* get functions start */
-GtkNotebook* gtk_ltr_families_get_nb(GtkLTRFamilies *ltrfams)
+GtFeatureIndex* gtk_ltr_families_get_fi(GtkLTRFamilies *ltrfams)
+{
+  return ltrfams->fi;
+}
+
+GtRDB* gtk_ltr_families_get_rdb(GtkLTRFamilies *ltrfams)
+{
+  return ltrfams->rdb;
+}
+
+GtAnnoDBSchema* gtk_ltr_families_get_adb(GtkLTRFamilies *ltrfams)
+{
+  return ltrfams->adb;
+}
+
+GtkNotebook* gtk_ltr_families_get_notebook(GtkLTRFamilies *ltrfams)
 {
   return GTK_NOTEBOOK(ltrfams->nb_family);
 }
@@ -75,6 +88,21 @@ gint gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams)
 /* get functions end */
 
 /* set functions start */
+void gtk_ltr_families_set_rdb(GtRDB *rdb, GtkLTRFamilies *ltrfams)
+{
+  ltrfams->rdb = rdb;
+}
+
+void gtk_ltr_families_set_adb(GtAnnoDBSchema *adb, GtkLTRFamilies *ltrfams)
+{
+  ltrfams->adb = adb;
+}
+
+void gtk_ltr_families_set_fi(GtFeatureIndex *fi, GtkLTRFamilies *ltrfams)
+{
+  ltrfams->fi = fi;
+}
+
 void gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams, gboolean modified)
 {
   ltrfams->modified = modified;
@@ -151,45 +179,35 @@ void append_attribute_to_string(GString *string, GtFeatureNode *fn,
   g_string_append(string, ";");
 }
 
-gint remove_refseq_params(const gchar *projectfile, unsigned long last_id,
-                          GtError *err)
+gint remove_refseq_params(GtkLTRFamilies *ltrfams, unsigned long last_id)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
   gchar query[BUFSIZ];
   gint had_err = 0;
-  err = gt_error_new();
 
-  rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb)
-    return -1;
   g_snprintf(query, BUFSIZ,
              "DELETE FROM refseq_match_params WHERE set_id = \"%lu\"", last_id);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
+  if (had_err)
+    return -1;
+  if ((had_err = gt_rdb_stmt_exec(stmt, ltrfams->err)) < 0) {
+    gt_rdb_stmt_delete(stmt);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
-  gt_rdb_delete(rdb);
   return 0;
 }
 
 gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
                         int gapextend, int penalty, int reward, int threads,
                         double xdrop, double identity, const char *moreblast,
-                        double minlen, const char *projectfile,
-                        unsigned long set_id, GtError *err)
+                        double minlen, unsigned long set_id, GtRDB *rdb,
+                        GtError *err)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
   gchar query[BUFSIZ];
   gint had_err = 0;
-
-  rdb = gt_rdb_sqlite_new(projectfile, err);
-  if (!rdb)
-    return -1;
 
   had_err = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS refseq_match_params "
@@ -209,8 +227,10 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
                             "minlen REAL)",
                            -1, &stmt, err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
+  if (had_err)
+    return -1;
+  if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    gt_rdb_stmt_delete(stmt);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -271,12 +291,13 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
              moreblast, minlen);
   had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
+  if (had_err)
+    return -1;
+  if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    gt_rdb_stmt_delete(stmt);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
-  gt_rdb_delete(rdb);
   return 0;
 }
 
@@ -300,11 +321,11 @@ void update_main_tab_label(GtkLTRFamilies *ltrfams)
   percent = ((gfloat) ltrfams->unclassified_cands /
              (gfloat) size) * 100.0;
   g_snprintf(text, BUFSIZ, "%s (%.1f%%)", MAIN_TAB_LABEL, percent);
-  gtk_label_close_set_text(GTKLABELCLOSE(tab_label), text);
+  gtk_label_close_set_text(GTK_LABEL_CLOSE(tab_label), text);
 }
 
-void gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
-                                         long int amount)
+void gtk_ltr_families_update_unclassified_cands(GtkLTRFamilies *ltrfams,
+                                                long int amount)
 {
   gchar sb_text[BUFSIZ];
 
@@ -315,8 +336,8 @@ void gtk_ltr_families_update_unclass_cands(GtkLTRFamilies *ltrfams,
   statusbar_set_status(ltrfams->statusbar, sb_text);
 }
 
-static gboolean prefix_in_list_view_fams(GtkTreeModel *model,
-                                         const gchar *prefix)
+static gboolean prefix_in_list_view_families(GtkTreeModel *model,
+                                             const gchar *prefix)
 {
   GtkTreeIter iter;
   gchar *name;
@@ -554,7 +575,7 @@ static void remove_merged_family(GtkTreeRowReference *rowref,
   if (tab_label) {
     gtk_notebook_remove_page(GTK_NOTEBOOK(ltrfams->nb_family),
                 GPOINTER_TO_INT(
-                 gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
+                 gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
                                                  "nbpage")));
   }
   gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
@@ -603,8 +624,8 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
       attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN);
       if (attr)
         gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
-      gtk_ltr_families_nb_fam_lv_append_gn(ltrfams, list_view, gn, NULL, NULL,
-                                           NULL, NULL);
+      gtk_ltr_families_notebook_list_view_append_gn(ltrfams, list_view, gn,
+                                                    NULL, NULL, NULL, NULL);
       gt_feature_node_iterator_delete(fni);
     }
     gt_array_delete(nodes);
@@ -614,7 +635,7 @@ static void remove_family(GtkTreeRowReference *rowref, GtkLTRFamilies *ltrfams)
     if (tab_label) {
       gtk_notebook_remove_page(GTK_NOTEBOOK(ltrfams->nb_family),
                   GPOINTER_TO_INT(
-                   gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
+                   gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
                                                    "nbpage")));
     }
     g_list_free(children);
@@ -651,27 +672,16 @@ static void remove_nodes_from_array(GtArray *nodes1, GtArray *nodes2,
       tmp1 = *(GtGenomeNode**) gt_array_get(nodes1, j);
       if (gt_genome_node_cmp(tmp1, tmp2) == 0) {
         gt_array_rem(nodes1, j);
-        if (delete_gn)
+        if (delete_gn) {
           delete_gt_genome_node(tmp1);
+        }
         break;
       }
     }
   }
 }
 
-char* double_underscores(const char *str)
-{
-  char **arr;
-  char *ret;
-
-  arr = g_strsplit(str, "_", 0);
-  ret = g_strjoinv("__", arr);
-  g_strfreev(arr);
-
-  return ret;
-}
-
-void free_str_hash(void *elem)
+static void free_str_hash(void *elem)
 {
   gt_free(elem);
 }
@@ -697,11 +707,10 @@ static gboolean classify_nodes_finished(gpointer data)
       g_list_foreach(threaddata->references, (GFunc) remove_candidate, NULL);
       threaddata->ltrfams->unclassified_cands -=
                                            gt_array_size(threaddata->new_nodes);
-      gtk_ltr_families_nb_fam_lv_append_array(threaddata->ltrfams,
+      gtk_ltr_families_notebook_list_view_append_array(threaddata->ltrfams,
                                               threaddata->list_view,
                                               threaddata->new_nodes,
                                               NULL);
-      gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
       update_main_tab_label(threaddata->ltrfams);
     } else {
       gt_error_set(threaddata->ltrfams->err,
@@ -990,8 +999,10 @@ static void on_drag_data_received(GtkWidget *widget,
     cdata->cand_ref = NULL;
     gt_array_add(nodes, gn);
     if (tab_child)
-      gtk_ltr_families_nb_fam_lv_append_gn(ltrfams, GTK_TREE_VIEW(tab_child),
-                                           gn, tv_ref2, NULL, NULL, NULL);
+      gtk_ltr_families_notebook_list_view_append_gn(ltrfams,
+                                                    GTK_TREE_VIEW(tab_child),
+                                                    gn, tv_ref2, NULL, NULL,
+                                                    NULL);
     gtk_tree_path_free(path);
   }
 
@@ -1002,7 +1013,6 @@ static void on_drag_data_received(GtkWidget *widget,
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
   g_free(oldname);
   free_tdata(tdata);
-  gtk_ltr_families_set_modified(ltrfams, TRUE);
 }
 /* drag'n'drop related functions end */
 
@@ -1020,9 +1030,8 @@ static gboolean refseq_match_cands_finished(gpointer data)
   if (threaddata->had_err) {
     if (threaddata->set_id != GT_UNDEF_ULONG) {
       gint had_err;
-      had_err = remove_refseq_params(threaddata->ltrfams->projectfile,
-                                     threaddata->set_id,
-                                     threaddata->ltrfams->err);
+      had_err = remove_refseq_params(threaddata->ltrfams,
+                                     threaddata->set_id);
       if (!had_err) {
         gdk_threads_enter();
         error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
@@ -1037,8 +1046,7 @@ static gboolean refseq_match_cands_finished(gpointer data)
     error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
                  threaddata->ltrfams->err);
     gdk_threads_leave();
-  } else
-    gtk_ltr_families_set_modified(threaddata->ltrfams, TRUE);
+  }
   gt_array_delete(threaddata->nodes);
   threaddata_delete(threaddata);
   return FALSE;
@@ -1101,8 +1109,8 @@ static gpointer refseq_match_cands_start(gpointer data)
                                                  gapopen, gapextend, penalty,
                                                  reward, threads, xdrop, seqid,
                                                  moreblast, match_len,
-                                               threaddata->ltrfams->projectfile,
                                                  threaddata->set_id,
+                                                 threaddata->ltrfams->rdb,
                                                  threaddata->err);
       }
     }
@@ -1138,128 +1146,199 @@ static gpointer refseq_match_cands_start(gpointer data)
   return NULL;
 }
 
-static void refseq_match_changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
+static gint refseq_match_changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
-  GtError *err = NULL;
+  GtError *err;
   gint had_err = 0;
   gchar *param, query[BUFSIZ];
 
   param = gtk_combo_box_get_active_text(combob);
   if (!param || (g_strcmp0(param, "") == 0))
-    return;
+    return 0;
   err = gt_error_new();
-  rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
-  if (!rdb)
-    had_err = -1;
+  g_snprintf(query, BUFSIZ,
+             "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
+             param);
+  had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, err);
   if (!had_err) {
-    g_snprintf(query, BUFSIZ,
-               "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
-               param);
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, NULL);
-    if (!had_err) {
-      had_err = gt_rdb_stmt_exec(stmt, err);
-      if (!(had_err < 0)) {
-        GtStr *result = gt_str_new();
-        gint dust, gapopen, gapextend, penalty, reward, threads, wordsize;
-        gdouble xdrop, evalue, seqid, mlen;
-        gchar *moreblast;
+    had_err = gt_rdb_stmt_exec(stmt, err);
+    if (!(had_err < 0)) {
+      GtStr *result = gt_str_new();
+      gint dust, gapopen, gapextend, penalty, reward, threads, wordsize;
+      gdouble xdrop, evalue, seqid, mlen;
+      gchar *moreblast;
 
-        gt_rdb_stmt_get_string(stmt, 2, result, err);
+      had_err = gt_rdb_stmt_get_string(stmt, 2, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           evalue = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &evalue);
+      } else {
         gt_str_delete(result);
-        gt_rdb_stmt_get_int(stmt, 3, &dust, err);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 4, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      had_err = gt_rdb_stmt_get_int(stmt, 3, &dust, err);
+      if (had_err) {
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 4, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           gapopen = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &gapopen);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 5, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 5, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           gapextend = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &gapextend);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 6, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 6, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           xdrop = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &xdrop);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 7, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 7, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           penalty = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &penalty);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 8, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 8, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           reward = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &reward);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 9, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 9, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           threads = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &threads);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 10, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 10, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           wordsize = GT_UNDEF_INT;
         else
           sscanf(gt_str_get(result), "%d", &wordsize);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 11, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 11, result, err);
+      if (!had_err) {
         if (g_strcmp0(gt_str_get(result), "DEFAULT") == 0)
           seqid = GT_UNDEF_DOUBLE;
         else
           sscanf(gt_str_get(result), "%lf", &seqid);
+      } else {
         gt_str_delete(result);
-        result = gt_str_new();
-        gt_rdb_stmt_get_string(stmt, 12, result, err);
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      result = gt_str_new();
+      had_err = gt_rdb_stmt_get_string(stmt, 12, result, err);
+      if (!had_err)
         moreblast = gt_cstr_dup(gt_str_get(result));
+      else {
         gt_str_delete(result);
-        gt_rdb_stmt_get_double(stmt, 13, &mlen, err);
-
+        gt_rdb_stmt_delete(stmt);
+        return -1;
+      }
+      gt_str_delete(result);
+      had_err = gt_rdb_stmt_get_double(stmt, 13, &mlen, err);
+      if (!had_err) {
         gtk_blastn_params_refseq_set_paramset(GTK_BLASTN_PARAMS_REFSEQ(
-                                                        ltrfams->blastn_params),
-                                              evalue, dust, gapopen, gapextend,
-                                              xdrop, penalty, reward, threads,
-                                              wordsize, seqid, moreblast, mlen);
+                                                      ltrfams->blastn_params),
+                                             evalue, dust, gapopen, gapextend,
+                                             xdrop, penalty, reward, threads,
+                                             wordsize, seqid, moreblast, mlen);
         gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
                                                        ltrfams->blastn_params));
+      } else {
+        gt_rdb_stmt_delete(stmt);
+        return -1;
       }
+    } else {
+      gt_rdb_stmt_delete(stmt);
+      return -1;
     }
-  }
+  } else
+    return -1;
   gt_rdb_stmt_delete(stmt);
-  gt_rdb_delete(rdb);
   gt_error_delete(err);
+  return 0;
 }
 
 static void refseq_match_toggled(GtkToggleButton *togglebutton,
                                  GtkLTRFamilies *ltrfams)
 {
   gboolean active;
+  gint had_err = 0;
   active = gtk_toggle_button_get_active(togglebutton);
   gtk_widget_set_sensitive(ltrfams->blastn_params_combob, active);
   if (active) {
-    refseq_match_changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob), ltrfams);
-    gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
+    had_err = refseq_match_changed(GTK_COMBO_BOX(ltrfams->blastn_params_combob),
+                                   ltrfams);
+    if (!had_err)
+      gtk_blastn_params_refseq_unset_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
                                                        ltrfams->blastn_params));
+    else
+      error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
   } else
     gtk_blastn_params_refseq_set_sensitive(GTK_BLASTN_PARAMS_REFSEQ(
                                                        ltrfams->blastn_params));
@@ -1304,20 +1383,15 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
   ltrfams->blastn_params_combob = combob = gtk_combo_box_new_text();
   gtk_widget_set_sensitive(combob, FALSE);
   if (ltrfams->projectfile) {
-    GtRDB *rdb = NULL;
     GtRDBStmt *stmt;
     GtError *err;
     gint had_err = 0;
 
     err = gt_error_new();
-    rdb = gt_rdb_sqlite_new(ltrfams->projectfile, err);
-    if (!rdb)
-      had_err = -1;
-    if (!had_err)
-      had_err = gt_rdb_prepare(rdb,
-                               "SELECT set_id FROM refseq_match_params "
-                               "ORDER by set_id",
-                               -1, &stmt, err);
+    had_err = gt_rdb_prepare(ltrfams->rdb,
+                             "SELECT set_id FROM refseq_match_params "
+                             "ORDER by set_id",
+                             -1, &stmt, err);
     if (!had_err) {
       while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
         had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
@@ -1347,7 +1421,6 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
       error_handle(toplevel, ltrfams->err);
     }
     gt_error_delete(err);
-    gt_rdb_delete(rdb);
   } else {
     gtk_widget_set_sensitive(checkb, FALSE);
     gtk_widget_set_sensitive(combob, FALSE);
@@ -1423,7 +1496,6 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
         gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(
                                                               ltrfams->projset),
                                               tmp);
-        gtk_ltr_families_set_modified(ltrfams, TRUE);
         g_free(tmp);
         g_free(tmpname);
 
@@ -1465,10 +1537,8 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
 /* RefSeqMatch related functions end */
 
 /* popupmenu related functions start*/
-static void
-gtk_ltr_families_notebook_list_view_pmenu_match_clicked(
-                                                  GT_UNUSED GtkWidget *menuitem,
-                                                        GtkLTRFamilies *ltrfams)
+static void notebook_list_view_menu_match_clicked(GT_UNUSED GtkWidget *menuitem,
+                                                  GtkLTRFamilies *ltrfams)
 {
   GtkTreeView *list_view;
   GtkTreeSelection *sel;
@@ -1505,9 +1575,8 @@ gtk_ltr_families_notebook_list_view_pmenu_match_clicked(
 }
 
 static void
-gtk_ltr_families_notebook_list_view_pmenu_filter_clicked(
-                                                  GT_UNUSED GtkWidget *menuitem,
-                                                        GtkLTRFamilies *ltrfams)
+notebook_list_view_menu_filter_clicked(GT_UNUSED GtkWidget *menuitem,
+                                       GtkLTRFamilies *ltrfams)
 {
   GtkTreeSelection *sel;
   GtkWidget *tab_child;
@@ -1531,8 +1600,8 @@ gtk_ltr_families_notebook_list_view_pmenu_filter_clicked(
 }
 
 static void
-gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
-                                                GtkLTRFamilies *ltrfams)
+notebook_list_view_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
+                                       GtkLTRFamilies *ltrfams)
 {
   GtkWidget *dialog,
             *main_tab,
@@ -1601,8 +1670,8 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
         gt_feature_node_remove_attribute(curnode, ATTR_LTRFAM);
         if ((attr = gt_feature_node_get_attribute(curnode, ATTR_FULLLEN)))
           gt_feature_node_remove_attribute(curnode, ATTR_FULLLEN);
-        gtk_ltr_families_nb_fam_lv_append_gn(ltrfams, tmp_view, gn, NULL, NULL,
-                                             NULL, NULL);
+        gtk_ltr_families_notebook_list_view_append_gn(ltrfams, tmp_view, gn,
+                                                      NULL, NULL, NULL, NULL);
         gt_feature_node_iterator_delete(fni);
       }
       references = g_list_prepend(references,
@@ -1636,8 +1705,8 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
       g_free(tmp_oldname);
     } else {
       remove_nodes_from_array(ltrfams->nodes, nodes, TRUE);
-      gtk_ltr_families_update_unclass_cands(ltrfams,
-                                            (-1) * gt_array_size(nodes));
+      gtk_ltr_families_update_unclassified_cands(ltrfams,
+                                                 (-1) * gt_array_size(nodes));
     }
     g_list_foreach(references, (GFunc) remove_row, NULL);
     g_list_foreach(references, (GFunc) gtk_tree_row_reference_free, NULL);
@@ -1646,15 +1715,14 @@ gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
     g_list_free(rows);
     g_list_free(tmp_children);
     gt_array_delete(nodes);
-    gtk_ltr_families_set_modified(ltrfams, TRUE);
   }
   g_list_free(children);
   gtk_widget_destroy(dialog);
 }
 
-static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
-                                             GdkEventButton *event,
-                                             GtkLTRFamilies *ltrfams)
+static void notebook_list_view_menu(GT_UNUSED GtkWidget *tree_view,
+                                    GdkEventButton *event,
+                                    GtkLTRFamilies *ltrfams)
 {
   GtkWidget *menu,
             *menuitem;
@@ -1668,21 +1736,18 @@ static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
 
   menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
   g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_filter_clicked),
-                   ltrfams);
+                   G_CALLBACK(notebook_list_view_menu_filter_clicked), ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_MATCH_SELECTION);
   g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_notebook_list_view_pmenu_match_clicked),
-                   ltrfams);
+                   G_CALLBACK(notebook_list_view_menu_match_clicked), ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label((cur_tab_no == main_tab_no)
                                           ? DELETE_SELECTED : UNCLASS_SELECTED);
   g_signal_connect(menuitem, "activate",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked),
-                   ltrfams);
+                   G_CALLBACK(notebook_list_view_menu_remove_clicked), ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   gtk_widget_show_all(menu);
@@ -1691,9 +1756,9 @@ static void gtk_ltr_families_nb_fam_lv_pmenu(GT_UNUSED GtkWidget *tree_view,
                  gdk_event_get_time((GdkEvent*)event));
 }
 
-static gboolean gtk_ltr_families_nb_fam_lv_button_pressed(GtkWidget *tree_view,
-                                                          GdkEventButton *event,
-                                                        GtkLTRFamilies *ltrfams)
+static gboolean notebook_list_view_button_pressed(GtkWidget *tree_view,
+                                                  GdkEventButton *event,
+                                                  GtkLTRFamilies *ltrfams)
 {
   if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
   {
@@ -1712,22 +1777,21 @@ static gboolean gtk_ltr_families_nb_fam_lv_button_pressed(GtkWidget *tree_view,
       } else
         return TRUE;
     }
-    gtk_ltr_families_nb_fam_lv_pmenu(tree_view, event, ltrfams);
+    notebook_list_view_menu(tree_view, event, ltrfams);
     return TRUE;
   }
   return FALSE;
 }
 
-static gboolean gtk_ltr_families_nb_fam_lv_on_pmenu(GtkWidget *tree_view,
-                                                    GtkLTRFamilies *ltrfams)
+static gboolean notebook_list_view_on_menu(GtkWidget *tree_view,
+                                           GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_nb_fam_lv_pmenu(tree_view, NULL, ltrfams);
+  notebook_list_view_menu(tree_view, NULL, ltrfams);
   return TRUE;
 }
 
-static void
-gtk_ltr_families_lv_fams_pmenu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
-                                            gpointer userdata)
+static void list_view_families_menu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
+                                                 gpointer userdata)
 {
   GtkTreeView *tree_view;
   GtkTreeModel *model;
@@ -1752,9 +1816,8 @@ gtk_ltr_families_lv_fams_pmenu_edit_clicked(GT_UNUSED GtkWidget *menuitem,
   gtk_tree_path_free(path);
 }
 
-static void
-gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
-                                                        GtkLTRFamilies *ltrfams)
+static void list_view_families_menu_match_clicked(GT_UNUSED GtkWidget *m,
+                                                  GtkLTRFamilies *ltrfams)
 {
   GtkTreeSelection *sel;
   GtkTreeModel *model;
@@ -1785,9 +1848,8 @@ gtk_ltr_families_list_view_families_pmenu_match_clicked(GT_UNUSED GtkWidget *m,
   gtk_ltr_families_refseq_match(nodes, ltrfams);
 }
 
-static void
-gtk_ltr_families_list_view_families_pmenu_filter_clicked(GT_UNUSED GtkWidget *m,
-                                                        GtkLTRFamilies *ltrfams)
+static void list_view_families_menu_filter_clicked(GT_UNUSED GtkWidget *m,
+                                                   GtkLTRFamilies *ltrfams)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -1817,10 +1879,8 @@ gtk_ltr_families_list_view_families_pmenu_filter_clicked(GT_UNUSED GtkWidget *m,
   gtk_widget_show(ltrfams->ltrfilt);
 }
 
-static void
-gtk_ltr_families_list_view_families_pmenu_merge_clicked(
-                                                  GT_UNUSED GtkWidget *menuitem,
-                                                        GtkLTRFamilies *ltrfams)
+static void list_view_families_menu_merge_clicked(GT_UNUSED GtkWidget *menuitem,
+                                                  GtkLTRFamilies *ltrfams)
 {
   CandidateData *cdata;
   GtkWidget *dialog, *entry, *label;
@@ -1905,12 +1965,11 @@ gtk_ltr_families_list_view_families_pmenu_merge_clicked(
   g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
   g_list_free(references);
   g_list_free(rows);
-  gtk_ltr_families_set_modified(ltrfams, TRUE);
 }
 
 static void
-gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
-                                              GtkLTRFamilies *ltrfams)
+list_view_families_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
+                                       GtkLTRFamilies *ltrfams)
 {
   GtkWidget *dialog;
   GtkTreeView *tree_view;
@@ -1952,15 +2011,13 @@ gtk_ltr_families_lv_fams_pmenu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free(references);
     g_list_free(rows);
-    gtk_ltr_families_set_modified(ltrfams, TRUE);
     update_main_tab_label(ltrfams);
   }
   gtk_widget_destroy(dialog);
 }
 
-static void
-gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
-                                           gboolean multi)
+static void list_view_families_menu_export_annotation(GtkLTRFamilies *ltrfams,
+                                                      gboolean multi)
 {
   GtkWidget *filechooser = NULL,
             *toplevel,
@@ -2054,9 +2111,8 @@ gtk_ltr_families_lv_fams_pmenu_export_anno(GtkLTRFamilies *ltrfams,
   }
 }
 
-static void
-gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
-                                           gboolean multi)
+static void list_view_families_menu_export_sequences(GtkLTRFamilies *ltrfams,
+                                                     gboolean multi)
 {
   GtkWidget *dialog = NULL,
             *filechooser,
@@ -2131,7 +2187,6 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
         gtk_widget_destroy(filechooser);
         gtk_project_settings_update_indexname(GTK_PROJECT_SETTINGS(projset),
                                               tmp);
-        gtk_ltr_families_set_modified(ltrfams, TRUE);
         g_free(tmp);
         g_free(tmpname);
         indexname =
@@ -2215,36 +2270,37 @@ gtk_ltr_families_lv_fams_pmenu_export_seqs(GtkLTRFamilies *ltrfams,
 }
 
 static void
-gtk_ltr_families_lv_fams_pmenu_export_seqs_one(GT_UNUSED GtkWidget *menuitem,
-                                               GtkLTRFamilies *ltrfams)
+list_view_families_menu_export_sequences_single_clicked(GT_UNUSED GtkWidget *m,
+                                                        GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_lv_fams_pmenu_export_seqs(ltrfams, FALSE);
+  list_view_families_menu_export_sequences(ltrfams, FALSE);
 }
 
 static void
-gtk_ltr_families_lv_fams_pmenu_export_seqs_mult(GT_UNUSED GtkWidget *menuitem,
-                                                GtkLTRFamilies *ltrfams)
+list_view_families_menu_export_sequences_multiple_clicked(
+                                                  GT_UNUSED GtkWidget *menuitem,
+                                                        GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_lv_fams_pmenu_export_seqs(ltrfams, TRUE);
+  list_view_families_menu_export_sequences(ltrfams, TRUE);
 }
 
 static void
-gtk_ltr_families_lv_fams_pmenu_export_anno_one(GT_UNUSED GtkWidget *menuitem,
-                                               GtkLTRFamilies *ltrfams)
+list_view_families_menu_export_annotation_single_clicked(GT_UNUSED GtkWidget *m,
+                                                        GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_lv_fams_pmenu_export_anno(ltrfams, FALSE);
+  list_view_families_menu_export_annotation(ltrfams, FALSE);
 }
 
 static void
-gtk_ltr_families_lv_fams_pmenu_export_anno_mult(GT_UNUSED GtkWidget *menuitem,
-                                                GtkLTRFamilies *ltrfams)
+list_view_families_menu_export_annotation_multiple_clicked(
+                                                  GT_UNUSED GtkWidget *menuitem,
+                                                        GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_lv_fams_pmenu_export_anno(ltrfams, TRUE);
+  list_view_families_menu_export_annotation(ltrfams, TRUE);
 }
 
-static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
-                                           GdkEventButton *event,
-                                           GtkLTRFamilies *ltrfams)
+static void list_view_families_menu(GtkWidget *tree_view, GdkEventButton *event,
+                                    GtkLTRFamilies *ltrfams)
 {
   GtkWidget *menu,
             *menuitem;
@@ -2258,32 +2314,32 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
 
   menuitem = gtk_menu_item_new_with_label(FAMS_EDIT_NAME);
   g_signal_connect(menuitem, "activate",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_edit_clicked),
+                   G_CALLBACK(list_view_families_menu_edit_clicked),
                    tree_view);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_FILTER_SELECTION);
   g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_list_view_families_pmenu_filter_clicked),
+                   G_CALLBACK(list_view_families_menu_filter_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   /* gtk_ltr_families_lv_fams_tb_refseqmatch_clicked */
   menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_MATCH_SELECTION);
   g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_list_view_families_pmenu_match_clicked),
+                   G_CALLBACK(list_view_families_menu_match_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(FAMS_REMOVE_SEL);
   g_signal_connect(menuitem, "activate",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_remove_clicked),
+                   G_CALLBACK(list_view_families_menu_remove_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(LTR_FAMILIES_MERGE_SELECTION);
   g_signal_connect(menuitem, "activate",
-           G_CALLBACK(gtk_ltr_families_list_view_families_pmenu_merge_clicked),
+                   G_CALLBACK(list_view_families_menu_merge_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
   if (gtk_tree_selection_count_selected_rows(sel) == 1)
@@ -2291,13 +2347,13 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
 
   menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_SEQS_ONE);
   g_signal_connect(menuitem, "activate",
-                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_seqs_one),
+            G_CALLBACK(list_view_families_menu_export_sequences_single_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_SEQS_MULT);
   g_signal_connect(menuitem, "activate",
-                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_seqs_mult),
+          G_CALLBACK(list_view_families_menu_export_sequences_multiple_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
   if (gtk_tree_selection_count_selected_rows(sel) == 1)
@@ -2305,13 +2361,13 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
 
   menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_ANNO_ONE);
   g_signal_connect(menuitem, "activate",
-                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_anno_one),
+           G_CALLBACK(list_view_families_menu_export_annotation_single_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_label(FAMS_EXPORT_ANNO_MULT);
   g_signal_connect(menuitem, "activate",
-                 G_CALLBACK(gtk_ltr_families_lv_fams_pmenu_export_anno_mult),
+         G_CALLBACK(list_view_families_menu_export_annotation_multiple_clicked),
                    ltrfams);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
   if (gtk_tree_selection_count_selected_rows(sel) == 1)
@@ -2323,9 +2379,9 @@ static void gtk_ltr_families_tv_fams_pmenu(GtkWidget *tree_view,
                  gdk_event_get_time((GdkEvent*)event));
 }
 
-static gboolean gtk_ltr_families_tv_fams_button_pressed(GtkWidget *tree_view,
-                                                        GdkEventButton *event,
-                                                        GtkLTRFamilies *ltrfams)
+static gboolean list_view_families_button_pressed(GtkWidget *tree_view,
+                                                  GdkEventButton *event,
+                                                  GtkLTRFamilies *ltrfams)
 {
   if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3)
   {
@@ -2344,22 +2400,22 @@ static gboolean gtk_ltr_families_tv_fams_button_pressed(GtkWidget *tree_view,
       } else
         return TRUE;
     }
-    gtk_ltr_families_tv_fams_pmenu(tree_view, event, ltrfams);
+    list_view_families_menu(tree_view, event, ltrfams);
     return TRUE;
   }
   return FALSE;
 }
 
-static gboolean gtk_ltr_families_tv_fams_on_pmenu(GtkWidget *tree_view,
-                                                  GtkLTRFamilies *ltrfams)
+static gboolean list_view_families_on_menu(GtkWidget *tree_view,
+                                           GtkLTRFamilies *ltrfams)
 {
-  gtk_ltr_families_tv_fams_pmenu(tree_view, NULL, ltrfams);
+  list_view_families_menu(tree_view, NULL, ltrfams);
   return TRUE;
 }
 /* popupmenu related functions end */
 
 /* <nb_family> related functions start */
-void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
+void gtk_ltr_families_notebook_list_view_append_array(GtkLTRFamilies *ltrfams,
                                              GtkTreeView *list_view,
                                              GtArray *nodes,
                                              GtkListStore *store)
@@ -2383,7 +2439,7 @@ void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
     fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
     curnode = gt_feature_node_iterator_next(fni);
     if ((fam = gt_feature_node_get_attribute(curnode, ATTR_LTRFAM)) == NULL) {
-      gtk_ltr_families_nb_fam_lv_append_gn(ltrfams, list_view, gn,
+      gtk_ltr_families_notebook_list_view_append_gn(ltrfams, list_view, gn,
                                            NULL, store, ltrfams->style,
                                            ltrfams->colors);
       ltrfams->unclassified_cands++;
@@ -2465,8 +2521,8 @@ void gtk_ltr_families_nb_fam_lv_append_array(GtkLTRFamilies *ltrfams,
   gt_hashmap_delete(iter_hash);
 }
 
-static void gtk_ltr_families_nb_fam_tb_fl_clicked(GT_UNUSED GtkWidget *button,
-                                                  GtkLTRFamilies *ltrfams)
+static void notebook_toolbar_flcand_clicked(GT_UNUSED GtkWidget *button,
+                                            GtkLTRFamilies *ltrfams)
 {
   GtkNotebook *notebook;
   GtkTreeView *list_view;
@@ -2581,12 +2637,11 @@ static void gtk_ltr_families_nb_fam_tb_fl_clicked(GT_UNUSED GtkWidget *button,
     update_list_view_with_flcand(GTK_LIST_STORE(model1), &iter1, gn);
   }
   g_list_free(children);
-
-  gtk_ltr_families_set_modified(ltrfams, TRUE);
 }
 
-static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
-                                                  GtkLTRFamilies *ltrfams)
+static void
+notebook_toolbar_search_cand_group_clicked(GT_UNUSED GtkWidget *button,
+                                           GtkLTRFamilies *ltrfams)
 {
   GtkNotebook *notebook;
   GtkTreeView *list_view;
@@ -2637,7 +2692,7 @@ static void gtk_ltr_families_nb_fam_tb_nf_clicked(GT_UNUSED GtkWidget *button,
     GtkTreeModel *tmp_model;
     tmp_model =
             gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfams->list_view_families));
-    while (prefix_in_list_view_fams(tmp_model, fam_prefix)) {
+    while (prefix_in_list_view_families(tmp_model, fam_prefix)) {
       GtkWidget *label,
                 *entry,
                 *vbox;
@@ -2730,7 +2785,7 @@ static int add_feature_columns(void *key, void *value, void *lv,
                                                     num, NULL);
   gtk_tree_view_column_set_resizable(column, true);
   gtk_tree_sortable_set_sort_func(sortable, num,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(num), NULL);
   gtk_tree_view_column_set_sort_column_id(column, num);
   if (g_strcmp0((const char*) key, FNT_LLTR) == 0)
@@ -2742,9 +2797,8 @@ static int add_feature_columns(void *key, void *value, void *lv,
   return 0;
 }
 
-static void
-gtk_ltr_families_nb_fam_lv_set_visible_columns(GtkNotebook *notebook,
-                                               GtkTreeView *list_view1)
+static void notebook_list_view_set_visible_columns(GtkNotebook *notebook,
+                                                   GtkTreeView *list_view1)
 {
   GtkWidget *sw;
   GtkTreeView *list_view2;
@@ -2763,7 +2817,7 @@ gtk_ltr_families_nb_fam_lv_set_visible_columns(GtkNotebook *notebook,
   columns = gtk_tree_view_get_columns(list_view2);
   noc = g_list_length(columns);
   /* start with i = 1 because column 0 needs to be visible for families but not
-     on general tab */
+     on unclassified tab */
   for (i = 1; i < noc; i++) {
     column1 = gtk_tree_view_get_column(list_view1, i);
     column2 = gtk_tree_view_get_column(list_view2, i);
@@ -2774,8 +2828,9 @@ gtk_ltr_families_nb_fam_lv_set_visible_columns(GtkNotebook *notebook,
   g_list_free(columns);
 }
 
-gint extract_feature_sequence(GtStr *seqid, GtRange *range, gchar *sequence,
-                                const gchar *indexname, GtError *err)
+static gint extract_feature_sequence(GtStr *seqid, GtRange *range,
+                                     gchar *sequence, const gchar *indexname,
+                                     GtError *err)
 {
   GtEncseqLoader *el = NULL;
   GtEncseq *encseq = NULL;
@@ -2799,8 +2854,8 @@ gint extract_feature_sequence(GtStr *seqid, GtRange *range, gchar *sequence,
   return had_err;
 }
 
-static void notebook_family_list_view_cursor_changed(GtkTreeView *list_view,
-                                                     GtkLTRFamilies *ltrfams)
+static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
+                                              GtkLTRFamilies *ltrfams)
 {
   GtkTreeModel *list_model, *tree_model;
   GtkTreeIter iter, tmp;
@@ -3052,7 +3107,7 @@ static void notebook_family_list_view_cursor_changed(GtkTreeView *list_view,
   }
 }
 
-void gtk_ltr_families_nb_fam_lv_append_gn(GtkLTRFamilies *ltrfams,
+void gtk_ltr_families_notebook_list_view_append_gn(GtkLTRFamilies *ltrfams,
                                           GtkTreeView *list_view,
                                           GtGenomeNode *gn,
                                           GtkTreeRowReference *rowref,
@@ -3185,8 +3240,9 @@ void gtk_ltr_families_nb_fam_lv_append_gn(GtkLTRFamilies *ltrfams,
   return;
 }
 
-static gint nb_fam_lv_sort_function(GtkTreeModel *model, GtkTreeIter *a,
-                                    GtkTreeIter *b, gpointer userdata)
+static gint notebook_list_view_sort_function(GtkTreeModel *model,
+                                             GtkTreeIter *a,
+                                             GtkTreeIter *b, gpointer userdata)
 {
   GtkTreeSortable *sortable;
   GtkSortType order;
@@ -3265,9 +3321,8 @@ static gint nb_fam_lv_sort_function(GtkTreeModel *model, GtkTreeIter *a,
   return ret;
 }
 
-static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
-                                              GtArray *nodes,
-                                              GtkLTRFamilies *ltrfams)
+static void notebook_list_view_create(GtkTreeView *list_view, GtArray *nodes,
+                                      GtkLTRFamilies *ltrfams)
 {
   GtkCellRenderer *renderer;
   GtkTreeViewColumn *column;
@@ -3306,7 +3361,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_FLCAND, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_FLCAND,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_FLCAND), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_FLCAND);
   gtk_tree_view_append_column(list_view, column);
@@ -3316,7 +3371,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_SEQID, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_SEQID,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_SEQID), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_SEQID);
   gtk_tree_view_append_column(list_view, column);
@@ -3327,7 +3382,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_STRAND, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_STRAND,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_STRAND), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_STRAND);
   gtk_tree_view_append_column(list_view, column);
@@ -3338,7 +3393,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_START, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_START,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_START), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_START);
   gtk_tree_view_append_column(list_view, column);
@@ -3349,7 +3404,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_END, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_END,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_END), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_END);
   gtk_tree_view_append_column(list_view, column);
@@ -3360,7 +3415,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_LLTRLEN, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_LLTRLEN,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_LLTRLEN), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_LLTRLEN);
   gtk_tree_view_append_column(list_view, column);
@@ -3371,7 +3426,7 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
                                                     renderer, "text",
                                                     LTRFAMS_LV_ELEMLEN, NULL);
   gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_ELEMLEN,
-                                  nb_fam_lv_sort_function,
+                                  notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_ELEMLEN), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_ELEMLEN);
   gtk_tree_view_append_column(list_view, column);
@@ -3389,7 +3444,8 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
   gtk_tree_view_append_column(list_view, column);
 
   if (nodes)
-    gtk_ltr_families_nb_fam_lv_append_array(ltrfams, list_view, nodes, store);
+    gtk_ltr_families_notebook_list_view_append_array(ltrfams, list_view, nodes,
+                                                     store);
 
   columns = gtk_tree_view_get_columns(list_view);
   set_cell_colors(columns, ltrfams->colors);
@@ -3398,17 +3454,14 @@ static void gtk_ltr_families_nb_fam_lv_create(GtkTreeView *list_view,
   g_object_unref(store);
 
   g_signal_connect(G_OBJECT(list_view), "cursor-changed",
-                   G_CALLBACK(notebook_family_list_view_cursor_changed),
-                   ltrfams);
+                   G_CALLBACK(notebook_list_view_cursor_changed), ltrfams);
   g_free(types);
   g_list_free(columns);
 }
 
-static void notebook_family_refresh_tab_nums(GtkNotebook *notebook,
-                                             const gchar *file,
-                                             GtError *err)
+static void notebook_refresh_tab_nums(GtkNotebook *notebook,
+                                      GtkLTRFamilies *ltrfams)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt = NULL;
   GtkWidget *tab_child,
             *tab_label;
@@ -3419,50 +3472,49 @@ static void notebook_family_refresh_tab_nums(GtkNotebook *notebook,
        had_err = 0;
 
   n_pages = gtk_notebook_get_n_pages(notebook);
-  if (file)
-    rdb = gt_rdb_sqlite_new(file, err);
   for (i = 0; i < n_pages; i++) {
     tab_child = gtk_notebook_get_nth_page(notebook, i);
     tab_label = gtk_notebook_get_tab_label(notebook, tab_child);
     old_pagenum =
-       GPOINTER_TO_INT(gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
-                                                       "nbpage"));
+     GPOINTER_TO_INT(gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
+                                                     "nbpage"));
     if (old_pagenum != i) {
-      gtk_label_close_set_button_data(GTKLABELCLOSE(tab_label),
+      gtk_label_close_set_button_data(GTK_LABEL_CLOSE(tab_label),
                                       "nbpage",
                                       GINT_TO_POINTER(i));
-      if (g_strcmp0(gtk_label_close_get_text(GTKLABELCLOSE(tab_label)),
+      if (g_strcmp0(gtk_label_close_get_text(GTK_LABEL_CLOSE(tab_label)),
                     MAIN_TAB_LABEL) == 0) {
         g_object_set_data(G_OBJECT(notebook),
                           "main_tab",
                           GINT_TO_POINTER(i));
       }
-      if (rdb) {
+      if (ltrfams->rdb) {
         g_snprintf(query, BUFSIZ,
                    "UPDATE notebook_tabs SET position = %d WHERE name = \"%s\"",
-                   i, gtk_label_close_get_text(GTKLABELCLOSE(tab_label)));
-        had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-        if (!had_err)
-          had_err = gt_rdb_stmt_exec(stmt, err);
-        gt_rdb_stmt_delete(stmt);
+                   i, gtk_label_close_get_text(GTK_LABEL_CLOSE(tab_label)));
+        had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
+        if (!had_err) {
+          had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
+          gt_rdb_stmt_delete(stmt);
+        }
+        if (had_err == -1)
+          error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                       ltrfams->err);
       }
     }
   }
-  if (rdb)
-    gt_rdb_delete(rdb);
 }
 
-static void notebook_family_page_removed(GtkNotebook *notebook,
-                                         GT_UNUSED GtkWidget *child,
-                                         GT_UNUSED guint page_num,
-                                         GtkLTRFamilies *ltrfams)
+static void notebook_page_removed(GtkNotebook *notebook,
+                                  GT_UNUSED GtkWidget *child,
+                                  GT_UNUSED guint page_num,
+                                  GtkLTRFamilies *ltrfams)
 {
-  notebook_family_refresh_tab_nums(notebook, ltrfams->projectfile,
-                                   ltrfams->err);
+  notebook_refresh_tab_nums(notebook, ltrfams);
 }
 
-static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
-                                                      GtkLTRFamilies *ltrfams)
+static void notebook_close_tab_clicked(GtkButton *button,
+                                       GtkLTRFamilies *ltrfams)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -3478,7 +3530,8 @@ static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
                      -1);
   if (tab_label)
     tmp = GPOINTER_TO_INT(
-           gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label), "nbpage"));
+           gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
+                                           "nbpage"));
   if (nbpage == tmp) {
     gtk_list_store_set(GTK_LIST_STORE(model), &iter,
                        LTRFAMS_FAM_LV_TAB_CHILD, NULL,
@@ -3491,7 +3544,7 @@ static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
                          -1);
       if (tab_label)
         tmp = GPOINTER_TO_INT(
-               gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
+               gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
                                                "nbpage"));
       if (nbpage == tmp) {
         gtk_list_store_set(GTK_LIST_STORE(model), &iter,
@@ -3506,22 +3559,23 @@ static void gtk_ltr_families_nb_fam_close_tab_clicked(GtkButton *button,
   gchar *file;
   file = gtk_ltr_families_get_projectfile(ltrfams);
   if (file) {
-    GtRDB *rdb = NULL;
     GtRDBStmt *stmt;
     gchar query[BUFSIZ];
     gint had_err = 0;
 
-    rdb = gt_rdb_sqlite_new(file, ltrfams->err);
-    if (!rdb)
-      return;
     g_snprintf(query, BUFSIZ,
                "DELETE FROM notebook_tabs WHERE name = \"%s\"",
-               gtk_label_close_get_text(GTKLABELCLOSE(tab_label)));
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, ltrfams->err);
-    if (!had_err)
+               gtk_label_close_get_text(GTK_LABEL_CLOSE(tab_label)));
+    if (gt_error_is_set(ltrfams->err))
+      g_warning("err: %s", gt_error_get(ltrfams->err));
+    had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
+    if (!had_err) {
       had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
-    gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
+      gt_rdb_stmt_delete(stmt);
+    }
+    if (had_err == -1)
+      error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
+                   ltrfams->err);
   }
   gtk_notebook_remove_page(GTK_NOTEBOOK(ltrfams->nb_family), nbpage);
 }
@@ -3532,7 +3586,7 @@ gboolean gtk_ltr_families_nb_fam_key_pressed(GT_UNUSED GtkWidget *list_view,
 {
   switch (event->keyval) {
     case GDK_Delete:
-      gtk_ltr_families_nb_fam_lv_pmenu_remove_clicked(NULL, ltrfams);
+      notebook_list_view_menu_remove_clicked(NULL, ltrfams);
       return TRUE;
       break;
     default:
@@ -3541,11 +3595,9 @@ gboolean gtk_ltr_families_nb_fam_key_pressed(GT_UNUSED GtkWidget *list_view,
   return FALSE;
 }
 
-void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
-                                     GtkTreeIter *iter,
-                                     GtArray *nodes,
-                                     gboolean load,
-                                     GtkLTRFamilies *ltrfams)
+void gtk_ltr_families_notebook_add_tab(GtkTreeModel *model, GtkTreeIter *iter,
+                                       GtArray *nodes, gboolean load,
+                                       GtkLTRFamilies *ltrfams)
 {
   GtGenomeNode *gn;
   GtkTreeRowReference *rowref;
@@ -3570,7 +3622,7 @@ void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
   g_signal_connect(G_OBJECT(list_view),
                    "key-press-event",
                    G_CALLBACK(gtk_ltr_families_nb_fam_key_pressed), ltrfams);
-  gtk_ltr_families_nb_fam_lv_create(GTK_TREE_VIEW(list_view), NULL, ltrfams);
+  notebook_list_view_create(GTK_TREE_VIEW(list_view), NULL, ltrfams);
 
   gtk_drag_source_set(list_view,
                       GDK_BUTTON1_MASK, family_drag_targets,
@@ -3582,10 +3634,10 @@ void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
                    G_CALLBACK(on_drag_data_get), NULL);
   g_signal_connect(G_OBJECT(list_view),
                    "button-press-event",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_lv_button_pressed),
+                   G_CALLBACK(notebook_list_view_button_pressed),
                    ltrfams);
   g_signal_connect(G_OBJECT(list_view), "popup-menu",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_lv_on_pmenu), ltrfams);
+                   G_CALLBACK(notebook_list_view_on_menu), ltrfams);
   gtk_container_add(GTK_CONTAINER(child), list_view);
   gtk_widget_show_all(child);
 
@@ -3593,19 +3645,19 @@ void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
   rowref = gtk_tree_row_reference_new(model, path);
   for (i = 0; i < gt_array_size(nodes); i++) {
     gn = *(GtGenomeNode**) gt_array_get(nodes, i);
-    gtk_ltr_families_nb_fam_lv_append_gn(ltrfams, GTK_TREE_VIEW(list_view), gn,
-                                         rowref, NULL, ltrfams->style,
-                                         ltrfams->colors);
+    gtk_ltr_families_notebook_list_view_append_gn(ltrfams,
+                                                  GTK_TREE_VIEW(list_view), gn,
+                                                  rowref, NULL, ltrfams->style,
+                                                  ltrfams->colors);
   }
   gtk_tree_path_free(path);
 
-  label = gtk_label_close_new(name,
-                          G_CALLBACK(gtk_ltr_families_nb_fam_close_tab_clicked),
-                             ltrfams);
+  label = gtk_label_close_new(name, G_CALLBACK(notebook_close_tab_clicked),
+                              ltrfams);
   nbpage = gtk_notebook_append_page(GTK_NOTEBOOK(ltrfams->nb_family),
                                     child,
                                     label);
-  gtk_label_close_set_button_data(GTKLABELCLOSE(label),
+  gtk_label_close_set_button_data(GTK_LABEL_CLOSE(label),
                                   "nbpage",
                                   GINT_TO_POINTER(nbpage));
   gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(ltrfams->nb_family),
@@ -3615,48 +3667,41 @@ void gtk_ltr_families_nb_fam_add_tab(GtkTreeModel *model,
                      LTRFAMS_FAM_LV_TAB_CHILD, list_view,
                      LTRFAMS_FAM_LV_TAB_LABEL, label,
                      -1);
-  gtk_ltr_families_nb_fam_lv_set_visible_columns(
-                                               GTK_NOTEBOOK(ltrfams->nb_family),
-                                                 GTK_TREE_VIEW(list_view));
+  notebook_list_view_set_visible_columns(GTK_NOTEBOOK(ltrfams->nb_family),
+                                         GTK_TREE_VIEW(list_view));
   gtk_notebook_set_current_page(GTK_NOTEBOOK(ltrfams->nb_family), nbpage);
   file = gtk_ltr_families_get_projectfile(ltrfams);
   if (file && !load) {
-    GtRDB *rdb = NULL;
     GtRDBStmt *stmt = NULL;
     gchar query[BUFSIZ];
     gint had_err = 0;
 
-    rdb = gt_rdb_sqlite_new(file, ltrfams->err);
-    if (!rdb) {
-      g_free(name);
-      return;
-    }
     g_snprintf(query, BUFSIZ,
                "INSERT OR IGNORE INTO notebook_tabs "
                " (name, position) values (\"%s\", %d)",
                name, nbpage);
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, ltrfams->err);
-    if (!had_err)
+    had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
+    if (!had_err) {
       had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
-    gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
+      gt_rdb_stmt_delete(stmt);
+    }
+    if (had_err == -1)
+      error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
   }
   g_free(name);
 }
 
-static void notebook_family_page_reordered(GtkNotebook *notebook,
-                                           GT_UNUSED GtkWidget *child,
-                                           GT_UNUSED guint page_num,
-                                           GtkLTRFamilies *ltrfams)
+static void notebook_page_reordered(GtkNotebook *notebook,
+                                    GT_UNUSED GtkWidget *child,
+                                    GT_UNUSED guint page_num,
+                                    GtkLTRFamilies *ltrfams)
 {
-  notebook_family_refresh_tab_nums(notebook, ltrfams->projectfile,
-                                   ltrfams->err);
+  notebook_refresh_tab_nums(notebook, ltrfams);
 }
 
-static gboolean gtk_ltr_families_nb_fam_switch_page(GtkNotebook *notebook,
-                                                    GT_UNUSED gpointer arg1,
-                                                    guint arg2,
-                                                    GtkLTRFamilies *ltrfams)
+static gboolean notebook_switch_page(GtkNotebook *notebook,
+                                     GT_UNUSED gpointer arg1,
+                                     guint arg2, GtkLTRFamilies *ltrfams)
 {
   gint main_tab;
   main_tab = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(notebook), "main_tab"));
@@ -3670,7 +3715,7 @@ static gboolean gtk_ltr_families_nb_fam_switch_page(GtkNotebook *notebook,
   return FALSE;
 }
 
-static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
+static void notebook_create(GtkLTRFamilies *ltrfams)
 {
   GtkWidget *child,
             *label,
@@ -3681,7 +3726,7 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
   gtk_notebook_set_scrollable(GTK_NOTEBOOK(ltrfams->nb_family), TRUE);
 
   g_signal_connect(G_OBJECT(ltrfams->nb_family), "page-reordered",
-                   G_CALLBACK(notebook_family_page_reordered), ltrfams);
+                   G_CALLBACK(notebook_page_reordered), ltrfams);
 
   child = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(child),
@@ -3690,7 +3735,7 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
   list_view = gtk_tree_view_new();
   g_signal_connect(G_OBJECT(list_view), "key-press-event",
                    G_CALLBACK(gtk_ltr_families_nb_fam_key_pressed), ltrfams);
-  gtk_ltr_families_nb_fam_lv_create(GTK_TREE_VIEW(list_view), ltrfams->nodes,
+  notebook_list_view_create(GTK_TREE_VIEW(list_view), ltrfams->nodes,
                                     ltrfams);
   column = gtk_tree_view_get_column(GTK_TREE_VIEW(list_view), 0);
   gtk_tree_view_column_set_visible(column, FALSE);
@@ -3705,14 +3750,14 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
                    G_CALLBACK(on_drag_data_get), NULL);
   g_signal_connect(G_OBJECT(list_view),
                    "button-press-event",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_lv_button_pressed),
+                   G_CALLBACK(notebook_list_view_button_pressed),
                    ltrfams);
 
   gtk_container_add(GTK_CONTAINER(child), list_view);
   gtk_widget_show_all(child);
 
   label = gtk_label_close_new(MAIN_TAB_LABEL, NULL, NULL);
-  gtk_label_close_hide_close(GTKLABELCLOSE(label));
+  gtk_label_close_hide_close(GTK_LABEL_CLOSE(label));
   gtk_widget_show(label);
 
   /* Attach a "drag-data-received" signal to pull in the dragged data */
@@ -3725,15 +3770,14 @@ static void gtk_ltr_families_nb_fam_create(GtkLTRFamilies *ltrfams)
   gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(ltrfams->nb_family),
                                    child,
                                    TRUE);
-  gtk_label_close_set_button_data(GTKLABELCLOSE(label),
+  gtk_label_close_set_button_data(GTK_LABEL_CLOSE(label),
                                   "nbpage",
                                   GINT_TO_POINTER(nbpage));
   g_object_set_data(G_OBJECT(ltrfams->nb_family),
                     "main_tab",
                     GINT_TO_POINTER(nbpage));
   g_signal_connect(G_OBJECT(ltrfams->nb_family), "switch-page",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_switch_page),
-                   (gpointer) ltrfams);
+                   G_CALLBACK(notebook_switch_page), (gpointer) ltrfams);
 }
 /* <nb_family> related functions end */
 
@@ -3853,10 +3897,9 @@ static void tree_view_details_create(GtkTreeView *tree_view)
 /* <tree_view_details> related functions end */
 
 /* <list_view_families> related functions start */
-static gboolean
-gtk_ltr_families_lv_fams_check_if_name_exists(GtkTreeView *list_view,
-                                              const gchar *new_name,
-                                              const gchar *tmp)
+static gboolean list_view_families_check_if_name_exists(GtkTreeView *list_view,
+                                                        const gchar *new_name,
+                                                        const gchar *tmp)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -3891,9 +3934,8 @@ gtk_ltr_families_lv_fams_check_if_name_exists(GtkTreeView *list_view,
   return FALSE;
 }
 
-static void
-gtk_ltr_families_lv_fams_tb_add_clicked(GT_UNUSED GtkWidget *button,
-                                        GtkLTRFamilies *ltrfams)
+static void list_view_families_toolbar_add_clicked(GT_UNUSED GtkWidget *button,
+                                                   GtkLTRFamilies *ltrfams)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -3924,8 +3966,9 @@ gtk_ltr_families_lv_fams_tb_add_clicked(GT_UNUSED GtkWidget *button,
   gtk_tree_path_free(path);
 }
 
-static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
-                                                   GtkLTRFamilies *ltrfams)
+static void
+list_view_families_toolbar_remove_clicked(GT_UNUSED GtkWidget *button,
+                                          GtkLTRFamilies *ltrfams)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -3994,15 +4037,13 @@ static void gtk_ltr_families_lv_fams_tb_rm_clicked(GT_UNUSED GtkWidget *button,
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     g_list_free(references);
     g_list_free(rows);
-    gtk_ltr_families_set_modified(ltrfams, TRUE);
     update_main_tab_label(ltrfams);
   }
 }
 
-static void
-gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
-                                     gchar *path_string, gchar *new_name,
-                                     GtkLTRFamilies *ltrfams)
+static void list_view_families_cell_edited(GT_UNUSED GtkCellRendererText *cell,
+                                           gchar *path_string, gchar *new_name,
+                                           GtkLTRFamilies *ltrfams)
 {
   GtkTreeView *list_view;
   GtkTreeIter iter;
@@ -4038,9 +4079,8 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
     gchar *iter_str;
     gboolean exists;
     iter_str = gtk_tree_model_get_string_from_iter(model, &iter);
-    exists =
-         gtk_ltr_families_lv_fams_check_if_name_exists(GTK_TREE_VIEW(list_view),
-                                                       new_name, iter_str);
+    exists = list_view_families_check_if_name_exists(GTK_TREE_VIEW(list_view),
+                                                     new_name, iter_str);
     if (exists) {
       GtkWidget *dialog;
       dialog = gtk_message_dialog_new(NULL,
@@ -4075,10 +4115,9 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
                          LTRFAMS_FAM_LV_TAB_LABEL, &label,
                          -1);
       if (label)
-        gtk_label_close_set_text(GTKLABELCLOSE(label), new_name);
+        gtk_label_close_set_text(GTK_LABEL_CLOSE(label), new_name);
 
       g_free(iter_str);
-      gtk_ltr_families_set_modified(ltrfams, TRUE);
     }
   }
   g_object_set(ltrfams->lv_fams_renderer, "editable", FALSE, NULL);
@@ -4087,8 +4126,8 @@ gtk_ltr_families_lv_fams_cell_edited(GT_UNUSED GtkCellRendererText *cell,
 }
 
 static void
-gtk_ltr_families_lv_fams_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
-                                            GtkLTRFamilies *ltrfams)
+list_view_families_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
+                                      GtkLTRFamilies *ltrfams)
 {
   GtkTreeView *list_view;
   GtkTreeModel *model;
@@ -4112,10 +4151,10 @@ gtk_ltr_families_lv_fams_cell_edit_canceled(GT_UNUSED GtkCellRenderer *renderer,
 }
 
 static void
-gtk_ltr_families_lv_fams_cell_edit_started(GT_UNUSED GtkCellRenderer *renderer,
-                                           GtkCellEditable *editable,
-                                           gchar *path_str,
-                                           gpointer list_view)
+list_view_families_cell_edit_started(GT_UNUSED GtkCellRenderer *renderer,
+                                     GtkCellEditable *editable,
+                                     gchar *path_str,
+                                     gpointer list_view)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
@@ -4163,34 +4202,34 @@ gtk_ltr_families_lv_fams_row_activated(GtkTreeView *tree_view,
 
   if (tab_label) {
     nbpage =
-       GPOINTER_TO_INT(gtk_label_close_get_button_data(GTKLABELCLOSE(tab_label),
-                                                       "nbpage"));
+     GPOINTER_TO_INT(gtk_label_close_get_button_data(GTK_LABEL_CLOSE(tab_label),
+                                                     "nbpage"));
     gtk_notebook_set_current_page(notebook, nbpage);
   } else {
-    gtk_ltr_families_nb_fam_add_tab(model, &iter, nodes, FALSE, ltrfams);
+    gtk_ltr_families_notebook_add_tab(model, &iter, nodes, FALSE, ltrfams);
   }
 }
 
-static void gtk_ltr_families_lv_fams_create(GtkLTRFamilies *ltrfams)
+static void list_view_families_create(GtkLTRFamilies *ltrfams)
 {
   GtkTreeViewColumn *column;
   GtkListStore *store;
 
   ltrfams->lv_fams_renderer = gtk_cell_renderer_text_new();
   g_signal_connect(G_OBJECT(ltrfams->lv_fams_renderer), "edited",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_cell_edited),
+                   G_CALLBACK(list_view_families_cell_edited),
                    ltrfams);
   g_signal_connect(G_OBJECT(ltrfams->lv_fams_renderer), "editing-canceled",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_cell_edit_canceled),
+                   G_CALLBACK(list_view_families_cell_edit_canceled),
                    ltrfams);
   g_signal_connect(G_OBJECT(ltrfams->lv_fams_renderer), "editing-started",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_cell_edit_started),
+                   G_CALLBACK(list_view_families_cell_edit_started),
                    ltrfams->list_view_families);
   g_signal_connect(G_OBJECT(ltrfams->list_view_families), "button-press-event",
-                   G_CALLBACK(gtk_ltr_families_tv_fams_button_pressed),
+                   G_CALLBACK(list_view_families_button_pressed),
                    ltrfams);
   g_signal_connect(G_OBJECT(ltrfams->list_view_families), "popup-menu",
-                   G_CALLBACK(gtk_ltr_families_tv_fams_on_pmenu), ltrfams);
+                   G_CALLBACK(list_view_families_on_menu), ltrfams);
   g_signal_connect(G_OBJECT(ltrfams->list_view_families), "row-activated",
                    G_CALLBACK(gtk_ltr_families_lv_fams_row_activated), ltrfams);
   column  = gtk_tree_view_column_new_with_attributes("LTR Families",
@@ -4262,16 +4301,13 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->colors = gt_hashmap_new(GT_HASH_STRING,
                                    free_str_hash, free_str_hash);
   ltrfams->n_features = noc;
-  ltrfams->err = gt_error_new();
   ltrfams->style = gt_style_new(ltrfams->err);
 
   had_err = gt_style_load_file(ltrfams->style, ltrfams->style_file,
                                ltrfams->err);
-  if (had_err) {
-    g_warning("%s", gt_error_get(ltrfams->err));
-    gt_error_unset(ltrfams->err);
-  }
-  gtk_ltr_families_nb_fam_create(ltrfams);
+  if (had_err)
+    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
+  notebook_create(ltrfams);
   update_main_tab_label(ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->tb_lv_families), TRUE);
@@ -4291,11 +4327,13 @@ static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
 
   g_signal_handler_disconnect((gpointer) ltrfams->nb_family,
                               ltrfams->sig_handler);
-  gt_error_delete(ltrfams->err);
   gt_style_delete(ltrfams->style);
   gt_diagram_delete(ltrfams->diagram);
   gt_hashmap_delete(ltrfams->features);
   gt_hashmap_delete(ltrfams->colors);
+  gt_feature_index_delete(ltrfams->fi);
+  gt_anno_db_schema_delete(ltrfams->adb);
+  gt_rdb_delete(ltrfams->rdb);
   for (i = 0; i < gt_array_size(ltrfams->nodes); i++) {
     gn = *(GtGenomeNode**) gt_array_get(ltrfams->nodes, i);
     delete_gt_genome_node(gn);
@@ -4312,11 +4350,11 @@ gboolean gtk_ltr_families_lv_fams_key_pressed(GT_UNUSED GtkWidget *list_view,
 {
   switch (event->keyval) {
     case GDK_Delete:
-      gtk_ltr_families_lv_fams_pmenu_remove_clicked(NULL, ltrfams);
+      list_view_families_menu_remove_clicked(NULL, ltrfams);
       return TRUE;
       break;
     case GDK_F2:
-      gtk_ltr_families_lv_fams_pmenu_edit_clicked(NULL,
+      list_view_families_menu_edit_clicked(NULL,
                                         (gpointer) ltrfams->list_view_families);
       return TRUE;
       break;
@@ -4372,10 +4410,10 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   g_signal_connect(G_OBJECT(ltrfams->list_view_families), "key-press-event",
                    G_CALLBACK(gtk_ltr_families_lv_fams_key_pressed), ltrfams);
   g_signal_connect(G_OBJECT(add), "clicked",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_tb_add_clicked),
+                   G_CALLBACK(list_view_families_toolbar_add_clicked),
                    ltrfams);
   g_signal_connect(G_OBJECT(remove), "clicked",
-                   G_CALLBACK(gtk_ltr_families_lv_fams_tb_rm_clicked),
+                   G_CALLBACK(list_view_families_toolbar_remove_clicked),
                    ltrfams);
   gtk_container_add(GTK_CONTAINER(sw1), ltrfams->list_view_families);
   hsep1 = gtk_hseparator_new();
@@ -4394,19 +4432,20 @@ static void gtk_ltr_families_init(GtkLTRFamilies *ltrfams)
   gtk_tool_item_set_tooltip_text(ltrfams->new_fam, TB_NB_NEW_FAM);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), ltrfams->new_fam, 0);
   g_signal_connect(G_OBJECT(ltrfams->new_fam), "clicked",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_nf_clicked), ltrfams);
+                   G_CALLBACK(notebook_toolbar_search_cand_group_clicked),
+                   ltrfams);
   ltrfams->fl_cands =
                      gtk_tool_button_new_from_stock(GTK_STOCK_FIND_AND_REPLACE);
   gtk_tool_item_set_tooltip_text(ltrfams->fl_cands, TB_NB_FL_CANDS);
   gtk_toolbar_insert(GTK_TOOLBAR(ltrfams->tb_nb_family), ltrfams->fl_cands, 1);
   g_signal_connect(G_OBJECT(ltrfams->fl_cands), "clicked",
-                   G_CALLBACK(gtk_ltr_families_nb_fam_tb_fl_clicked), ltrfams);
+                   G_CALLBACK(notebook_toolbar_flcand_clicked), ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), FALSE);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->fl_cands), FALSE);
   ltrfams->nb_family = gtk_notebook_new();
   ltrfams->sig_handler = g_signal_connect(G_OBJECT(ltrfams->nb_family),
                                           "page-removed",
-                                       G_CALLBACK(notebook_family_page_removed),
+                                          G_CALLBACK(notebook_page_removed),
                                           ltrfams);
   hsep2 = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(vbox2), ltrfams->tb_nb_family, FALSE, TRUE, 1);
@@ -4486,11 +4525,12 @@ GType gtk_ltr_families_get_type(void)
 GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
                                 GtkWidget *progressbar,
                                 GtkWidget *projset,
-                                gchar *style_file)
+                                gchar *style_file,
+                                GtError *err)
 {
   GtkLTRFamilies *ltrfams;
   ltrfams = gtk_type_new(GTK_LTR_FAMILIES_TYPE);
-  gtk_ltr_families_lv_fams_create(ltrfams);
+  list_view_families_create(ltrfams);
   tree_view_details_create(GTK_TREE_VIEW(ltrfams->tree_view_details));
   g_signal_connect(G_OBJECT(ltrfams->tree_view_details), "cursor-changed",
                    G_CALLBACK(tree_view_details_cursor_changed), ltrfams);
@@ -4503,6 +4543,7 @@ GtkWidget* gtk_ltr_families_new(GtkWidget *statusbar,
   ltrfams->progressbar = progressbar;
   ltrfams->projset = projset;
   ltrfams->style_file = style_file;
+  ltrfams->err = err;
 
   return GTK_WIDGET(ltrfams);
 }

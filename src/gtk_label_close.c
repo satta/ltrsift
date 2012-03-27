@@ -97,7 +97,7 @@ GtkWidget* gtk_label_close_new(const gchar *text,
                                gpointer user_data)
 {
   GtkLabelClose *labelclose;
-  labelclose = gtk_type_new(GTKLABELCLOSE_TYPE);
+  labelclose = gtk_type_new(GTK_LABEL_CLOSE_TYPE);
   gtk_label_set_text(GTK_LABEL(labelclose->label), text);
   if (signal_func)
     g_signal_connect(G_OBJECT(labelclose->button), "clicked",

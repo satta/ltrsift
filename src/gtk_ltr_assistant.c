@@ -21,11 +21,11 @@
 #include "support.h"
 
 typedef struct {
-GtkWidget *widget;
-gint index;
-const gchar *title;
-GtkAssistantPageType type;
-gboolean complete;
+  GtkWidget *widget;
+  gint index;
+  const gchar *title;
+  GtkAssistantPageType type;
+  gboolean complete;
 } LTRAssistantPageInfo;
 
 const gchar* gtk_ltr_assistant_get_projectfile(GtkLTRAssistant *ltrassi)
@@ -503,8 +503,9 @@ static void update_features_label(GtkTreeView *list_view,
   g_free(text);
 }
 
-void list_view_features_selection_changed(GT_UNUSED GtkTreeSelection *sel,
-                                          GtkLTRAssistant *ltrassi)
+static void
+list_view_features_selection_changed(GT_UNUSED GtkTreeSelection *sel,
+                                     GtkLTRAssistant *ltrassi)
 {
   check_complete_page_classification(ltrassi);
   update_features_label(GTK_TREE_VIEW(ltrassi->list_view_features),
@@ -875,8 +876,7 @@ static void update_label_moreblast(GtkLTRAssistant *ltrassi)
   g_free(buffer);
 }
 
-static void gtk_ltr_assistant_combob_blast_changed(GtkComboBox *combob,
-                                                   GtkLTRAssistant *ltrassi)
+static void combob_blast_changed(GtkComboBox *combob, GtkLTRAssistant *ltrassi)
 {
   gchar *param;
   gpointer value;
@@ -902,9 +902,8 @@ static void gtk_ltr_assistant_combob_blast_changed(GtkComboBox *combob,
   g_free(param);
 }
 
-static void
-gtk_ltr_assistant_add_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                          GtkLTRAssistant *ltrassi)
+static void add_blast_param_clicked(GT_UNUSED GtkButton *button,
+                                    GtkLTRAssistant *ltrassi)
 {
   gchar *key;
   const gchar *value;
@@ -924,9 +923,8 @@ gtk_ltr_assistant_add_blast_param_clicked(GT_UNUSED GtkButton *button,
   update_label_moreblast(ltrassi);
 }
 
-static void
-gtk_ltr_assistant_rm_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                         GtkLTRAssistant *ltrassi)
+static void remove_blast_param_clicked(GT_UNUSED GtkButton *button,
+                                       GtkLTRAssistant *ltrassi)
 {
   gchar *key;
 
@@ -941,8 +939,8 @@ gtk_ltr_assistant_rm_blast_param_clicked(GT_UNUSED GtkButton *button,
   g_free(key);
 }
 
-static void gtk_ltr_assistant_fam_prefix_changed(GT_UNUSED GtkEditable *edit,
-                                                 GtkLTRAssistant *ltrassi)
+static void family_prefix_changed(GT_UNUSED GtkEditable *edit,
+                                  GtkLTRAssistant *ltrassi)
 {
   check_complete_page_classification(ltrassi);
 }
@@ -958,6 +956,42 @@ static gboolean gtk_ltr_assistant_destroy(GtkWidget *widget,
   g_hash_table_destroy(ltrassi->hasht_blastparams);
 
   return FALSE;
+}
+
+static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
+{
+  gint next_page;
+  gboolean active;
+
+  switch (current_page) {
+    /*case PAGE_INTRODUCTION:
+      next_page = PAGE_GENERAL;
+      break;*/
+    case PAGE_GENERAL:
+      active =  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                               ltrassi->checkb_clustering));
+      next_page = (active ? PAGE_CLUSTERING : PAGE_SUMMARY);
+      break;
+    case PAGE_CLUSTERING:
+      active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
+                                              ltrassi->checkb_classification));
+      if (active)
+        get_feature_list(ltrassi);
+      next_page = (active ? PAGE_CLASSIFICATION : PAGE_SUMMARY);
+      break;
+    case PAGE_CLASSIFICATION:
+      next_page = PAGE_SUMMARY;
+      break;
+    default:
+      next_page = -1;
+  }
+  return next_page;
+}
+
+static void cancel_clicked(GtkAssistant *assistant, GT_UNUSED gpointer data)
+
+{
+  gtk_widget_hide(GTK_WIDGET(assistant));
 }
 
 static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
@@ -1152,7 +1186,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_WINDOWS);
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_OFF_DIAG);
   g_signal_connect(G_OBJECT(combob), "changed",
-                   G_CALLBACK(gtk_ltr_assistant_combob_blast_changed), ltrassi);
+                   G_CALLBACK(combob_blast_changed), ltrassi);
   gtk_box_pack_start(GTK_BOX(vbox), combob, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
@@ -1282,7 +1316,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   image = gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
   button = ltrassi->button_addblastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_ltr_assistant_add_blast_param_clicked),
+                   G_CALLBACK(add_blast_param_clicked),
                    ltrassi);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
@@ -1291,7 +1325,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
   button = ltrassi->button_rmblastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_ltr_assistant_rm_blast_param_clicked),
+                   G_CALLBACK(remove_blast_param_clicked),
                    ltrassi);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
@@ -1380,7 +1414,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_entry_set_max_length(GTK_ENTRY(ltrassi->entry_famprefix), 20);
   gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_famprefix), NEW_FAM_PREFIX);
   g_signal_connect(G_OBJECT(ltrassi->entry_famprefix), "changed",
-                   G_CALLBACK(gtk_ltr_assistant_fam_prefix_changed), ltrassi);
+                   G_CALLBACK(family_prefix_changed), ltrassi);
   gtk_box_pack_start(GTK_BOX(vbox), ltrassi->entry_famprefix, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
@@ -1752,43 +1786,6 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                                                      g_free, g_free);
 }
 
-gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
-{
-  gint next_page;
-  gboolean active;
-
-  switch (current_page) {
-    /*case PAGE_INTRODUCTION:
-      next_page = PAGE_GENERAL;
-      break;*/
-    case PAGE_GENERAL:
-      active =  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
-                                               ltrassi->checkb_clustering));
-      next_page = (active ? PAGE_CLUSTERING : PAGE_SUMMARY);
-      break;
-    case PAGE_CLUSTERING:
-      active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
-                                              ltrassi->checkb_classification));
-      if (active)
-        get_feature_list(ltrassi);
-      next_page = (active ? PAGE_CLASSIFICATION : PAGE_SUMMARY);
-      break;
-    case PAGE_CLASSIFICATION:
-      next_page = PAGE_SUMMARY;
-      break;
-    default:
-      next_page = -1;
-  }
-  return next_page;
-}
-
-static void gtk_ltr_assistant_cancel(GtkAssistant *assistant,
-                                     GT_UNUSED gpointer data)
-
-{
-  gtk_widget_hide(GTK_WIDGET(assistant));
-}
-
 GType gtk_ltr_assistant_get_type(void)
 {
   static GType ltr_assistant_type = 0;
@@ -1828,9 +1825,9 @@ GtkWidget* gtk_ltr_assistant_new()
   g_signal_connect(G_OBJECT(ltrassi), "destroy",
                    G_CALLBACK(gtk_ltr_assistant_destroy), NULL);
   g_signal_connect(G_OBJECT(ltrassi), "cancel",
-                   G_CALLBACK(gtk_ltr_assistant_cancel), NULL);
+                   G_CALLBACK(cancel_clicked), NULL);
   g_signal_connect(G_OBJECT(ltrassi), "close",
-                   G_CALLBACK(gtk_ltr_assistant_cancel), NULL);
+                   G_CALLBACK(cancel_clicked), NULL);
   show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 1, FALSE);
   show_hide_tab(GTK_NOTEBOOK(ltrassi->notebook), 2, FALSE);
 

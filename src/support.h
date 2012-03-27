@@ -18,7 +18,7 @@
 #ifndef SUPPORT_H
 #define SUPPORT_H
 
-#include "ltrgui.h"
+#include "ltrsift.h"
 
 typedef struct _ThreadData    ThreadData;
 typedef struct _CandidateData CandidateData;
@@ -38,6 +38,9 @@ struct _ThreadData {
   GtError *err;
   GtHashmap *sel_features,
             *features;
+  GtRDB *rdb;
+  GtAnnoDBSchema *adb;
+  GtFeatureIndex *fi;
   gboolean classification,
            projectw,
            save,
@@ -103,5 +106,7 @@ void          remove_row(GtkTreeRowReference *rowref);
 unsigned long determine_full_length_candidates(GtArray *nodes,
                                                gfloat ltrtolerance,
                                                gfloat lentolerance);
+
+gchar*         double_underscores(const gchar *str);
 
 #endif

@@ -98,6 +98,21 @@ const gchar* gtk_blastn_params_get_moreblast(GtkBlastnParams *blastpar)
   return gtk_label_get_text(GTK_LABEL(blastpar->label_moreblast));
 }
 
+void gtk_blastn_params_set_extra_widget(GtkBlastnParams *blastpar,
+                                        GtkWidget *widget)
+{
+  if (blastpar->extra_widget)
+    gtk_widget_destroy(blastpar->extra_widget);
+  blastpar->extra_widget = widget;
+  gtk_box_pack_start(GTK_BOX(blastpar), widget, FALSE, FALSE, 1);
+  gtk_widget_show_all(widget);
+}
+
+GtkWidget* gtk_blastn_params_get_extra_widget(GtkBlastnParams *blastpar)
+{
+  return blastpar->extra_widget;
+}
+
 void gtk_blastn_params_unset_sensitive(GtkBlastnParams *blastpar)
 {
   gtk_widget_set_sensitive(blastpar->spinb_evalue, FALSE);
@@ -368,8 +383,8 @@ static void update_label_moreblast(GtkBlastnParams *blastpar)
   g_free(buffer);
 }
 
-static void gtk_blastn_params_combob_blast_changed(GtkComboBox *combob,
-                                                   GtkBlastnParams *blastpar)
+static void combob_blast_changed(GtkComboBox *combob,
+                                 GtkBlastnParams *blastpar)
 {
   gchar *param;
   gpointer value;
@@ -395,9 +410,8 @@ static void gtk_blastn_params_combob_blast_changed(GtkComboBox *combob,
   g_free(param);
 }
 
-static void
-gtk_blastn_params_add_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                          GtkBlastnParams *blastpar)
+static void add_blast_param_clicked(GT_UNUSED GtkButton *button,
+                                    GtkBlastnParams *blastpar)
 {
   gchar *key;
   const gchar *value;
@@ -417,9 +431,8 @@ gtk_blastn_params_add_blast_param_clicked(GT_UNUSED GtkButton *button,
   update_label_moreblast(blastpar);
 }
 
-static void
-gtk_blastn_params_rm_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                         GtkBlastnParams *blastpar)
+static void remove_blast_param_clicked(GT_UNUSED GtkButton *button,
+                                       GtkBlastnParams *blastpar)
 {
   gchar *key;
 
@@ -432,21 +445,6 @@ gtk_blastn_params_rm_blast_param_clicked(GT_UNUSED GtkButton *button,
   gtk_entry_set_text(GTK_ENTRY(blastpar->entry_blastvalues), "");
   update_label_moreblast(blastpar);
   g_free(key);
-}
-
-void gtk_blastn_params_set_extra_widget(GtkBlastnParams *blastpar,
-                                        GtkWidget *widget)
-{
-  if (blastpar->extra_widget)
-    gtk_widget_destroy(blastpar->extra_widget);
-  blastpar->extra_widget = widget;
-  gtk_box_pack_start(GTK_BOX(blastpar), widget, FALSE, FALSE, 1);
-  gtk_widget_show_all(widget);
-}
-
-GtkWidget* gtk_blastn_params_get_extra_widget(GtkBlastnParams *blastpar)
-{
-  return blastpar->extra_widget;
 }
 
 static gboolean gtk_blastn_params_destroy(GtkWidget *widget,
@@ -519,8 +517,7 @@ static void gtk_blastn_params_init(GtkBlastnParams *blastpar)
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_WINDOWS);
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_OFF_DIAG);
   g_signal_connect(G_OBJECT(combob), "changed",
-                   G_CALLBACK(gtk_blastn_params_combob_blast_changed),
-                   blastpar);
+                   G_CALLBACK(combob_blast_changed), blastpar);
   gtk_box_pack_start(GTK_BOX(vbox), combob, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
@@ -654,8 +651,7 @@ static void gtk_blastn_params_init(GtkBlastnParams *blastpar)
   image = gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
   button = blastpar->button_addblastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_blastn_params_add_blast_param_clicked),
-                   blastpar);
+                   G_CALLBACK(add_blast_param_clicked), blastpar);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_box_pack_start(GTK_BOX(tmpbox), button, FALSE, FALSE, 1);
@@ -663,8 +659,7 @@ static void gtk_blastn_params_init(GtkBlastnParams *blastpar)
                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
   button = blastpar->button_rmblastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(gtk_blastn_params_rm_blast_param_clicked),
-                   blastpar);
+                   G_CALLBACK(remove_blast_param_clicked), blastpar);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_box_pack_start(GTK_BOX(tmpbox), button, FALSE, FALSE, 1);

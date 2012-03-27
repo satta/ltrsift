@@ -18,7 +18,7 @@
 #ifndef STATUSBAR_H
 #define STATUSBAR_H
 
-#include "ltrgui.h"
+#include "ltrsift.h"
 
 void     statusbar_set_status(GtkWidget *sb, gchar *status_msg);
 

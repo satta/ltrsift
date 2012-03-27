@@ -18,7 +18,7 @@
 #ifndef ERROR_H
 #define ERROR_H
 
-#include "ltrgui.h"
+#include "ltrsift.h"
 
 void error_handle(GtkWidget *toplevel, GtError *err);
 

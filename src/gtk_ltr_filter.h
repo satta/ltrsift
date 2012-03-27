@@ -55,7 +55,6 @@ struct _GtkLTRFilter
   gchar *last_dir;
   gchar *cur_filename;
   gint range;
-  GError *gerr;
 };
 
 struct _GtkLTRFilterClass
@@ -88,8 +87,6 @@ enum {
 
 GType      gtk_ltr_filter_get_type(void);
 
-GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams);
-
 void       gtk_ltr_filter_set_ltrfams(GtkLTRFilter *ltrfilt,
                                       GtkWidget *ltrfams);
 
@@ -102,5 +99,7 @@ void       gtk_ltr_filter_set_apply_text(GtkLTRFilter *ltrfilt,
                                          const gchar *text);
 
 gint       gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err);
+
+GtkWidget* gtk_ltr_filter_new(GtkWidget *ltrfams);
 
 #endif
