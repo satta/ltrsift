@@ -661,19 +661,19 @@ static void update_genomenode_famname(GtArray *nodes, const char *newname)
 }
 
 static void remove_nodes_from_array(GtArray *nodes1, GtArray *nodes2,
-                                    gboolean delete_gn)
+                                    gboolean delete_gn, GtFeatureIndex *fi)
 {
-  GtGenomeNode *tmp1, *tmp2;
+  GtFeatureNode *tmp1, *tmp2;
   unsigned long i, j;
 
   for (i = 0; i < gt_array_size(nodes2); i++) {
-    tmp2 = *(GtGenomeNode**) gt_array_get(nodes2, i);
+    tmp2 = *(GtFeatureNode**) gt_array_get(nodes2, i);
     for (j = 0; j < gt_array_size(nodes1); j++) {
-      tmp1 = *(GtGenomeNode**) gt_array_get(nodes1, j);
-      if (gt_genome_node_cmp(tmp1, tmp2) == 0) {
+      tmp1 = *(GtFeatureNode**) gt_array_get(nodes1, j);
+      if (gt_genome_node_cmp((GtGenomeNode*) tmp1, (GtGenomeNode*) tmp2) == 0) {
         gt_array_rem(nodes1, j);
-        if (delete_gn) {
-          delete_gt_genome_node(tmp1);
+        if (delete_gn && fi) {
+          gt_feature_index_remove_node(fi, tmp1, NULL);
         }
         break;
       }
@@ -961,7 +961,7 @@ static void on_drag_data_received(GtkWidget *widget,
                        LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
                        LTRFAMS_FAM_LV_OLDNAME, &tmp_oldname,
                        -1);
-    remove_nodes_from_array(tmp_nodes, tdata->nodes, FALSE);
+    remove_nodes_from_array(tmp_nodes, tdata->nodes, FALSE, NULL);
     g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
                tmp_oldname, gt_array_size(tmp_nodes));
     gtk_list_store_set(GTK_LIST_STORE(model), &tv_iter,
@@ -1693,7 +1693,7 @@ notebook_list_view_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
                          LTRFAMS_FAM_LV_NODE_ARRAY, &tmp_nodes,
                          LTRFAMS_FAM_LV_OLDNAME, &tmp_oldname,
                          -1);
-      remove_nodes_from_array(tmp_nodes, nodes, FALSE);
+      remove_nodes_from_array(tmp_nodes, nodes, FALSE, NULL);
       ltrfams->unclassified_cands += gt_array_size(nodes);
       update_main_tab_label(ltrfams);
       g_snprintf(tmp_curname, BUFSIZ, "%s (%lu)",
@@ -1704,7 +1704,7 @@ notebook_list_view_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
       gtk_tree_path_free(tv_path);
       g_free(tmp_oldname);
     } else {
-      remove_nodes_from_array(ltrfams->nodes, nodes, TRUE);
+      remove_nodes_from_array(ltrfams->nodes, nodes, TRUE, gtk_ltr_families_get_fi(ltrfams));
       gtk_ltr_families_update_unclassified_cands(ltrfams,
                                                  (-1) * gt_array_size(nodes));
     }
@@ -2866,13 +2866,13 @@ static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
   GtFeatureNodeIterator *fni;
   GtFeatureNode *curnode;
   GtRange range;
-  GtStr *seqid;
-  GtStrand strand;
+  GtStr *seqid = NULL;
+  GtStrand strand = GT_STRAND_UNKNOWN;
   GtHashmap *iter_hash;
   GList *rows;
   gboolean first_ltr = TRUE;
   gchar *sequence = NULL;
-  const char *fnt, *global_parent, *indexname = NULL;
+  const char *fnt, *global_parent = NULL, *indexname = NULL;
 
   selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(list_view));
   if (gtk_tree_selection_count_selected_rows(selection) != 1)
@@ -3058,7 +3058,7 @@ static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
                 continue;
               append_attribute_to_string(string, curnode, tmp_attr);
             }
-            if (indexname) {
+            if (indexname && seqid) {
               sequence = gt_calloc((size_t) gt_range_length(&range) + 1,
                                    sizeof (gchar));
               extract_feature_sequence(seqid, &range, sequence, indexname,

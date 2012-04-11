@@ -469,9 +469,9 @@ static void update_features_label(GtkTreeView *list_view,
   GtkTreeSelection *sel;
   GList *rows, *tmp;
   gboolean first = TRUE;
-  gchar *text,
-        *old_text,
-        *buffer;
+  gchar *text = NULL,
+        *old_text = NULL,
+        *buffer = NULL;
 
   sel = gtk_tree_view_get_selection(list_view);
   if (gtk_tree_selection_count_selected_rows(sel) == 0) {
@@ -557,7 +557,7 @@ void add_gff3_button_clicked(GT_UNUSED GtkButton *button,
   GtkTreeIter iter;
   GtkTreeModel *model;
   GSList *filenames;
-  gchar *file;
+  gchar *file = NULL;
 
   filechooser = gtk_file_chooser_dialog_new(SELECT_GFF3_FILES,
                                             GTK_WINDOW(ltrassi),

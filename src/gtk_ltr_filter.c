@@ -544,9 +544,9 @@ static void apply_clicked(GT_UNUSED GtkButton *button, GtkLTRFilter *ltrfilt)
   GtNodeStream *array_in_stream = NULL,
                *script_filter_stream = NULL,
                *array_out_stream = NULL;
-  GtArray *nodes,
-          *filtered_nodes,
-          *tmp_nodes;
+  GtArray *nodes = NULL,
+          *filtered_nodes = NULL,
+          *tmp_nodes = NULL;
   GtBittab *negate;
   GtGenomeNode *gn;
   GList *rows, *tmp, *children;
@@ -556,12 +556,13 @@ static void apply_clicked(GT_UNUSED GtkButton *button, GtkLTRFilter *ltrfilt)
         filter_message[BUFSIZ];
   gint action, logic, had_err = 0, tab_no;
   const char *attr;
-  unsigned long total_candidates,
+  unsigned long total_candidates = 0,
                 unclassified_candidates = 0,
                 deleted_candidates = 0,
                 i = 0;
 
   model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrfilt->list_view_sel));
+  filtered_nodes = gt_array_new(sizeof (GtGenomeNode*));
 
   if (!gtk_tree_model_get_iter_first(model, &iter)) {
     return;
@@ -646,8 +647,11 @@ static void apply_clicked(GT_UNUSED GtkButton *button, GtkLTRFilter *ltrfilt)
     default:
       break;
   }
-  filtered_nodes = gt_array_new(sizeof (GtGenomeNode*));
-  array_in_stream = gt_array_in_stream_new(nodes, NULL, err);
+  if (!nodes)
+    had_err = -1;
+  if (!had_err) {
+    array_in_stream = gt_array_in_stream_new(nodes, NULL, err);
+  }
   if (!array_in_stream)
     had_err = -1;
   if (!had_err)
@@ -854,7 +858,7 @@ static void add_clicked(GT_UNUSED GtkWidget *button, GtkLTRFilter *ltrfilt)
   GtError *err;
   GtScriptFilter *script_filter;
   GSList *filenames;
-  gchar *file;
+  gchar *file = NULL;
   gboolean valid,
            skipped = FALSE;
 

@@ -388,7 +388,7 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
   GtGenomeNode *gn, *rn, *tmp_gn;
   GtStr *current_seqid = NULL,
         *new_seqid;
-  unsigned long i, start, end;
+  unsigned long i, start = GT_UNDEF_ULONG, end = GT_UNDEF_ULONG;
 
   region_nodes = gt_array_new(sizeof (GtGenomeNode*));
   gt_genome_nodes_sort_stable(nodes);
@@ -405,6 +405,7 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
     if (gt_str_cmp(current_seqid, new_seqid) != 0) {
       tmp_gn = *(GtGenomeNode**) gt_array_get(nodes, i - 1);
       end = gt_genome_node_get_end(tmp_gn);
+      gt_assert(start != GT_UNDEF_ULONG && end != GT_UNDEF_ULONG);
       rn = gt_region_node_new(current_seqid, start, end);
       gt_array_add(region_nodes, rn);
       start = gt_genome_node_get_start(gn);
@@ -413,6 +414,7 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
     }
     if (i == (gt_array_size(nodes) - 1)) {
       end = gt_genome_node_get_end(gn);
+      gt_assert(start != GT_UNDEF_ULONG && end != GT_UNDEF_ULONG);
       rn = gt_region_node_new(current_seqid, start, end);
       gt_array_add(region_nodes, rn);
     }

@@ -73,27 +73,27 @@ static gpointer project_wizard_start_job(gpointer data)
   GtEncseq *encseq = NULL;
   GtArray *nodes;
   GtHashmap *sel_features = NULL;
-  gint psmall,
-       plarge,
-       gapopen,
-       gapextend,
-       wordsize,
-       penalty,
-       reward,
-       num_threads,
+  gint psmall = 0,
+       plarge = 0,
+       gapopen = 0,
+       gapextend = 0,
+       wordsize = 0,
+       penalty = 0,
+       reward = 0,
+       num_threads = 0,
        i = 0,
        num_of_files;
-  const gchar *moreblast;
+  const gchar *moreblast = NULL;
   char buf[BUFSIZ],
-       *tmp_gff3,
-       *old_gff3;
+       *tmp_gff3 = NULL,
+       *old_gff3 = NULL;
   const char **gff3_files,
              *indexname;
-  gboolean dust,
+  gboolean dust = FALSE,
            first = TRUE;
-  gdouble evalue,
-          seqid,
-          xdrop;
+  gdouble evalue = 0.0,
+          seqid = 0.0,
+          xdrop = 0.0;
 
   list_view =
           gtk_ltr_assistant_get_list_view_gff3files(GTK_LTR_ASSISTANT(ltrassi));

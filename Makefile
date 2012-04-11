@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -Wunused-parameter -Werror
+CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -I$(gt_prefix)/include/genometools
 GT_FLAGS_STATIC := $(GT_FLAGS) -lbz2
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
