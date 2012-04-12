@@ -923,108 +923,6 @@ static void export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
     gtk_widget_destroy(dialog);
 }
 
-static void import_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
-{
-  GtkWidget *filechooser, *dialog;
-  GtkFileFilter *gff3_file_filter;
-  GtArray *nodes;
-  GtHashmap *features;
-  GtNodeStream *gff3_in_stream = NULL,
-               *preprocess_stream = NULL,
-               *array_out_stream = NULL;
-  GtError *err = gt_error_new();
-  gint response = GTK_RESPONSE_REJECT, had_err = 0;
-  unsigned long n_features;
-  gchar *filename;
-
-  if (gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
-    if (!gtk_ltr_families_get_projectfile(
-                                        GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
-      dialog = unsaved_changes_dialog(ltrgui, NO_PROJECT_DIALOG);
-      response = gtk_dialog_run(GTK_DIALOG(dialog));
-      gtk_widget_destroy(dialog);
-    } else if (gtk_ltr_families_get_modified(
-                                           GTK_LTR_FAMILIES(ltrgui->ltrfams))) {
-      dialog = unsaved_changes_dialog(ltrgui, UNSAVED_CHANGES_DIALOG);
-      response = gtk_dialog_run(GTK_DIALOG(dialog));
-      gtk_widget_destroy(dialog);
-    }
-  }
-
-  switch (response) {
-    case GTK_RESPONSE_CANCEL:
-      return;
-      break;
-    case GTK_RESPONSE_ACCEPT:
-      menubar_save_activate(NULL, ltrgui);
-      return;
-      break;
-    case GTK_RESPONSE_REJECT:
-      break;
-    default:
-      return;
-      break;
-  }
-
-  filechooser = gtk_file_chooser_dialog_new(GUI_DIALOG_IMPORT,
-                                            GTK_WINDOW (ltrgui->main_window),
-                                            GTK_FILE_CHOOSER_ACTION_OPEN,
-                                            GTK_STOCK_CANCEL,
-                                            GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN,
-                                            GTK_RESPONSE_ACCEPT, NULL);
-  gff3_file_filter = gtk_file_filter_new();
-  gtk_file_filter_set_name(gff3_file_filter, GFF3_FILTER_PATTERN);
-  gtk_file_filter_add_pattern(gff3_file_filter, GFF3_FILTER_PATTERN);
-  gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(filechooser), gff3_file_filter);
-
-  if (gtk_dialog_run(GTK_DIALOG(filechooser)) == GTK_RESPONSE_ACCEPT) {
-    filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(filechooser));
-    gtk_widget_destroy(filechooser);
-  } else {
-    gtk_widget_destroy(filechooser);
-    return;
-  }
-
-  nodes = gt_array_new(sizeof(GtGenomeNode*));
-  features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-  n_features = LTRFAMS_LV_N_COLUMS;
-  gff3_in_stream = gt_gff3_in_stream_new_sorted(filename);
-  preprocess_stream = ltrgui_preprocess_stream_new(gff3_in_stream, features,
-                                                   &n_features, FALSE, err);
-  array_out_stream = gt_array_out_stream_new(preprocess_stream, nodes, err);
-  had_err = gt_node_stream_pull(array_out_stream, err);
-  if (!had_err) {
-    gtk_widget_destroy(ltrgui->ltrfams);
-    gtk_widget_destroy(ltrgui->ltrfilt);
-    gtk_widget_destroy(ltrgui->projset);
-    ltrgui->projset = gtk_project_settings_new(NULL);
-    ltrgui->ltrfams = gtk_ltr_families_new(ltrgui->statusbar,
-                                           ltrgui->progressbar,
-                                           ltrgui->projset,
-                                           ltrgui->style_file,
-                                           ltrgui->err);
-    ltrgui->ltrfilt = gtk_ltr_filter_new(ltrgui->ltrfams);
-    gtk_ltr_families_set_filter_widget(GTK_LTR_FAMILIES(ltrgui->ltrfams),
-                                       ltrgui->ltrfilt);
-    gtk_box_pack_start(GTK_BOX(ltrgui->vbox), ltrgui->ltrfams, TRUE, TRUE, 0);
-    gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrgui->ltrfams),
-                                    nodes,
-                                    features,
-                                    n_features);
-    view_columns_set_submenu(ltrgui, features, NULL, err, FALSE);
-    activate_menuitems(ltrgui);
-  } else {
-    gt_error_set(ltrgui->err,
-                "Could not import data: %s",
-                gt_error_get(err));
-    error_handle(ltrgui->main_window, ltrgui->err);
-  }
-  gt_node_stream_delete(gff3_in_stream);
-  gt_node_stream_delete(preprocess_stream);
-  gt_node_stream_delete(array_out_stream);
-  gt_error_delete(err);
-}
-
 static void open_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
 {
   ThreadData *threaddata;
@@ -1499,10 +1397,9 @@ void menubar_init(GUIData *ltrgui)
   g_signal_connect(G_OBJECT(ltrgui->menubar_save), "activate",
                    G_CALLBACK(menubar_save_activate), ltrgui);
   gtk_widget_set_sensitive(ltrgui->menubar_save, FALSE);
-  /* temporary deactivated (ask Sascha) */
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save);
 
-  ltrgui->menubar_save_as =
+  /* ltrgui->menubar_save_as =
               gtk_image_menu_item_new_from_stock(GTK_STOCK_SAVE_AS, accelgroup);
   g_object_set_data(G_OBJECT(ltrgui->menubar_save_as),
                     STATUSBAR_MENU_HINT,
@@ -1516,13 +1413,12 @@ void menubar_init(GUIData *ltrgui)
   gtk_menu_item_set_label(GTK_MENU_ITEM(ltrgui->menubar_save_as),
                           "Save _As...");
   gtk_widget_set_sensitive(ltrgui->menubar_save_as, FALSE);
-  /* temporary deactivated (ask Sascha) */
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), ltrgui->menubar_save_as);
 
   menuitem = gtk_separator_menu_item_new();
-  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
 
-  menuitem = gtk_menu_item_new_with_mnemonic("_Import...");
+  /* menuitem = gtk_menu_item_new_with_mnemonic("_Import...");
   g_object_set_data(G_OBJECT(menuitem),
                     STATUSBAR_MENU_HINT, (gpointer) STATUSBAR_MENU_HINT_IMPORT);
   g_signal_connect(G_OBJECT(menuitem), "enter-notify-event",
@@ -1531,10 +1427,8 @@ void menubar_init(GUIData *ltrgui)
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
                    G_CALLBACK(import_activate), ltrgui);
-  /* temporary deactivated (ask Sascha) */
-  /* gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
-
-  /* menuitem = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+  menuitem = gtk_separator_menu_item_new();
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem); */
 
   ltrgui->menubar_export = gtk_menu_item_new_with_mnemonic("E_xport");
