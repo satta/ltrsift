@@ -753,6 +753,25 @@ static gpointer classify_nodes_start(gpointer data)
 }
 /* thread related functions end */
 
+static void ltrsift_track_selector_func(GtBlock *block, GtStr *name,
+                                        GT_UNUSED void *data)
+{
+  GtFeatureNode *fn = gt_block_get_top_level_feature(block);
+  if (strcmp(gt_feature_node_get_type(fn), "nucleotide_match") == 0) {
+    const char *params = gt_feature_node_get_attribute(fn, "params");
+    if (params) {
+      gt_str_append_cstr(name, "BLAST match with parameter set ");
+      gt_str_append_cstr(name, params);
+    }
+  } else {
+    /* gt_str_append_cstr(name, "generated|"); */
+    char *str = gt_cstr_dup(gt_block_get_type(block));
+    gt_cstr_rep(str, '_', ' ');
+    gt_str_append_cstr(name, str);
+    gt_free(str);
+  }
+}
+
 /* <image_area> related functions start */
 static void draw_image(GtkLTRFamilies *ltrfams, GtGenomeNode *gn)
 {
@@ -767,8 +786,12 @@ static void draw_image(GtkLTRFamilies *ltrfams, GtGenomeNode *gn)
   seqid = gt_feature_index_get_first_seqid(features, ltrfams->err);
   gt_feature_index_get_range_for_seqid(features, &range, seqid, ltrfams->err);
   gt_diagram_delete(ltrfams->diagram);
+
   ltrfams->diagram = gt_diagram_new(features, seqid, &range,
                                     ltrfams->style, ltrfams->err);
+   gt_diagram_set_track_selector_func(ltrfams->diagram,
+                                      ltrsift_track_selector_func,
+                                      NULL);
   gtk_widget_queue_draw_area(a, 0, 0, a->allocation.width,
                              a->allocation.height);
   gt_feature_index_delete(features);
