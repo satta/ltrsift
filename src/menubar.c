@@ -1214,7 +1214,7 @@ static void help_about_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_about_dialog_set_version(GTK_ABOUT_DIALOG(dialog), GUI_VERSION);
   gtk_about_dialog_set_copyright(GTK_ABOUT_DIALOG(dialog), GUI_COPYRIGHT);
   gtk_about_dialog_set_comments(GTK_ABOUT_DIALOG(dialog), GUI_COMMENTS);
-  gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(dialog), GUI_LICENSE);
+  gtk_about_dialog_set_license(GTK_ABOUT_DIALOG(dialog), license);
   gtk_about_dialog_set_website(GTK_ABOUT_DIALOG(dialog), GUI_WEBSITE);
 
   gtk_dialog_run(GTK_DIALOG(dialog));
