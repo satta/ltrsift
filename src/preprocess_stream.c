@@ -75,7 +75,7 @@ GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
 {
   GtNodeStream *gs;
   LTRGuiPreprocessStream *ps;
-  gs = gt_node_stream_create(ltrgui_preprocess_stream_class(), true);
+  gs = gt_node_stream_create(ltrgui_preprocess_stream_class(), false);
   ps = ltrgui_preprocess_stream_cast(gs);
   ps->in_stream = gt_node_stream_ref(in_stream);
   ps->pv = (LTRGuiPreprocessVisitor*) ltrgui_preprocess_visitor_new(features,
