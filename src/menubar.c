@@ -876,7 +876,6 @@ void menubar_save_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
     threaddata->err = gt_error_new();
     threaddata->progress = 0;
     threaddata->had_err = 0;
-    /* g_rename(projectfile, threaddata->tmp_filename); */
     progress_dialog_init(threaddata, ltrgui->main_window);
 
     if (!g_thread_create(save_project_data_start, (gpointer) threaddata,
