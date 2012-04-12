@@ -54,7 +54,7 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   had_err = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS invisible_columns "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)",
-                           -1, &stmt, err);
+                           0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
@@ -69,7 +69,7 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                            "CREATE TABLE IF NOT EXISTS filter_files "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                              "filename TEXT)",
-                           -1, &stmt, err);
+                           0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_rdb_delete(rdb);
     return -1;
@@ -81,7 +81,7 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "name TEXT, "
                             "position INTEGER NOT NULL)",
-                           -1, &stmt, err);
+                           0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
@@ -93,8 +93,8 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   gt_rdb_stmt_delete(stmt);
 
   had_err = gt_rdb_prepare(rdb,
-                           "CREATE UNIQUE INDEX nbtabs ON notebook_tabs (name)",
-                           -1, &stmt, err);
+                           "CREATE UNIQUE INDEX IF NOT EXISTS nbtabs ON notebook_tabs (name)",
+                           0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
