@@ -694,10 +694,12 @@ static gpointer save_and_reload_data_start(gpointer data)
       threaddata->had_err = threaddata->fi ? 0 : -1;
     }
     if (!threaddata->had_err) {
+      GtStrArray *seqids;
       nodes = gt_array_new(sizeof(GtFeatureNode*));
       seqids = gt_feature_index_get_seqids(threaddata->fi,
                                            threaddata->ltrgui->err);
       if (seqids) {
+        GtArray *tmp_nodes;
         for (i = 0; i < gt_str_array_size(seqids); i++) {
           tmp_nodes = gt_feature_index_get_features_for_seqid(threaddata->fi,
                                                         gt_str_array_get(seqids,
