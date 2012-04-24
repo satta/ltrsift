@@ -21,6 +21,7 @@
 #include "message_strings.h"
 #include "statusbar.h"
 #include "support.h"
+#include "extended/orf_finder_stream.h"
 
 /* function prototypes start */
 static gint notebook_list_view_sort_function(GtkTreeModel*, GtkTreeIter*,
@@ -1558,6 +1559,116 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
   }
 }
 /* RefSeqMatch related functions end */
+
+static gboolean orffind_finished(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+
+  g_source_remove(GPOINTER_TO_INT(
+                               g_object_get_data(G_OBJECT(threaddata->window),
+                                                 "source_id")));
+  gtk_widget_destroy(threaddata->window);
+  reset_progressbar(threaddata->progressbar);
+
+  if (threaddata->had_err) {
+     gt_error_set(threaddata->ltrfams->err,
+                "Could not match the selected data: %s",
+                gt_error_get(threaddata->err));
+    gdk_threads_enter();
+    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
+                 threaddata->ltrfams->err);
+    gdk_threads_leave();
+  }
+  gt_array_delete(threaddata->nodes);
+  threaddata_delete(threaddata);
+  return FALSE;
+}
+
+static gpointer orffind_start(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+  GtNodeStream *array_in_stream = NULL,
+               *orf_stream = NULL;
+  GtEncseq *encseq = NULL;
+  GtEncseqLoader *el = gt_encseq_loader_new();
+  const gchar *indexname = NULL;
+
+  if (!threaddata->had_err) {
+    indexname =
+      gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(threaddata->ltrfams->projset));
+    encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
+    if (!encseq)
+      threaddata->had_err = -1;
+  }
+
+  if (!threaddata->had_err) {
+    GtHashmap *types = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
+    GtGenomeNode *gn;
+    gdk_threads_enter();
+    gt_hashmap_add(types, "LTR_retrotransposon", (void*) 1);
+    gt_assert(encseq);
+
+    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                             NULL, threaddata->err);
+    orf_stream = gt_orf_finder_stream_new(array_in_stream,
+                                          encseq,
+                                          types,
+                                          30,
+                                          10000,
+                                          false,
+                                          threaddata->err);
+    while (!(threaddata->had_err = gt_node_stream_next(orf_stream, &gn, threaddata->err)) && gn);
+    gt_hashmap_delete(types);
+    gdk_threads_leave();
+  }
+  gt_node_stream_delete(orf_stream);
+  gt_node_stream_delete(array_in_stream);
+  gt_encseq_loader_delete(el);
+  gt_encseq_delete(encseq);
+  g_idle_add(orffind_finished, data);
+  return NULL;
+}
+
+
+void gtk_ltr_families_orffind(GtArray *nodes, GtkLTRFamilies *ltrfams)
+{
+  ThreadData *threaddata;
+  GtkWidget *dialog,
+            *toplevel;
+
+  toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
+
+  if (!ltrfams->projectfile) {
+    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
+                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_DESTROY_WITH_PARENT,
+                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
+                                     "%s",
+                                     NO_PROJECTFILE_FOR_PARAMS_DIALOG);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
+    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
+    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
+      gtk_widget_destroy(dialog);
+      return;
+    }
+    gtk_widget_destroy(dialog);
+  }
+
+  /* create thread for matching */
+  threaddata = threaddata_new();
+  threaddata->ltrfams = ltrfams;
+  threaddata->progressbar = ltrfams->progressbar;
+  threaddata->nodes = nodes;
+  threaddata->err = gt_error_new();
+
+  progress_dialog_init(threaddata, toplevel);
+
+  if (!g_thread_create(orffind_start, (gpointer) threaddata, FALSE,
+                       NULL)) {
+    gt_error_set(ltrfams->err, "Could not create new thread.");
+    error_handle(toplevel, ltrfams->err);
+  }
+}
 
 /* popupmenu related functions start*/
 static void notebook_list_view_menu_match_clicked(GT_UNUSED GtkWidget *menuitem,

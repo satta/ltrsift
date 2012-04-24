@@ -1329,6 +1329,16 @@ static void project_match_activate(GT_UNUSED GtkMenuItem *menuitem,
   gtk_ltr_families_refseq_match(nodes, GTK_LTR_FAMILIES(ltrgui->ltrfams));
 }
 
+static void project_orf_activate(GT_UNUSED GtkMenuItem *menuitem,
+                                   GUIData *ltrgui)
+{
+  GtArray *nodes;
+
+  nodes =
+    gt_array_ref(gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams)));
+  gtk_ltr_families_orffind(nodes, GTK_LTR_FAMILIES(ltrgui->ltrfams));
+}
+
 void menubar_init(GUIData *ltrgui)
 {
   GtkWidget *rc, *menu, *menuitem, *submenu;
@@ -1514,6 +1524,18 @@ void menubar_init(GUIData *ltrgui)
                    G_CALLBACK(statusbar_menuhints), ltrgui);
   g_signal_connect(G_OBJECT(menuitem), "activate",
                    G_CALLBACK(project_match_activate), ltrgui);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+
+    menuitem = gtk_menu_item_new_with_mnemonic("Detect _ORFs...");
+  g_object_set_data(G_OBJECT(menuitem),
+                    STATUSBAR_MENU_HINT,
+                    (gpointer) STATUSBAR_MENU_HINT_MATCH);
+  g_signal_connect(G_OBJECT(menuitem), "enter-notify-event",
+                   G_CALLBACK(statusbar_menuhints), ltrgui);
+  g_signal_connect(G_OBJECT(menuitem), "leave-notify-event",
+                   G_CALLBACK(statusbar_menuhints), ltrgui);
+  g_signal_connect(G_OBJECT(menuitem), "activate",
+                   G_CALLBACK(project_orf_activate), ltrgui);
   gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 
   menuitem = gtk_menu_item_new_with_mnemonic("_Settings...");

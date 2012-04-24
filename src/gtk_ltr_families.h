@@ -220,6 +220,9 @@ void            gtk_ltr_families_notebook_list_view_append_array(
 void            gtk_ltr_families_refseq_match(GtArray *nodes,
                                               GtkLTRFamilies *ltrfams);
 
+void            gtk_ltr_families_orffind(GtArray *nodes,
+                                         GtkLTRFamilies *ltrfams);
+
 GtkWidget*      gtk_ltr_families_new(GtkWidget *statusbar,
                                      GtkWidget *progressbar, GtkWidget *projset,
                                      gchar *style_file, GtError *err);
