@@ -152,8 +152,9 @@ style =
     fill               = {red=0.7, green=0.7, blue=0.7},
     style              = "box",
     -- Collapsing options
-    collapse_to_parent = false,
+    collapse_to_parent = true,
     split_lines        = true,
+    z_index            = 10,
     -- Caption options
     max_capt_show_width= nil,
     -- Display this track only if the viewport is not wider than this
@@ -286,8 +287,23 @@ nucleotide_match = {
     max_num_lines      = 10,
   },
 --------------------------------------
-  three_prime_splice_site = {
-    collapse_to_parent = true,
+  reading_frame = {
+    -- Color definitions
+    stroke             = {red=0.0, green=0.0, blue=0.0, alpha = 1.0},
+    stroke_marked      = {red=1.0, green=0.0, blue=0.0},
+    fill               = {red=0.6, green=0.6, blue=0.9, alpha = 0.7},
+    block_caption      = function(gn)
+                           rng = gn:get_range()
+                           return string.format("%dnt (%d%s)", rng:get_end() - rng:get_start() + 1, gn:get_attribute("frame"), gn:get_strand())
+                         end,
+    style              = "box",
+    stroke_width       = 1,
+    z_index            = 3,
+    bar_height         = 10,
+    -- Collapsing options
+    collapse_to_parent = false,
+    split_lines        = true,
+    group_by_parent    = false,
   },
 --------------------------------------
   expressed_sequence_match = {
