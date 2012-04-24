@@ -408,9 +408,9 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
     gt_rdb_sqlite_new(gtk_label_get_text(GTK_LABEL(projset->label_projectfile)),
                       tmp_err);
   if (!rdb) {
-    gt_error_set(err, "Could not save projekt settings: %s",
+    gt_error_set(err, "Could not save project settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     return -1;
   }
 
@@ -443,14 +443,14 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   if (had_err) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
@@ -463,14 +463,14 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   if (had_err) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
@@ -513,20 +513,20 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   if (had_err) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
-    gt_error_delete(err);
+    gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
     gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
-  gt_error_delete(err);
+  gt_error_delete(tmp_err);
   gt_rdb_delete(rdb);
   return 0;
 }
@@ -607,7 +607,7 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   projset->notebook = gtk_notebook_new();
 
   vbox1 = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("Projectfile:");
+  label = gtk_label_new("Project file:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
@@ -622,12 +622,12 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Clustering?");
+  label = gtk_label_new("Clustering enabled?");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  button = gtk_button_new_with_mnemonic("_Change/Set indexname");
+  button = gtk_button_new_with_mnemonic("_Change/set indexname");
   g_signal_connect(G_OBJECT(button), "clicked",
                    G_CALLBACK(change_index_clicked), projset);
   gtk_box_pack_start(GTK_BOX(vbox1), button, FALSE, FALSE, 1);

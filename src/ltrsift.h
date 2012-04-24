@@ -60,7 +60,6 @@ struct _GUIData
 };
 
 gint apply_gui_settings(GUIData *ltrgui);
-
-gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile);
+gint save_gui_settings(GUIData *ltrgui);
 
 #endif

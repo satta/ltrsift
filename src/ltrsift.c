@@ -36,7 +36,7 @@ static void reorder_tabs(gpointer key, gpointer value, gpointer user_data)
                              GPOINTER_TO_INT(value));
 }
 
-gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
+gint save_gui_settings(GUIData *ltrgui)
 {
   GtRDB *rdb;
   GtRDBStmt *stmt;
@@ -44,7 +44,7 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
   gint had_err = 0;
 
   err = gt_error_new();
-  rdb = gt_rdb_sqlite_new(projectfile, err);
+  rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   if (!rdb) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
@@ -60,7 +60,6 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                 "Could not save gui settings: %s",
                 gt_error_get(err));
     gt_error_delete(err);
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -71,7 +70,6 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                              "filename TEXT)",
                            0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -87,12 +85,11 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                 "Could not save gui settings: %s",
                 gt_error_get(err));
     gt_error_delete(err);
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb,
+   had_err = gt_rdb_prepare(rdb,
                            "CREATE UNIQUE INDEX IF NOT EXISTS nbtabs ON notebook_tabs (name)",
                            0, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
@@ -100,12 +97,9 @@ gint save_gui_settings(GUIData *ltrgui, const gchar *projectfile)
                 "Could not save gui settings: %s",
                 gt_error_get(err));
     gt_error_delete(err);
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
-
-  gt_rdb_delete(rdb);
   gt_error_delete(err);
 
   return 0;

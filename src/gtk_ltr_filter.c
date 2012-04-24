@@ -83,20 +83,17 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
   g_free(file);
 }
 
-/*gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
+gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
 {
   GtkTreeModel *model;
   GtkTreeIter iter;
   GtRDB *rdb;
   GtRDBStmt *stmt;
   gboolean valid;
-  gchar *pfile, query[BUFSIZ], *file;
+  gchar query[BUFSIZ], *file;
   gint had_err = 0;
 
-  pfile = gtk_ltr_families_get_projectfile(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
-  if (!pfile)
-    return had_err;
-  rdb = gt_rdb_sqlite_new(pfile, err);
+  rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
   if (!rdb)
     return -1;
   had_err = gt_rdb_prepare(rdb,
@@ -105,7 +102,6 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
                              "filename TEXT)",
                            -1, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -115,7 +111,6 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
                            -1, &stmt, err);
 
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -131,7 +126,6 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
   had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
   if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     g_free(file);
-    gt_rdb_delete(rdb);
     return -1;
   }
   g_free(file);
@@ -144,16 +138,14 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
     had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
     if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
       g_free(file);
-      gt_rdb_delete(rdb);
       return -1;
     }
     g_free(file);
     gt_rdb_stmt_delete(stmt);
   }
-  gt_rdb_delete(rdb);
 
   return 0;
-}*/
+}
 
 static void add_file_to_sqlite(GtkLTRFilter *ltrfilt, gchar *file)
 {
@@ -726,7 +718,8 @@ static void apply_clicked(GT_UNUSED GtkButton *button, GtkLTRFilter *ltrfilt)
                  gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
             remove_row(cdata->cand_ref);
             remove_node_from_array(nodes, gn);
-            delete_gt_genome_node(gn);
+            (void) gt_feature_index_remove_node(gtk_ltr_families_get_fi(GTK_LTR_FAMILIES(ltrfilt->ltrfams)),
+                                         (GtFeatureNode*) gn, err);  /* XXX */
             deleted_candidates++;
             gtk_ltr_families_update_unclassified_cands(
                                              GTK_LTR_FAMILIES(ltrfilt->ltrfams),
