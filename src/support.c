@@ -187,7 +187,7 @@ void progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel)
                                GTK_WINDOW(toplevel));
   gtk_window_set_position(GTK_WINDOW(threaddata->window),
                           GTK_WIN_POS_CENTER_ON_PARENT);
-  gtk_window_set_modal(GTK_WINDOW(threaddata->window), TRUE);
+  gtk_window_set_modal(GTK_WINDOW(threaddata->window), FALSE);
   gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
   gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
   gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 5);
