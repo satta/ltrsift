@@ -39,11 +39,11 @@ void gtk_project_settings_update_indexname(GtkProjectSettings *projset,
     g_snprintf(query, BUFSIZ,
                "UPDATE project_settings SET indexname = \"%s\"",
                gtk_label_get_text(GTK_LABEL(projset->label_indexname)));
-    had_err = gt_rdb_prepare(projset->rdb, query, -1, &stmt, err);
-    if (!had_err) {
+    stmt = gt_rdb_prepare(projset->rdb, query, -1, err);
+    if (stmt) {
       had_err = gt_rdb_stmt_exec(stmt, err);
       gt_rdb_stmt_delete(stmt);
-    }
+    } else had_err = -1;
     if (had_err == -1)
       error_handle(GTK_WIDGET(projset), err);
     gt_error_delete(err);
@@ -169,14 +169,14 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
 
   gtk_label_set_text(GTK_LABEL(projset->label_projectfile), projectfile);
 
-  had_err = gt_rdb_prepare(projset->rdb,
+  stmt = gt_rdb_prepare(projset->rdb,
                            "SELECT gff3files, indexname, clustering, evalue, "
                             "dust, gapopen, gapextend, xdrop, penalty, reward, "
                             "threads, wordsize, seq_identity, psmall, plarge, "
                             "classification, ltr_tolerance, cand_tolerance, "
                             "features, moreblast FROM project_settings",
-                           -1, &stmt, err);
-  if (had_err)
+                           -1, err);
+  if (!stmt)
     return -1;
   if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_rdb_stmt_delete(stmt);
@@ -414,7 +414,7 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
     return -1;
   }
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS project_settings "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "projectfile TEXT, "
@@ -438,9 +438,9 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
                             "ltr_tolerance TEXT, "
                             "cand_tolerance TEXT, "
                             "features TEXT)",
-                           -1, &stmt, tmp_err);
+                           -1, tmp_err);
 
-  if (had_err) {
+  if (!stmt) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
@@ -457,10 +457,10 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb, "DELETE FROM project_settings",
-                           -1, &stmt, tmp_err);
+  stmt = gt_rdb_prepare(rdb, "DELETE FROM project_settings",
+                           -1, tmp_err);
 
-  if (had_err) {
+  if (!stmt) {
     gt_error_set(err, "Could not save projekt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
@@ -508,17 +508,17 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
              gtk_label_get_text(GTK_LABEL(projset->label_ltrtolerance)),
              gtk_label_get_text(GTK_LABEL(projset->label_candtolerance)),
              gtk_label_get_text(GTK_LABEL(projset->label_usedfeatures)));
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, tmp_err);
+  stmt = gt_rdb_prepare(rdb, query, -1, tmp_err);
 
-  if (had_err) {
-    gt_error_set(err, "Could not save projekt settings: %s",
+  if (!stmt) {
+    gt_error_set(err, "Could not save project settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could not save projekt settings: %s",
+    gt_error_set(err, "Could not save projestmtt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
@@ -575,11 +575,11 @@ static void change_index_clicked(GT_UNUSED GtkWidget *button,
         g_snprintf(query, BUFSIZ,
                    "UPDATE project_settings SET indexname = \"%s\"",
                    gtk_label_get_text(GTK_LABEL(projset->label_indexname)));
-        had_err = gt_rdb_prepare(projset->rdb, query, -1, &stmt, err);
-        if (!had_err) {
+        stmt = gt_rdb_prepare(projset->rdb, query, -1, err);
+        if (stmt) {
           had_err = gt_rdb_stmt_exec(stmt, err);
           gt_rdb_stmt_delete(stmt);
-        }
+        } else had_err = -1;
         if (had_err == -1)
           error_handle(GTK_WIDGET(projset), err);
       }

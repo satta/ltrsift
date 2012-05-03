@@ -61,8 +61,8 @@ static void remove_file_from_sqlite(GtkTreeRowReference *row_ref,
   }
   g_snprintf(query, BUFSIZ,
              "DELETE FROM filter_files WHERE filename = \"%s\"", file);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-  if (had_err) {
+  stmt = gt_rdb_prepare(rdb, query, -1, err);
+  if (!stmt) {
     error_handle(GTK_WIDGET(ltrfilt), err);
     gt_error_delete(err);
     gtk_tree_path_free(path);
@@ -96,21 +96,21 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
   rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
   if (!rdb)
     return -1;
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS filter_files "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                              "filename TEXT)",
-                           -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+                           -1, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "DELETE FROM filter_files",
-                           -1, &stmt, err);
+                           -1, err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -123,8 +123,8 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
   gtk_tree_model_get(model, &iter, LTR_FILTER_LV_FILE, &file, -1);
   g_snprintf(query, BUFSIZ,
              "INSERT INTO filter_files (filename) values (\"%s\")", file);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+  stmt = gt_rdb_prepare(rdb, query, -1, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     g_free(file);
     return -1;
   }
@@ -135,8 +135,8 @@ gint gtk_ltr_filter_save_data(GtkLTRFilter *ltrfilt, GtError *err)
     gtk_tree_model_get(model, &iter, LTR_FILTER_LV_FILE, &file, -1);
     g_snprintf(query, BUFSIZ,
                "INSERT INTO filter_files (filename) values (\"%s\")", file);
-    had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-    if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    stmt = gt_rdb_prepare(rdb, query, -1,  err);
+    if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
       g_free(file);
       return -1;
     }
@@ -164,12 +164,12 @@ static void add_file_to_sqlite(GtkLTRFilter *ltrfilt, gchar *file)
     gt_error_delete(err);
     return;
   }
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS filter_files "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                              "filename TEXT)",
-                           -1, &stmt, err);
-  if (had_err) {
+                           -1, err);
+  if (!stmt) {
     error_handle(GTK_WIDGET(ltrfilt), err);
     gt_error_delete(err);
     return;
@@ -183,8 +183,8 @@ static void add_file_to_sqlite(GtkLTRFilter *ltrfilt, gchar *file)
   gt_rdb_stmt_delete(stmt);
   g_snprintf(query, BUFSIZ,
              "INSERT INTO filter_files (filename) values (\"%s\")", file);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-  if (had_err) {
+  stmt = gt_rdb_prepare(rdb, query, -1, err);
+  if (!stmt) {
     error_handle(GTK_WIDGET(ltrfilt), err);
     gt_error_delete(err);
     return;
@@ -216,10 +216,10 @@ gint gtk_ltr_filter_get_filter_files_from_sql(GtkLTRFilter *ltrfilt,
   if (pfile == NULL)
     return 0;
   rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "SELECT filename FROM filter_files",
-                           -1, &stmt, err);
-  if (had_err)
+                           -1, err);
+  if (!stmt)
     return -1;
   while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
     result = gt_str_new();

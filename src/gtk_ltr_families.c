@@ -21,7 +21,7 @@
 #include "message_strings.h"
 #include "statusbar.h"
 #include "support.h"
-#include "extended/orf_finder_stream.h"
+#include "ltr/ltr_orf_annotator_stream_api.h"
 
 /* function prototypes start */
 static gint notebook_list_view_sort_function(GtkTreeModel*, GtkTreeIter*,
@@ -188,9 +188,9 @@ gint remove_refseq_params(GtkLTRFamilies *ltrfams, unsigned long last_id)
 
   g_snprintf(query, BUFSIZ,
              "DELETE FROM refseq_match_params WHERE set_id = \"%lu\"", last_id);
-  had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
+  stmt = gt_rdb_prepare(ltrfams->rdb, query, -1, ltrfams->err);
 
-  if (had_err)
+  if (!stmt)
     return -1;
   if ((had_err = gt_rdb_stmt_exec(stmt, ltrfams->err)) < 0) {
     gt_rdb_stmt_delete(stmt);
@@ -210,7 +210,7 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
   gchar query[BUFSIZ];
   gint had_err = 0;
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS refseq_match_params "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "set_id INTEGER, "
@@ -226,9 +226,9 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
                             "identity TEXT, "
                             "moreblast TEXT, "
                             "minlen REAL)",
-                           -1, &stmt, err);
+                           -1, err);
 
-  if (had_err)
+  if (!stmt)
     return -1;
   if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_rdb_stmt_delete(stmt);
@@ -290,9 +290,9 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
              evalue_str, (dust ? 1 : 0), gapopen_str, gapextend_str, xdrop_str,
              penalty_str, reward_str, threads_str, wordsize_str, identity_str,
              moreblast, minlen);
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
+  stmt = gt_rdb_prepare(rdb, query, -1, err);
 
-  if (had_err)
+  if (!stmt)
     return -1;
   if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_rdb_stmt_delete(stmt);
@@ -1184,8 +1184,8 @@ static gint refseq_match_changed(GtkComboBox *combob, GtkLTRFamilies *ltrfams)
   g_snprintf(query, BUFSIZ,
              "SELECT * FROM refseq_match_params WHERE set_id = \"%s\"",
              param);
-  had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, err);
-  if (!had_err) {
+  stmt = gt_rdb_prepare(ltrfams->rdb, query, -1, err);
+  if (stmt) {
     had_err = gt_rdb_stmt_exec(stmt, err);
     if (!(had_err < 0)) {
       GtStr *result = gt_str_new();
@@ -1412,11 +1412,11 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
     gint had_err = 0;
 
     err = gt_error_new();
-    had_err = gt_rdb_prepare(ltrfams->rdb,
-                             "SELECT set_id FROM refseq_match_params "
-                             "ORDER by set_id",
-                             -1, &stmt, err);
-    if (!had_err) {
+    stmt = gt_rdb_prepare(ltrfams->rdb,
+                          "SELECT set_id FROM refseq_match_params "
+                          "ORDER by set_id",
+                          -1,  err);
+    if (stmt) {
       while ((had_err = gt_rdb_stmt_exec(stmt, err)) == 0) {
         had_err = gt_rdb_stmt_get_ulong(stmt, 0, &result, err);
         if (!had_err) {
@@ -1428,7 +1428,7 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
       }
       gtk_combo_box_set_active(GTK_COMBO_BOX(combob), 0);
       gt_rdb_stmt_delete(stmt);
-    }
+    } else had_err = -1;
     if (!gtk_combo_box_get_active_text(GTK_COMBO_BOX(combob)) &&
         ltrfams->projectfile) {
       result = 1;
@@ -1602,23 +1602,21 @@ static gpointer orffind_start(gpointer data)
   }
 
   if (!threaddata->had_err) {
-    GtHashmap *types = gt_hashmap_new(GT_HASH_STRING, NULL, NULL);
     GtGenomeNode *gn;
     gdk_threads_enter();
-    gt_hashmap_add(types, "LTR_retrotransposon", (void*) 1);
     gt_assert(encseq);
 
     array_in_stream = gt_array_in_stream_new(threaddata->nodes,
                                              NULL, threaddata->err);
-    orf_stream = gt_orf_finder_stream_new(array_in_stream,
-                                          encseq,
-                                          types,
-                                          30,
-                                          10000,
-                                          false,
-                                          threaddata->err);
-    while (!(threaddata->had_err = gt_node_stream_next(orf_stream, &gn, threaddata->err)) && gn);
-    gt_hashmap_delete(types);
+    orf_stream = gt_ltr_orf_annotator_stream_new(array_in_stream,
+                                                 encseq,
+                                                 50,
+                                                 10000,
+                                                 false,
+                                                 threaddata->err);
+
+    while (!(threaddata->had_err = gt_node_stream_next(orf_stream, &gn,
+                                                       threaddata->err)) && gn);
     gdk_threads_leave();
   }
   gt_node_stream_delete(orf_stream);
@@ -1628,7 +1626,6 @@ static gpointer orffind_start(gpointer data)
   g_idle_add(orffind_finished, data);
   return NULL;
 }
-
 
 void gtk_ltr_families_orffind(GtArray *nodes, GtkLTRFamilies *ltrfams)
 {
@@ -3626,11 +3623,11 @@ static void notebook_refresh_tab_nums(GtkNotebook *notebook,
         g_snprintf(query, BUFSIZ,
                    "UPDATE notebook_tabs SET position = %d WHERE name = \"%s\"",
                    i, gtk_label_close_get_text(GTK_LABEL_CLOSE(tab_label)));
-        had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
-        if (!had_err) {
+        stmt = gt_rdb_prepare(ltrfams->rdb, query, -1, ltrfams->err);
+        if (stmt) {
           had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
           gt_rdb_stmt_delete(stmt);
-        }
+        } else had_err = -1;
         if (had_err == -1)
           error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
                        ltrfams->err);
@@ -3702,11 +3699,11 @@ static void notebook_close_tab_clicked(GtkButton *button,
                gtk_label_close_get_text(GTK_LABEL_CLOSE(tab_label)));
     if (gt_error_is_set(ltrfams->err))
       g_warning("err: %s", gt_error_get(ltrfams->err));
-    had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
-    if (!had_err) {
+    stmt = gt_rdb_prepare(ltrfams->rdb, query, -1, ltrfams->err);
+    if (stmt) {
       had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
       gt_rdb_stmt_delete(stmt);
-    }
+    } else had_err = -1;
     if (had_err == -1)
       error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)),
                    ltrfams->err);
@@ -3814,11 +3811,11 @@ void gtk_ltr_families_notebook_add_tab(GtkTreeModel *model, GtkTreeIter *iter,
                "INSERT OR IGNORE INTO notebook_tabs "
                " (name, position) values (\"%s\", %d)",
                name, nbpage);
-    had_err = gt_rdb_prepare(ltrfams->rdb, query, -1, &stmt, ltrfams->err);
-    if (!had_err) {
+    stmt = gt_rdb_prepare(ltrfams->rdb, query, -1, ltrfams->err);
+    if (stmt) {
       had_err = gt_rdb_stmt_exec(stmt, ltrfams->err);
       gt_rdb_stmt_delete(stmt);
-    }
+    } else had_err = -1;
     if (had_err == -1)
       error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
   }

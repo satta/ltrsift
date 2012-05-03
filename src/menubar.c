@@ -89,15 +89,17 @@ static void view_columns_toggled(GtkCheckMenuItem *menuitem,
       g_snprintf(query, BUFSIZ,
                  "INSERT INTO invisible_columns (name) values (\"%s\")",
                  caption);
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (!had_err)
+      stmt = gt_rdb_prepare(rdb, query, -1, err);
+      if (stmt)
         had_err = gt_rdb_stmt_exec(stmt, err);
+      else had_err = -1;
     } else {
       g_snprintf(query, BUFSIZ,
                  "DELETE FROM invisible_columns WHERE name = \"%s\"", caption);
-      had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-      if (!had_err)
+      stmt = gt_rdb_prepare(rdb, query, -1, err);
+      if (stmt)
         had_err = gt_rdb_stmt_exec(stmt, err);
+      else had_err = -1;
     }
     if (had_err == -1)
       error_handle(gtk_widget_get_toplevel(GTK_WIDGET(user_data)), err);
@@ -132,8 +134,8 @@ static void view_columns_set_submenu(GUIData *ltrgui, GtHashmap *features,
       g_snprintf(buffer, BUFSIZ,
                  "SELECT name FROM invisible_columns WHERE name = \"%s\"",
                  double_underscores(gt_str_array_get(captions, i)));
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+      stmt = gt_rdb_prepare(rdb, buffer, -1, err);
+      if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
         gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(menuitem), TRUE);
         error_handle(ltrgui->main_window, err);
       } else if (had_err == 0) {
@@ -170,9 +172,8 @@ insert_param_set(GT_UNUSED void *key, void *val, void *r, GtError *err)
   gchar *query = (gchar*) val;
   gint had_err = 0;
 
-  had_err = gt_rdb_prepare(rdb, query, -1, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
-    gt_rdb_stmt_delete(stmt);
+  stmt = gt_rdb_prepare(rdb, query, -1, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     return 1;
   }
   gt_rdb_stmt_delete(stmt);
@@ -195,9 +196,8 @@ static gint extract_match_param_sets(GUIData *ltrgui)
     gt_error_delete(err);
     return -1;
   }
-  had_err = gt_rdb_prepare(rdb, "SELECT * FROM refseq_match_params", -1,
-                           &stmt, err);
-  if (had_err) {
+  stmt = gt_rdb_prepare(rdb, "SELECT * FROM refseq_match_params", -1, err);
+  if (!stmt) {
     gt_error_set(ltrgui->err, "Could not retrieve parameter sets: %s",
                  gt_error_get(err));
     gt_error_delete(err);
@@ -310,7 +310,7 @@ static gint save_match_param_sets(GUIData *ltrgui)
     return -1;
   }
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS refseq_match_params "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "set_id INTEGER, "
@@ -326,9 +326,9 @@ static gint save_match_param_sets(GUIData *ltrgui)
                             "identity TEXT, "
                             "moreblast TEXT, "
                             "minlen REAL)",
-                           -1, &stmt, err);
+                           -1, err);
 
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err, "Could not save parameter sets: %s",
                  gt_error_get(err));
     gt_error_delete(err);

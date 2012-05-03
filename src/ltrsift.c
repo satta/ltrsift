@@ -51,11 +51,11 @@ gint save_gui_settings(GUIData *ltrgui)
                 gt_error_get(err));
     return -1;
   }
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS invisible_columns "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)",
-                           0, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+                           0, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
                 gt_error_get(err));
@@ -64,23 +64,23 @@ gint save_gui_settings(GUIData *ltrgui)
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS filter_files "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                              "filename TEXT)",
-                           0, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+                           0, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
 
-  had_err = gt_rdb_prepare(rdb,
+  stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS notebook_tabs "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
                             "name TEXT, "
                             "position INTEGER NOT NULL)",
-                           0, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+                           0, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
                 gt_error_get(err));
@@ -89,10 +89,10 @@ gint save_gui_settings(GUIData *ltrgui)
   }
   gt_rdb_stmt_delete(stmt);
 
-   had_err = gt_rdb_prepare(rdb,
+   stmt = gt_rdb_prepare(rdb,
                            "CREATE UNIQUE INDEX IF NOT EXISTS nbtabs ON notebook_tabs (name)",
-                           0, &stmt, err);
-  if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+                           0, err);
+  if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
                 "Could not save gui settings: %s",
                 gt_error_get(err));
@@ -137,8 +137,8 @@ gint apply_gui_settings(GUIData *ltrgui)
                "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
                name);
     g_free(name);
-    had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-    if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+    stmt = gt_rdb_prepare(rdb, buffer, -1, err);
+    if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
       gt_error_set(ltrgui->err,
                   "Could not apply gui settings: %s",
                   gt_error_get(err));
@@ -163,8 +163,8 @@ gint apply_gui_settings(GUIData *ltrgui)
                  "SELECT name FROM notebook_tabs WHERE name = \"%s\"",
                  name);
       g_free(name);
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+      stmt = gt_rdb_prepare(rdb, buffer, -1, err);
+      if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
         gt_error_set(ltrgui->err,
                     "Could not apply gui settings: %s",
                     gt_error_get(err));
@@ -196,8 +196,8 @@ gint apply_gui_settings(GUIData *ltrgui)
       g_snprintf(buffer, BUFSIZ,
                  "SELECT position FROM notebook_tabs WHERE name = \"%s\"",
                  gtk_label_close_get_text(GTK_LABEL_CLOSE(label_close)));
-      had_err = gt_rdb_prepare(rdb, buffer, -1, &stmt, err);
-      if (had_err || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
+      stmt = gt_rdb_prepare(rdb, buffer, -1, err);
+      if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
         gt_error_set(ltrgui->err,
                     "Could not apply gui settings: %s",
                     gt_error_get(err));
