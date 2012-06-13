@@ -75,25 +75,13 @@ static gpointer project_wizard_start_job(gpointer data)
   GtHashmap *sel_features = NULL;
   gint psmall = 0,
        plarge = 0,
-       gapopen = 0,
-       gapextend = 0,
-       wordsize = 0,
-       penalty = 0,
-       reward = 0,
-       num_threads = 0,
        i = 0,
        num_of_files;
-  const gchar *moreblast = NULL;
-  char buf[BUFSIZ],
-       *tmp_gff3 = NULL,
+  char *tmp_gff3 = NULL,
        *old_gff3 = NULL;
   const char **gff3_files,
              *indexname;
-  gboolean dust = FALSE,
-           first = TRUE;
-  gdouble evalue = 0.0,
-          seqid = 0.0,
-          xdrop = 0.0;
+  gboolean first = TRUE;
 
   list_view =
           gtk_ltr_assistant_get_list_view_gff3files(GTK_LTR_ASSISTANT(ltrassi));
@@ -127,85 +115,24 @@ static gpointer project_wizard_start_job(gpointer data)
                                                                 gff3_files);
 
   if (gtk_ltr_assistant_get_clustering(GTK_LTR_ASSISTANT(ltrassi))) {
-    gboolean from_file = FALSE;
-    gchar *match_params,
-          *md5,
-          *md5_file,
-          *tmp;
+    gchar *match_params;
 
     indexname = gtk_ltr_assistant_get_indexname(GTK_LTR_ASSISTANT(ltrassi));
     match_params =
                  gtk_ltr_assistant_get_match_params(GTK_LTR_ASSISTANT(ltrassi));
-    tmp = g_strdup_printf("%s%s%s", match_params, indexname, tmp_gff3);
-    md5 = g_compute_checksum_for_string(G_CHECKSUM_MD5, tmp, -1);
-    md5_file = g_strdup_printf("%s/tmp/%s", threaddata->projectdir, md5);
-    if (g_file_test(md5_file, G_FILE_TEST_EXISTS))
-      from_file = TRUE;
-    else {
-      FILE *fp;
-      fp = g_fopen(md5_file, "w");
-      if (!fp) {
-        gt_error_set(threaddata->err,
-                    "Could not create checksum file for matching: %s",
-                    md5_file);
-        error_handle(threaddata->ltrgui->main_window, threaddata->err);
-      } else
-        fclose(fp);
-      evalue = gtk_ltr_assistant_get_evalue(GTK_LTR_ASSISTANT(ltrassi));
-      dust = gtk_ltr_assistant_get_dust(GTK_LTR_ASSISTANT(ltrassi));
-      gapopen = gtk_ltr_assistant_get_gapopen(GTK_LTR_ASSISTANT(ltrassi));
-      if (gapopen == 0)
-        gapopen = GT_UNDEF_INT;
-      gapextend = gtk_ltr_assistant_get_gapextend(GTK_LTR_ASSISTANT(ltrassi));
-      if (gapextend == 0)
-        gapextend = GT_UNDEF_INT;
-      xdrop = gtk_ltr_assistant_get_xdrop(GTK_LTR_ASSISTANT(ltrassi));
-      penalty = gtk_ltr_assistant_get_penalty(GTK_LTR_ASSISTANT(ltrassi));
-      /* according to BLASTN help -penalty must be <=0 but BLASTN shows an
-         error: BLASTN penalty must be negative. Therefore -penalty will be
-         omitted when the value is zero */
-      if (penalty == 0)
-        penalty = GT_UNDEF_INT;
-      reward = gtk_ltr_assistant_get_reward(GTK_LTR_ASSISTANT(ltrassi));
-      if (reward == 0)
-        reward = GT_UNDEF_INT;
-      num_threads = gtk_ltr_assistant_get_threads(GTK_LTR_ASSISTANT(ltrassi));
-      wordsize = gtk_ltr_assistant_get_wordsize(GTK_LTR_ASSISTANT(ltrassi));
-      seqid = gtk_ltr_assistant_get_seqid(GTK_LTR_ASSISTANT(ltrassi));
-      moreblast = gtk_ltr_assistant_get_moreblast(GTK_LTR_ASSISTANT(ltrassi));
-
-      psmall = gtk_ltr_assistant_get_psmall(GTK_LTR_ASSISTANT(ltrassi));
-      plarge = gtk_ltr_assistant_get_plarge(GTK_LTR_ASSISTANT(ltrassi));
-    }
+    psmall = gtk_ltr_assistant_get_psmall(GTK_LTR_ASSISTANT(ltrassi));
+    plarge = gtk_ltr_assistant_get_plarge(GTK_LTR_ASSISTANT(ltrassi));
     g_free(match_params);
-    g_free(md5_file);
-    g_free(tmp);
 
     el = gt_encseq_loader_new();
     encseq = gt_encseq_loader_load(el, indexname, threaddata->err);
     if (!encseq)
       threaddata->had_err = -1;
     if (!threaddata->had_err) {
-      g_snprintf(buf, BUFSIZ, "%s/tmp/%s", threaddata->projectdir, md5);
-      tmpdirprefix = gt_str_new_cstr(buf);
-      g_free(md5);
       last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
                                                                    encseq,
-                                                                   tmpdirprefix,
                                                                    plarge,
                                                                    psmall,
-                                                                   evalue,
-                                                                   dust,
-                                                                   wordsize,
-                                                                   gapopen,
-                                                                   gapextend,
-                                                                   penalty,
-                                                                   reward,
-                                                                   num_threads,
-                                                                   xdrop,
-                                                                   seqid,
-                                                                   moreblast,
-                                                                   from_file,
                                                      &threaddata->current_state,
                                                                threaddata->err);
     }
