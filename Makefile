@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
+CFLAGS = -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
 GT_FLAGS_STATIC := $(GT_FLAGS) -lbz2
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
@@ -17,6 +17,10 @@ else
   ifeq ($(MACHINE),x86_64)
     m32=yes
   endif
+endif
+
+ifneq ($(opt),no)
+  CFLAGS += -O3
 endif
 
 ifeq ($(static),yes)

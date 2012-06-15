@@ -17,7 +17,7 @@
 
 #include "error.h"
 
-void error_handle(GtkWidget *toplevel, GtError *err)
+void _error_handle(GtkWidget *toplevel, GtError *err, const char *func, const char *file, int line)
 {
   if ((err != NULL) && gt_error_is_set(err)) {
     GtkWidget *dialog;
@@ -27,9 +27,9 @@ void error_handle(GtkWidget *toplevel, GtError *err)
                                     GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_ERROR, GTK_BUTTONS_OK,
-                                    "%s",
-                                    gt_error_get(err));
-    gtk_window_set_title(GTK_WINDOW(dialog), "An Error has occurred!");
+                                    "%s %s %s:%d",
+                                    gt_error_get(err), func, file, line);
+    gtk_window_set_title(GTK_WINDOW(dialog), "Error");
     gtk_dialog_run(GTK_DIALOG(dialog));
     gtk_widget_destroy(dialog);
     gt_error_unset(err);

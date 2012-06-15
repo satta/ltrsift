@@ -90,7 +90,8 @@ gint save_gui_settings(GUIData *ltrgui)
   gt_rdb_stmt_delete(stmt);
 
    stmt = gt_rdb_prepare(rdb,
-                           "CREATE UNIQUE INDEX IF NOT EXISTS nbtabs ON notebook_tabs (name)",
+                         "CREATE UNIQUE INDEX IF NOT EXISTS "
+                         "nbtabs ON notebook_tabs (name)",
                            0, err);
   if (!stmt || (had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
     gt_error_set(ltrgui->err,
@@ -328,7 +329,6 @@ gint main(gint argc, gchar *argv[])
   gdk_threads_leave();
   /* free memory allocated for GUIData struct */
   free_gui(ltrgui);
-  /*if (gt_lib_clean())
-    return GT_EXIT_PROGRAMMING_ERROR;  programmer error */
+  gt_lib_clean();
   return EXIT_SUCCESS;
 }

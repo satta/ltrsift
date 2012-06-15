@@ -354,6 +354,8 @@ static gboolean save_project_data_finished(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
+  printf("save_project_data_finished\n");
+  gdk_threads_enter();
   g_source_remove(GPOINTER_TO_INT(
                                  g_object_get_data(G_OBJECT(threaddata->window),
                                                    "source_id")));
@@ -374,67 +376,13 @@ static gboolean save_project_data_finished(gpointer data)
                                                    threaddata->ltrgui->err);
     if (!threaddata->had_err)
       threaddata->had_err = save_match_param_sets(threaddata->ltrgui);
-  } else
-    g_rename(threaddata->tmp_filename, threaddata->filename);
+  }
   if (threaddata->had_err) {
-    gdk_threads_enter();
     error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
-    gdk_threads_leave();
   }
-  threaddata_delete(threaddata);
-  return FALSE;
-}
-
-gboolean save_as_project_data_finished(gpointer data)
-{
-  ThreadData *threaddata = (ThreadData*) data;
-  GtkWidget *ltrfams = threaddata->ltrgui->ltrfams,
-            *projset = threaddata->ltrgui->projset;
-
-  g_source_remove(GPOINTER_TO_INT(
-                               g_object_get_data(G_OBJECT(threaddata->window),
-                                                 "source_id")));
-  gtk_widget_destroy(threaddata->window);
-  reset_progressbar(threaddata->progressbar);
-  if (threaddata->had_err) {
-    gt_error_set(threaddata->ltrgui->err,
-                "Error while saving data: %s",
-                gt_error_get(threaddata->err));
-  }
-  if (!threaddata->had_err) {
-    threaddata->had_err = save_gui_settings(threaddata->ltrgui);
-    gtk_project_settings_update_projectfile(GTK_PROJECT_SETTINGS(projset),
-                                            threaddata->filename);
-    if (!threaddata->had_err)
-      threaddata->had_err =
-                  gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(projset),
-                                                 threaddata->ltrgui->err);
-
-    if (!threaddata->had_err)
-      threaddata->had_err = save_match_param_sets(threaddata->ltrgui);
-  }
-  if (!threaddata->had_err) {
-    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
-                                     threaddata->filename);
-    threaddata->had_err = gtk_ltr_filter_save_data(
-                                    GTK_LTR_FILTER(threaddata->ltrgui->ltrfilt),
-                                                   threaddata->ltrgui->err);
-    if (threaddata->had_err) {
-      gdk_threads_enter();
-      error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
-      gdk_threads_leave();
-    }
-    gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
-    create_recently_used_resource(threaddata->filename);
-  } else {
-    gdk_threads_enter();
-    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
-    gdk_threads_leave();
-  }
-  gdk_threads_enter();
+  gtk_widget_set_sensitive(threaddata->ltrgui->menubar_save, TRUE);
   threaddata_delete(threaddata);
   gdk_threads_leave();
-
   return FALSE;
 }
 
@@ -443,6 +391,7 @@ static gboolean open_project_data_finished(gpointer data)
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
 
+  gdk_threads_enter();
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
@@ -494,12 +443,11 @@ static gboolean open_project_data_finished(gpointer data)
   }
 
   if (threaddata->had_err) {
-    gdk_threads_enter();
     error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
-    gdk_threads_leave();
   }
 
   threaddata_delete(threaddata);
+  gdk_threads_leave();
 
   return FALSE;
 }
@@ -510,15 +458,25 @@ static gpointer save_project_data_start(gpointer data)
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
   GtFeatureIndex *fi = NULL;
 
+  printf("save_project_data_start\n");
+  gdk_threads_enter();
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Saving data");
   (void) extract_match_param_sets(threaddata->ltrgui);
   fi = gtk_ltr_families_get_fi(GTK_LTR_FAMILIES(ltrfams));
   if (!fi)
     threaddata->had_err = -1;
-  if (!threaddata->had_err)
-    gt_feature_index_save(fi, NULL);
+
+  gtk_widget_set_sensitive(threaddata->ltrgui->menubar_save, FALSE);
+  if (!threaddata->had_err) {
+    gt_feature_index_save(fi, threaddata->ltrgui->err);
+  }
+  printf("after save in thread\n");
+  if (threaddata->had_err) {
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+  }
   g_idle_add(save_project_data_finished, data);
+  gdk_threads_leave();
   return NULL;
 }
 
@@ -533,6 +491,7 @@ static gpointer open_project_data_start(gpointer data)
   GtStrArray *seqids = NULL;
   unsigned long i, n_features;
 
+  gdk_threads_enter();
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Reading data from file");
   threaddata->rdb = gt_rdb_sqlite_new(threaddata->filename,
@@ -569,7 +528,7 @@ static gpointer open_project_data_start(gpointer data)
   }
   if (!threaddata->had_err) {
     GtGenomeNode *gn;
-    gdk_threads_enter();
+
     gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                               "Preprocessing candidates");
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
@@ -582,7 +541,6 @@ static gpointer open_project_data_start(gpointer data)
                                                      threaddata->ltrgui->err);
     while (!(threaddata->had_err = gt_node_stream_next(preprocess_stream, &gn,
                                              threaddata->ltrgui->err)) && gn);
-    gdk_threads_leave();
   }
   if (!threaddata->had_err) {
     threaddata->nodes = nodes;
@@ -593,6 +551,7 @@ static gpointer open_project_data_start(gpointer data)
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(preprocess_stream);
   g_idle_add(open_project_data_finished, data);
+  gdk_threads_leave();
   return NULL;
 }
 
@@ -607,9 +566,11 @@ static gpointer save_and_reload_data_start(gpointer data)
   GtFeatureIndex *fi = NULL;
   GT_UNUSED unsigned long i;
 
+  gdk_threads_enter();
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Saving data");
   rdb = gt_rdb_sqlite_new(threaddata->filename, threaddata->ltrgui->err);
+  gtk_ltr_families_set_rdb(rdb, GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
   if (!rdb)
     threaddata->had_err = -1;
   if (!threaddata->had_err) {
@@ -629,10 +590,8 @@ static gpointer save_and_reload_data_start(gpointer data)
     gt_assert(array_in_stream);
 
     feature_stream = gt_feature_stream_new(array_in_stream, fi);
-    gdk_threads_enter();
     threaddata->had_err = gt_node_stream_pull(feature_stream,
                                               threaddata->ltrgui->err);
-    gdk_threads_leave();
   }
   gt_node_stream_delete(feature_stream);
   gt_node_stream_delete(array_in_stream);
@@ -669,6 +628,8 @@ static gpointer save_and_reload_data_start(gpointer data)
       if (!threaddata->adb)
         threaddata->had_err = -1;
     }
+    if (!threaddata->had_err)
+      threaddata->had_err = save_match_param_sets(threaddata->ltrgui);
     if (!threaddata->had_err) {
       threaddata->fi = gt_anno_db_schema_get_feature_index(threaddata->adb,
                                                            threaddata->rdb,
@@ -696,7 +657,6 @@ static gpointer save_and_reload_data_start(gpointer data)
     }
     if (!threaddata->had_err) {
       GtGenomeNode *gn;
-      gdk_threads_enter();
       gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                                 "Preprocessing candidates");
       features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
@@ -710,7 +670,6 @@ static gpointer save_and_reload_data_start(gpointer data)
                                                        threaddata->ltrgui->err);
       while (!(threaddata->had_err = gt_node_stream_next(preprocess_stream, &gn,
                                              threaddata->ltrgui->err)) && gn);
-      gdk_threads_leave();
     }
     if (!threaddata->had_err) {
       threaddata->nodes = nodes;
@@ -720,12 +679,11 @@ static gpointer save_and_reload_data_start(gpointer data)
 
     gt_node_stream_delete(array_in_stream);
     gt_node_stream_delete(preprocess_stream);
-  } else
-    if (g_file_test(threaddata->tmp_filename, G_FILE_TEST_EXISTS))
-      g_rename(threaddata->tmp_filename, threaddata->filename);
+  }
   gt_free(threaddata->tmp_filename);
 
   g_idle_add(open_project_data_finished, data);
+  gdk_threads_leave();
   return NULL;
 }
 
@@ -736,10 +694,6 @@ void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
 
   threaddata = threaddata_new();
   threaddata->filename = g_strdup(projectfile);
-  if (g_file_test(threaddata->filename, G_FILE_TEST_EXISTS)) {
-    threaddata->tmp_filename = g_strdup_printf("%s.bak", threaddata->filename);
-    g_rename(threaddata->filename, threaddata->tmp_filename);
-  }
   threaddata->ltrgui = ltrgui;
   threaddata->progressbar = ltrgui->progressbar;
   threaddata->progress = 0;

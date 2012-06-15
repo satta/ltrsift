@@ -441,14 +441,14 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
                            -1, tmp_err);
 
   if (!stmt) {
-    gt_error_set(err, "Could not save projekt settings: %s",
+    gt_error_set(err, "Could1 not save projekt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could not save projekt settings: %s",
+    gt_error_set(err, "Could2 not save projekt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
@@ -457,28 +457,8 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   }
   gt_rdb_stmt_delete(stmt);
 
-  stmt = gt_rdb_prepare(rdb, "DELETE FROM project_settings",
-                           -1, tmp_err);
-
-  if (!stmt) {
-    gt_error_set(err, "Could not save projekt settings: %s",
-                 gt_error_get(tmp_err));
-    gt_error_delete(tmp_err);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could not save projekt settings: %s",
-                 gt_error_get(tmp_err));
-    gt_error_delete(tmp_err);
-    gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
-    return -1;
-  }
-  gt_rdb_stmt_delete(stmt);
-
-  g_snprintf(query, BUFSIZ,
-             "INSERT INTO project_settings (projectfile, gff3files, "
+    g_snprintf(query, BUFSIZ,
+             "DELETE FROM project_settings;INSERT INTO project_settings (projectfile, gff3files, "
               "indexname, clustering, evalue, dust, gapopen, "
               "gapextend, xdrop, penalty, reward, threads, wordsize, "
               "seq_identity, moreblast, psmall, plarge, classification, "
@@ -511,14 +491,14 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   stmt = gt_rdb_prepare(rdb, query, -1, tmp_err);
 
   if (!stmt) {
-    gt_error_set(err, "Could not save project settings: %s",
+    gt_error_set(err, "Could5 not save project settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could not save projestmtt settings: %s",
+    gt_error_set(err, "Could6 not save projestmtt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
