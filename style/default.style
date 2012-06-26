@@ -182,7 +182,8 @@ style =
                              aval = 1.0
                            end
                            type = gn:get_attribute("name")
-                             if type == "RVT_1"  or type == "RVT_thumb" then
+                             if type == "RVT_1" or type == "RVT_2"
+                               or type == "RVT_thumb" then
                                -- RT domain
                                return {red=0.8, green=0.5, blue=0.5, alpha = 1.0}
                              elseif type == "RVP" then
@@ -192,7 +193,7 @@ style =
                                or type == "Integrase_Zn" or type == "Integrase" then
                                -- integrase domain
                                return {red=0.5, green=0.8, blue=0.8, alpha = 1.0}
-                             elseif type == "RnaseH" then
+                             elseif type == "Rnase_H" then
                                -- RNase H domain
                                return {red=0.8, green=0.8, blue=0.5, alpha = 1.0}
                              else
