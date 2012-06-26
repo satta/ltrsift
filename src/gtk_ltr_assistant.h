@@ -40,7 +40,8 @@ typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
 
 typedef enum {
-  PAGE_GENERAL = 0,
+  PAGE_INTRODUCTION = 0,
+  PAGE_GENERAL,
   PAGE_CLUSTERING,
   PAGE_CLASSIFICATION,
   PAGE_SUMMARY,
@@ -56,25 +57,26 @@ struct _GtkLTRAssistant
   GtkWidget *label_indexname;
   GtkWidget *checkb_clustering;
   /* Matching/Clustering settings page */
-  GtkWidget *spinb_evalue;
-  GtkWidget *checkb_evalue;
-  GtkWidget *checkb_dust;
+  GtkWidget *spinb_matchscore;
+  GtkWidget *checkb_matchscore;
+  GtkWidget *spinb_mismatchcost;
+  GtkWidget *checkb_mismatchcost;
   GtkWidget *spinb_gapopen;
   GtkWidget *checkb_gapopen;
   GtkWidget *spinb_gapextend;
   GtkWidget *checkb_gapextend;
-  GtkWidget *spinb_xdrop;
-  GtkWidget *checkb_xdrop;
-  GtkWidget *spinb_penalty;
-  GtkWidget *checkb_penalty;
-  GtkWidget *spinb_reward;
-  GtkWidget *checkb_reward;
-  GtkWidget *spinb_threads;
-  GtkWidget *checkb_threads;
-  GtkWidget *spinb_words;
-  GtkWidget *checkb_words;
-  GtkWidget *spinb_seqid;
-  GtkWidget *checkb_seqid;
+  GtkWidget *spinb_xgapped;
+  GtkWidget *checkb_xgapped;
+  GtkWidget *spinb_xgapless;
+  GtkWidget *checkb_xgapless;
+  GtkWidget *spinb_xfinal;
+  GtkWidget *checkb_xfinal;
+  GtkWidget *spinb_mscoregapless;
+  GtkWidget *checkb_mscoregapless;
+  GtkWidget *spinb_mscoregapped;
+  GtkWidget *checkb_mscoregapped;
+  GtkWidget *spinb_stepsize;
+  GtkWidget *checkb_stepsize;
   GtkWidget *combob_blastparams;
   GtkWidget *entry_blastvalues;
   GtkWidget *button_addblastparam;
@@ -94,16 +96,16 @@ struct _GtkLTRAssistant
   GtkWidget *label_gff3files;
   GtkWidget *label_indexname2;
   GtkWidget *label_doclustering;
-  GtkWidget *label_evalue;
-  GtkWidget *label_dust;
   GtkWidget *label_gapopen;
   GtkWidget *label_gapextend;
-  GtkWidget *label_xdrop;
-  GtkWidget *label_penalty;
-  GtkWidget *label_reward;
-  GtkWidget *label_threads;
-  GtkWidget *label_wordsize;
-  GtkWidget *label_seqidentity;
+  GtkWidget *label_xgapped;
+  GtkWidget *label_xgapless;
+  GtkWidget *label_xfinal;
+  GtkWidget *label_mscoregapped;
+  GtkWidget *label_mscoregapless;
+  GtkWidget *label_matchscore;
+  GtkWidget *label_mismatchcost;
+  GtkWidget *label_stepsize;
   GtkWidget *label_moreblast2;
   GtkWidget *label_psmall;
   GtkWidget *label_plarge;
@@ -115,7 +117,7 @@ struct _GtkLTRAssistant
   /* misc */
   gchar *last_dir;
   gboolean added_features;
-  GHashTable *hasht_blastparams;
+  GHashTable *hasht_lastparams;
 };
 
 struct _GtkLTRAssistantClass
@@ -134,27 +136,29 @@ const gchar* gtk_ltr_assistant_get_indexname(GtkLTRAssistant *ltrassi);
 
 gboolean     gtk_ltr_assistant_get_clustering(GtkLTRAssistant *ltrassi);
 
-gdouble      gtk_ltr_assistant_get_evalue(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_xgapless(GtkLTRAssistant *ltrassi);
 
-gboolean     gtk_ltr_assistant_get_dust(GtkLTRAssistant *ltrassi);
+gint         gtk_ltr_assistant_get_xgapped(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_xfinal(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_matchscore(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_mscoregapped(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_mscoregapless(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_mismatchcost(GtkLTRAssistant *ltrassi);
 
 gint         gtk_ltr_assistant_get_gapopen(GtkLTRAssistant *ltrassi);
 
 gint         gtk_ltr_assistant_get_gapextend(GtkLTRAssistant *ltrassi);
 
-gdouble      gtk_ltr_assistant_get_xdrop(GtkLTRAssistant *ltrassi);
-
-gint         gtk_ltr_assistant_get_penalty(GtkLTRAssistant *ltrassi);
-
-gint         gtk_ltr_assistant_get_reward(GtkLTRAssistant *ltrassi);
-
-gint         gtk_ltr_assistant_get_threads(GtkLTRAssistant *ltrassi);
-
-gint         gtk_ltr_assistant_get_wordsize(GtkLTRAssistant *ltrassi);
-
 gdouble      gtk_ltr_assistant_get_seqid(GtkLTRAssistant *ltrassi);
 
-const gchar* gtk_ltr_assistant_get_moreblast(GtkLTRAssistant *ltrassi);
+const gchar* gtk_ltr_assistant_get_morelast(GtkLTRAssistant *ltrassi);
+
+gint         gtk_ltr_assistant_get_stepsize(GtkLTRAssistant *ltrassi);
 
 gint         gtk_ltr_assistant_get_psmall(GtkLTRAssistant *ltrassi);
 

@@ -32,19 +32,9 @@ static void tree_view_details_clear_on_equal_nodes(GtkLTRFamilies*,
 /* function prototypes end */
 
 /* get functions start */
-GtFeatureIndex* gtk_ltr_families_get_fi(GtkLTRFamilies *ltrfams)
-{
-  return ltrfams->fi;
-}
-
 GtRDB* gtk_ltr_families_get_rdb(GtkLTRFamilies *ltrfams)
 {
   return ltrfams->rdb;
-}
-
-GtAnnoDBSchema* gtk_ltr_families_get_adb(GtkLTRFamilies *ltrfams)
-{
-  return ltrfams->adb;
 }
 
 GtkNotebook* gtk_ltr_families_get_notebook(GtkLTRFamilies *ltrfams)
@@ -92,16 +82,6 @@ gint gtk_ltr_families_get_vpaned_position(GtkLTRFamilies *ltrfams)
 void gtk_ltr_families_set_rdb(GtRDB *rdb, GtkLTRFamilies *ltrfams)
 {
   ltrfams->rdb = rdb;
-}
-
-void gtk_ltr_families_set_adb(GtAnnoDBSchema *adb, GtkLTRFamilies *ltrfams)
-{
-  ltrfams->adb = adb;
-}
-
-void gtk_ltr_families_set_fi(GtFeatureIndex *fi, GtkLTRFamilies *ltrfams)
-{
-  ltrfams->fi = fi;
 }
 
 void gtk_ltr_families_set_modified(GtkLTRFamilies *ltrfams, gboolean modified)
@@ -278,7 +258,7 @@ gint save_refseq_params(double evalue, bool dust, int wordsize, int gapopen,
     g_snprintf(identity_str, 15, "%.2f", identity);
 
   g_snprintf(query, BUFSIZ,
-             "INSERT INTO refseq_match_params ("
+             "INSERT OR IGNORE INTO refseq_match_params ("
               "set_id, evalue, dust, gapopen, "
               "gapextend, xdrop, penalty, reward, threads, wordsize, "
               "identity, moreblast, "
@@ -761,11 +741,16 @@ static void ltrsift_track_selector_func(GtBlock *block, GtStr *name,
   if (strcmp(gt_feature_node_get_type(fn), "nucleotide_match") == 0) {
     const char *params = gt_feature_node_get_attribute(fn, "params");
     if (params) {
-      gt_str_append_cstr(name, "BLAST match with parameter set ");
+      gt_str_append_cstr(name, "Reference match with parameter set ");
       gt_str_append_cstr(name, params);
     }
+  } else if (strcmp(gt_feature_node_get_type(fn), "RR_tract") == 0) {
+    gt_str_append_cstr(name, "PPT");
+  } else if (strcmp(gt_feature_node_get_type(fn), "primer_binding_site") == 0) {
+    gt_str_append_cstr(name, "PBS");
+  } else if (strcmp(gt_feature_node_get_type(fn), "protein_match") == 0) {
+    gt_str_append_cstr(name, "Protein domains");
   } else {
-    /* gt_str_append_cstr(name, "generated|"); */
     char *str = gt_cstr_dup(gt_block_get_type(block));
     gt_cstr_rep(str, '_', ' ');
     gt_str_append_cstr(name, str);
@@ -1571,9 +1556,9 @@ static gboolean orffind_finished(gpointer data)
   reset_progressbar(threaddata->progressbar);
 
   if (threaddata->had_err) {
-     gt_error_set(threaddata->ltrfams->err,
-                "Could not match the selected data: %s",
-                gt_error_get(threaddata->err));
+    gt_error_set(threaddata->ltrfams->err,
+                 "error detecting ORFs: %s",
+                 gt_error_get(threaddata->err));
     gdk_threads_enter();
     error_handle(gtk_widget_get_toplevel(GTK_WIDGET(threaddata->ltrfams)),
                  threaddata->ltrfams->err);
@@ -1592,6 +1577,10 @@ static gpointer orffind_start(gpointer data)
   GtEncseq *encseq = NULL;
   GtEncseqLoader *el = gt_encseq_loader_new();
   const gchar *indexname = NULL;
+
+  reset_progressbar(threaddata->progressbar);
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            "Detecting ORFs");
 
   if (!threaddata->had_err) {
     indexname =
@@ -1614,9 +1603,13 @@ static gpointer orffind_start(gpointer data)
                                                  10000,
                                                  false,
                                                  threaddata->err);
+    gt_ltr_orf_annotator_stream_set_progress_location((GtLTRORFAnnotatorStream*) orf_stream, &threaddata->progress);
 
     while (!(threaddata->had_err = gt_node_stream_next(orf_stream, &gn,
-                                                       threaddata->err)) && gn);
+                                                       threaddata->err)) && gn)
+    {
+
+    }
     gdk_threads_leave();
   }
   gt_node_stream_delete(orf_stream);
@@ -1655,9 +1648,10 @@ void gtk_ltr_families_orffind(GtArray *nodes, GtkLTRFamilies *ltrfams)
   threaddata = threaddata_new();
   threaddata->ltrfams = ltrfams;
   threaddata->progressbar = ltrfams->progressbar;
+  threaddata->progress = 0;
   threaddata->nodes = nodes;
+  threaddata->orf = TRUE;
   threaddata->err = gt_error_new();
-
   progress_dialog_init(threaddata, toplevel);
 
   if (!g_thread_create(orffind_start, (gpointer) threaddata, FALSE,
@@ -1835,7 +1829,7 @@ notebook_list_view_menu_remove_clicked(GT_UNUSED GtkWidget *menuitem,
       gtk_tree_path_free(tv_path);
       g_free(tmp_oldname);
     } else {
-      remove_nodes_from_array(ltrfams->nodes, nodes, TRUE, gtk_ltr_families_get_fi(ltrfams));
+      remove_nodes_from_array(ltrfams->nodes, nodes, TRUE, NULL);
       gtk_ltr_families_update_unclassified_cands(ltrfams,
                                                  (-1) * gt_array_size(nodes));
     }
@@ -2959,6 +2953,8 @@ static void notebook_list_view_set_visible_columns(GtkNotebook *notebook,
   g_list_free(columns);
 }
 
+/* XXX: make this more efficient by not opening a new GtEncseq instance
+        per sequence */
 static gint extract_feature_sequence(GtStr *seqid, GtRange *range,
                                      gchar *sequence, const gchar *indexname,
                                      GtError *err)
@@ -3107,6 +3103,9 @@ static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
                                    sizeof (gchar));
               extract_feature_sequence(seqid, &range, sequence, indexname,
                                        ltrfams->err);
+              if (strand == GT_STRAND_REVERSE)
+                gt_reverse_complement(sequence, gt_range_length(&range),
+                                      ltrfams->err);
               gtk_tree_store_set(store, &child,
                                  LTRFAMS_DETAIL_TV_SEQ, sequence,
                                  -1);
@@ -3171,6 +3170,9 @@ static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
                                    sizeof (gchar));
               extract_feature_sequence(seqid, &range, sequence, indexname,
                                        ltrfams->err);
+              if (strand == GT_STRAND_REVERSE)
+                gt_reverse_complement(sequence, gt_range_length(&range),
+                                      ltrfams->err);
               gtk_tree_store_set(store, &child,
                                  LTRFAMS_DETAIL_TV_SEQ, sequence,
                                  -1);
@@ -3194,6 +3196,9 @@ static void notebook_list_view_cursor_changed(GtkTreeView *list_view,
                                    sizeof (gchar));
               extract_feature_sequence(seqid, &range, sequence, indexname,
                                        ltrfams->err);
+              if (strand == GT_STRAND_REVERSE)
+                gt_reverse_complement(sequence, gt_range_length(&range),
+                                      ltrfams->err);
               gtk_tree_store_set(store, &child,
                                  LTRFAMS_DETAIL_TV_SEQ, sequence,
                                  -1);
@@ -4462,9 +4467,6 @@ static gboolean gtk_ltr_families_destroy(GtkWidget *widget,
   gt_diagram_delete(ltrfams->diagram);
   gt_hashmap_delete(ltrfams->features);
   gt_hashmap_delete(ltrfams->colors);
-  gt_feature_index_delete(ltrfams->fi);
-  gt_anno_db_schema_delete(ltrfams->adb);
-  gt_rdb_delete(ltrfams->rdb);
   for (i = 0; i < gt_array_size(ltrfams->nodes); i++) {
     gn = *(GtGenomeNode**) gt_array_get(ltrfams->nodes, i);
     delete_gt_genome_node(gn);

@@ -50,28 +50,22 @@ void gtk_project_settings_update_indexname(GtkProjectSettings *projset,
   }
 }
 
-void gtk_project_settings_update_projectfile(GtkProjectSettings *projset,
-                                             const gchar *projectfile)
-{
-  gtk_label_set_text(GTK_LABEL(projset->label_projectfile), projectfile);
-}
-
 void gtk_project_settings_set_data(GtkProjectSettings *projset,
                                    const gchar *projectfile,
                                    gchar **gff3files,
                                    const gchar *indexname,
                                    gboolean clustering,
-                                   gdouble evalue,
-                                   gboolean dust,
+                                   gint xgapped,
+                                   gint xgapless,
+                                   gint xfinal,
+                                   gint mscoregapped,
+                                   gint mscoregapless,
                                    gint gapopen,
                                    gint gapextend,
-                                   gdouble xdrop,
-                                   gint penalty,
-                                   gint reward,
-                                   gint threads,
-                                   gint wordsize,
-                                   gdouble seqid,
-                                   const gchar *moreblast,
+                                   gint matchscore,
+                                   gint mismatchcost,
+                                   gint stepsize,
+                                   const gchar *morelast,
                                    gint psmall,
                                    gint plarge,
                                    gboolean classification,
@@ -88,62 +82,78 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
   gtk_label_set_text(GTK_LABEL(projset->label_indexname), indexname);
   gtk_label_set_text(GTK_LABEL(projset->label_didclustering),
                                clustering ? "yes" : "no");
-  if (evalue == GT_UNDEF_DOUBLE)
-    gtk_label_set_text(GTK_LABEL(projset->label_evalue), USED_DEFAULT);
+
+  if (xgapped == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapped), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%.6f", evalue);
-    gtk_label_set_text(GTK_LABEL(projset->label_evalue), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", xgapped);
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapped), buffer);
   }
-  gtk_label_set_text(GTK_LABEL(projset->label_dust), dust ? "yes" : "no");
+
+  if (xgapless == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapless), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", xgapless);
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapless), buffer);
+  }
+
+  if (xfinal == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_xfinal), USED_DEFAULT);
+  else {
+    g_snprintf(buffer, BUFSIZ, "%d", xfinal);
+    gtk_label_set_text(GTK_LABEL(projset->label_xfinal), buffer);
+  }
+
   if (gapopen == GT_UNDEF_INT)
     gtk_label_set_text(GTK_LABEL(projset->label_gapopen), USED_DEFAULT);
   else {
     g_snprintf(buffer, BUFSIZ, "%d", gapopen);
     gtk_label_set_text(GTK_LABEL(projset->label_gapopen), buffer);
   }
+
   if (gapextend == GT_UNDEF_INT)
     gtk_label_set_text(GTK_LABEL(projset->label_gapextend), USED_DEFAULT);
   else {
     g_snprintf(buffer, BUFSIZ, "%d", gapextend);
     gtk_label_set_text(GTK_LABEL(projset->label_gapextend), buffer);
   }
-  if (xdrop == GT_UNDEF_DOUBLE)
-    gtk_label_set_text(GTK_LABEL(projset->label_xdrop), USED_DEFAULT);
+
+  if (mscoregapless == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapless), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%.2f", xdrop);
-    gtk_label_set_text(GTK_LABEL(projset->label_xdrop), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", mscoregapless);
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapless), buffer);
   }
-  if (penalty == GT_UNDEF_INT)
-    gtk_label_set_text(GTK_LABEL(projset->label_penalty), USED_DEFAULT);
+
+  if (mscoregapped == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapped), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%d", penalty);
-    gtk_label_set_text(GTK_LABEL(projset->label_penalty), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", mscoregapped);
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapped), buffer);
   }
-  if (reward == GT_UNDEF_INT)
-    gtk_label_set_text(GTK_LABEL(projset->label_reward), USED_DEFAULT);
+
+  if (matchscore == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_matchscore), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%d", reward);
-    gtk_label_set_text(GTK_LABEL(projset->label_reward), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", matchscore);
+    gtk_label_set_text(GTK_LABEL(projset->label_matchscore), buffer);
   }
-  if (threads == GT_UNDEF_INT)
-    gtk_label_set_text(GTK_LABEL(projset->label_threads), USED_DEFAULT);
+
+  if (mismatchcost == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_mismatchcost), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%d", threads);
-    gtk_label_set_text(GTK_LABEL(projset->label_threads), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", mismatchcost);
+    gtk_label_set_text(GTK_LABEL(projset->label_mismatchcost), buffer);
   }
-  if (wordsize == GT_UNDEF_INT)
-    gtk_label_set_text(GTK_LABEL(projset->label_wordsize), USED_DEFAULT);
+
+  if (stepsize == GT_UNDEF_INT)
+    gtk_label_set_text(GTK_LABEL(projset->label_stepsize), USED_DEFAULT);
   else {
-    g_snprintf(buffer, BUFSIZ, "%d", wordsize);
-    gtk_label_set_text(GTK_LABEL(projset->label_wordsize), buffer);
+    g_snprintf(buffer, BUFSIZ, "%d", stepsize);
+    gtk_label_set_text(GTK_LABEL(projset->label_stepsize), buffer);
   }
-  if (seqid == GT_UNDEF_DOUBLE)
-    gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), USED_DEFAULT);
-  else {
-    g_snprintf(buffer, BUFSIZ, "%.2f", seqid);
-    gtk_label_set_text(GTK_LABEL(projset->label_seqidentity), buffer);
-  }
-  gtk_label_set_text(GTK_LABEL(projset->label_moreblast), moreblast);
+
+  gtk_label_set_text(GTK_LABEL(projset->label_morelast), morelast);
   g_snprintf(buffer, BUFSIZ, "%d", psmall);
   gtk_label_set_text(GTK_LABEL(projset->label_psmall), buffer);
   g_snprintf(buffer, BUFSIZ, "%d", plarge);
@@ -161,6 +171,7 @@ void gtk_project_settings_set_data(GtkProjectSettings *projset,
 
 gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
                                                const gchar *projectfile,
+                                               GtRDB  *rdb,
                                                GtError *err)
 {
   GtRDBStmt *stmt;
@@ -169,13 +180,14 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
 
   gtk_label_set_text(GTK_LABEL(projset->label_projectfile), projectfile);
 
-  stmt = gt_rdb_prepare(projset->rdb,
-                           "SELECT gff3files, indexname, clustering, evalue, "
-                            "dust, gapopen, gapextend, xdrop, penalty, reward, "
-                            "threads, wordsize, seq_identity, psmall, plarge, "
-                            "classification, ltr_tolerance, cand_tolerance, "
-                            "features, moreblast FROM project_settings",
-                           -1, err);
+  stmt = gt_rdb_prepare(rdb,
+                        "SELECT gff3files, indexname, clustering, xgapped, "
+                         "xgapless, xfinal, mscoregapped, mscoregapless, "
+                         "gapopen, gapextend, matchscore, mismatchcost, "
+                         "stepsize, psmall, plarge, "
+                         "classification, ltr_tolerance, cand_tolerance, "
+                         "features, morelast FROM project_settings",
+                        -1, err);
   if (!stmt)
     return -1;
   if ((had_err = gt_rdb_stmt_exec(stmt, err)) < 0) {
@@ -216,7 +228,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 3, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_evalue), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapped), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -226,7 +238,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 4, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_dust), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_xgapless), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -236,7 +248,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 5, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_gapopen), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_xfinal), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -246,7 +258,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 6, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_gapextend), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapped), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -256,7 +268,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 7, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_xdrop), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_mscoregapless), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -266,7 +278,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 8, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_penalty), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_gapopen), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -276,7 +288,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 9, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_reward), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_gapextend), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -286,7 +298,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 10, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_threads), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_matchscore), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -296,7 +308,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 11, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_wordsize), gt_str_get(result));
+    gtk_label_set_text(GTK_LABEL(projset->label_mismatchcost), gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
     gt_str_delete(result);
@@ -306,7 +318,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 12, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_seqidentity),
+    gtk_label_set_text(GTK_LABEL(projset->label_stepsize),
                        gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
@@ -381,7 +393,7 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
   result = gt_str_new();
   had_err = gt_rdb_stmt_get_string(stmt, 19, result, err);
   if (!had_err)
-    gtk_label_set_text(GTK_LABEL(projset->label_moreblast),
+    gtk_label_set_text(GTK_LABEL(projset->label_morelast),
                        gt_str_get(result));
   else {
     gt_rdb_stmt_delete(stmt);
@@ -395,43 +407,31 @@ gint gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *projset,
 }
 
 gint gtk_project_settings_save_data(GtkProjectSettings *projset,
-                                    GtError *err)
+                                    GtRDB *rdb, GtError *err)
 {
-  GtRDB *rdb = NULL;
   GtRDBStmt *stmt;
   GtError *tmp_err;
   gchar query[BUFSIZ];
   gint had_err = 0;
   tmp_err = gt_error_new();
 
-  rdb =
-    gt_rdb_sqlite_new(gtk_label_get_text(GTK_LABEL(projset->label_projectfile)),
-                      tmp_err);
-  if (!rdb) {
-    gt_error_set(err, "Could not save project settings: %s",
-                 gt_error_get(tmp_err));
-    gt_error_delete(tmp_err);
-    return -1;
-  }
-
   stmt = gt_rdb_prepare(rdb,
                            "CREATE TABLE IF NOT EXISTS project_settings "
                            "(id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                            "projectfile TEXT, "
                             "gff3files TEXT, "
                             "indexname TEXT, "
                             "clustering TEXT, "
-                            "evalue TEXT, "
-                            "dust TEXT, "
+                            "xgapped TEXT, "
+                            "xgapless TEXT, "
+                            "xfinal TEXT, "
+                            "mscoregapped TEXT, "
+                            "mscoregapless TEXT, "
                             "gapopen TEXT, "
                             "gapextend TEXT, "
-                            "xdrop TEXT, "
-                            "penalty TEXT, "
-                            "reward TEXT, "
-                            "threads TEXT, "
-                            "wordsize TEXT, "
-                            "seq_identity TEXT, "
-                            "moreblast TEXT, "
+                            "matchscore TEXT, "
+                            "mismatchcost TEXT, "
+                            "stepsize TEXT, "
+                            "morelast TEXT, "
                             "psmall TEXT, "
                             "plarge TEXT, "
                             "classification TEXT, "
@@ -441,47 +441,62 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
                            -1, tmp_err);
 
   if (!stmt) {
-    gt_error_set(err, "Could1 not save projekt settings: %s",
+    gt_error_set(err, "Could not save project settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
-    gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could2 not save projekt settings: %s",
+    gt_error_set(err, "Could not save project settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
 
-    g_snprintf(query, BUFSIZ,
-             "DELETE FROM project_settings;INSERT INTO project_settings (projectfile, gff3files, "
-              "indexname, clustering, evalue, dust, gapopen, "
-              "gapextend, xdrop, penalty, reward, threads, wordsize, "
-              "seq_identity, moreblast, psmall, plarge, classification, "
+  stmt = gt_rdb_prepare(rdb, "DELETE FROM project_settings",
+                           -1, tmp_err);
+
+  if (!stmt) {
+    gt_error_set(err, "Could not save project settings: %s",
+                 gt_error_get(tmp_err));
+    gt_error_delete(tmp_err);
+    return -1;
+  }
+  if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
+    gt_error_set(err, "Could not save project settings: %s",
+                 gt_error_get(tmp_err));
+    gt_error_delete(tmp_err);
+    gt_rdb_stmt_delete(stmt);
+    return -1;
+  }
+  gt_rdb_stmt_delete(stmt);
+
+  g_snprintf(query, BUFSIZ,
+             "INSERT INTO project_settings (gff3files, "
+              "indexname, clustering, xgapped, xgapless, xfinal, mscoregapped, "
+              "mscoregapless, gapopen, gapextend, matchscore, mismatchcost, stepsize,  "
+              "morelast, psmall, plarge, classification, "
               "ltr_tolerance, cand_tolerance, features) values (\"%s\", "
               "\"%s\", \"%s\", \"%s\", "
-              "\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", "
+              "\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", "
               "\"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", \"%s\", "
               "\"%s\")",
-             gtk_label_get_text(GTK_LABEL(projset->label_projectfile)),
              gtk_label_get_text(GTK_LABEL(projset->label_gff3files)),
              gtk_label_get_text(GTK_LABEL(projset->label_indexname)),
              gtk_label_get_text(GTK_LABEL(projset->label_didclustering)),
-             gtk_label_get_text(GTK_LABEL(projset->label_evalue)),
-             gtk_label_get_text(GTK_LABEL(projset->label_dust)),
+             gtk_label_get_text(GTK_LABEL(projset->label_xgapped)),
+             gtk_label_get_text(GTK_LABEL(projset->label_xgapless)),
+             gtk_label_get_text(GTK_LABEL(projset->label_xfinal)),
+             gtk_label_get_text(GTK_LABEL(projset->label_mscoregapped)),
+             gtk_label_get_text(GTK_LABEL(projset->label_mscoregapless)),
              gtk_label_get_text(GTK_LABEL(projset->label_gapopen)),
              gtk_label_get_text(GTK_LABEL(projset->label_gapextend)),
-             gtk_label_get_text(GTK_LABEL(projset->label_xdrop)),
-             gtk_label_get_text(GTK_LABEL(projset->label_penalty)),
-             gtk_label_get_text(GTK_LABEL(projset->label_reward)),
-             gtk_label_get_text(GTK_LABEL(projset->label_threads)),
-             gtk_label_get_text(GTK_LABEL(projset->label_wordsize)),
-             gtk_label_get_text(GTK_LABEL(projset->label_seqidentity)),
-             gtk_label_get_text(GTK_LABEL(projset->label_moreblast)),
+             gtk_label_get_text(GTK_LABEL(projset->label_matchscore)),
+             gtk_label_get_text(GTK_LABEL(projset->label_mismatchcost)),
+             gtk_label_get_text(GTK_LABEL(projset->label_stepsize)),
+             gtk_label_get_text(GTK_LABEL(projset->label_morelast)),
              gtk_label_get_text(GTK_LABEL(projset->label_psmall)),
              gtk_label_get_text(GTK_LABEL(projset->label_plarge)),
              gtk_label_get_text(GTK_LABEL(projset->label_didclassification)),
@@ -491,23 +506,20 @@ gint gtk_project_settings_save_data(GtkProjectSettings *projset,
   stmt = gt_rdb_prepare(rdb, query, -1, tmp_err);
 
   if (!stmt) {
-    gt_error_set(err, "Could5 not save project settings: %s",
+    gt_error_set(err, "Could not save project settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
-    gt_rdb_delete(rdb);
     return -1;
   }
   if ((had_err = gt_rdb_stmt_exec(stmt, tmp_err)) < 0) {
-    gt_error_set(err, "Could6 not save projestmtt settings: %s",
+    gt_error_set(err, "Could not save projestmtt settings: %s",
                  gt_error_get(tmp_err));
     gt_error_delete(tmp_err);
     gt_rdb_stmt_delete(stmt);
-    gt_rdb_delete(rdb);
     return -1;
   }
   gt_rdb_stmt_delete(stmt);
   gt_error_delete(tmp_err);
-  gt_rdb_delete(rdb);
   return 0;
 }
 
@@ -639,16 +651,6 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   gtk_notebook_append_page(GTK_NOTEBOOK(projset->notebook), hbox, label);
 
   vbox1 = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("Expectation value (E) threshold:");
-  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), label);
-  gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Filtered query sequence with DUST?");
-  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
-  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), label);
-  gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
   label = gtk_label_new("Cost to open a gap:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
@@ -660,67 +662,69 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("X-dropoff value (in bits):");
+  label = gtk_label_new("Maximum score drop for gapped alignments:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Penalty for a nucleotide mismatch:");
+  label = gtk_label_new("Maximum score drop for gapless alignments:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Reward for a nucleotide match:");
+  label = gtk_label_new("Maximum score drop for final gapped alignments:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Number of threads (CPUs) used:");
+  label = gtk_label_new("Minimum score for gapless alignments:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Word size for wordfinder algorithm:");
+  label = gtk_label_new("Minimum score for gapped alignments:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Percent identity:");
+  label = gtk_label_new("Cost for a nucleotide mismatch:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Additional BLASTN parameter:");
+  label = gtk_label_new("Score for a nucleotide match:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for psmall:");
+  label = gtk_label_new("Step size along the query sequence:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for plarge:");
+
+  label = gtk_label_new("Additional LAST parameters:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Classification?");
+
+  label = gtk_label_new("% of the smaller seq. a match needs to cover:");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
+  label = gtk_label_new("% of the larger seq. a match needs to cover:");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+  align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
+  label = gtk_label_new("Perform classification?");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox1), align, FALSE, FALSE, 1);
   vbox2 = gtk_vbox_new(FALSE, 5);
-  label = projset->label_evalue = gtk_label_new("");
-  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
-  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), label);
-  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_dust = gtk_label_new("");
-  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
-  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), label);
-  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
   label = projset->label_gapopen = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
@@ -731,37 +735,54 @@ static void gtk_project_settings_init(GtkProjectSettings *projset)
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_xdrop = gtk_label_new("");
+  label = projset->label_xgapped = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_penalty = gtk_label_new("");
+  label = projset->label_xgapless = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_reward = gtk_label_new("");
+  label = projset->label_xfinal = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_threads = gtk_label_new("");
+  label = projset->label_mscoregapless = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_wordsize = gtk_label_new("");
+  label = projset->label_mscoregapped = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_seqidentity = gtk_label_new("");
+  label = projset->label_mismatchcost = gtk_label_new("");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = projset->label_moreblast = gtk_label_new("");
+  label = projset->label_matchscore = gtk_label_new("");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
+  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  label = projset->label_stepsize = gtk_label_new("");
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
+  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+  label = projset->label_morelast = gtk_label_new("");
+  gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
+  gtk_label_set_line_wrap_mode(GTK_LABEL(label), PANGO_WRAP_WORD_CHAR);
+  gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
+  align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
+  gtk_container_add(GTK_CONTAINER(align), label);
+  gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
+
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_RIGHT);
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);

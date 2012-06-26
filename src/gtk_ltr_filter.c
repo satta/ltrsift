@@ -718,8 +718,6 @@ static void apply_clicked(GT_UNUSED GtkButton *button, GtkLTRFilter *ltrfilt)
                  gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrfilt->ltrfams));
             remove_row(cdata->cand_ref);
             remove_node_from_array(nodes, gn);
-            (void) gt_feature_index_remove_node(gtk_ltr_families_get_fi(GTK_LTR_FAMILIES(ltrfilt->ltrfams)),
-                                         (GtFeatureNode*) gn, err);  /* XXX */
             deleted_candidates++;
             gtk_ltr_families_update_unclassified_cands(
                                              GTK_LTR_FAMILIES(ltrfilt->ltrfams),

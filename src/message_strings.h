@@ -8,8 +8,8 @@
 #define GUI_NAME       "LTRsift"
 #define FAS_PATTERN    ".fas"
 #define GFF3_PATTERN   ".gff3"
-#define ESQ_PATTERN   ".esq"
-#define SQLITE_PATTERN ".sqlite"
+#define ESQ_PATTERN    ".esq"
+#define SQLITE_PATTERN ".ltrsift"
 
 #define LTRSIFT_STYLE_ENV "LTRSIFT_STYLE_FILE"
 
@@ -126,7 +126,7 @@
 #define FAMS_EXPORT_SEQS_MULT "Export sequences (multiple files)..."
 #define FAMS_EXPORT_ANNO_ONE  "Export annotation (one file)..."
 #define FAMS_EXPORT_ANNO_MULT "Export annotation (multiple files)..."
-#define FAMS_EXPORT_FLCANDS   "Export _full length candidates only."
+#define FAMS_EXPORT_FLCANDS   "Export _full length candidates only"
 #define FAMS_EDIT_NAME   "Edit name"
 #define FAMS_REMOVE_SEL  "Remove selection"
 
@@ -135,7 +135,7 @@
 #define SEQFILE_FOR_REFSEQ "%s/tmp/fam_seqs_for_refseq_match.fas"
 
 #define NO_PROJECTFILE_FOR_PARAMS_DIALOG "The data has not been saved as a " \
-                                         "project. Therefore match parameter " \
+                                         "project. Therefore match parameters "\
                                          "will not be saved and can not be " \
                                          "reproduced. It is recommended to " \
                                          "save the data first! Continue anyway?"
@@ -180,7 +180,7 @@
 #define LTRFILT_WINDOW_TITLE "%s - Filter"
 
 /* gtk_project_settings */
-#define USED_DEFAULT "Used default."
+#define USED_DEFAULT "Default value used."
 #define PROJSET_WINDOW_TITLE "%s - Project Settings"
 
 /* ltrgui.h */
@@ -190,9 +190,9 @@
 #define GUI_DIALOG_SAVE_AS  "Save file as..."
 
 /* Information used by gtk_about_dialog */
-#define GUI_VERSION         "0.0.1"
-#define GUI_COPYRIGHT       "(c) 2011-2012 Sascha Kastens"
-#define GUI_COMMENTS        "COMMENT PLACEHOLDER"
+#define GUI_VERSION         "1.0.0"
+#define GUI_COPYRIGHT       "(c) 2011-2012 Sascha Kastens\n(c) 2011-2012 Sascha Steinbiss\n(c) 2011-2012 Center for Bioinformatics, University of Hamburg"
+#define GUI_COMMENTS        "LTRsift - a tool to aid in semi-manual processing of LTR retrotransposon predictions"
 static const char license[] =           "                    GNU GENERAL PUBLIC LICENSE\n"
   "                       Version 3, 29 June 2007\n"
   "\n"
@@ -868,7 +868,7 @@ static const char license[] =           "                    GNU GENERAL PUBLIC 
   "Public License instead of this License.  But first, please read\n"
   "<http://www.gnu.org/philosophy/why-not-lgpl.html>.";
 
-#define GUI_WEBSITE         "http://www.genometools.org"
+#define GUI_WEBSITE         "http://www.zbh.uni-hamburg.de/LTRsift"
 #define GUI_LOGO            "../logo.png"
 
 #define UNTITLED_PROJECT "Untitled project"
@@ -910,7 +910,7 @@ static const char license[] =           "                    GNU GENERAL PUBLIC 
                       "different one\nto avoid duplicate entries"
 #define START_CLASSIF "Starting classification"
 #define MATCH_DIALOG  "Match against reference sequences"
-#define ATTENTION     "Attention!"
+#define ATTENTION     "Attention"
 #define INFORMATION   "Information"
 
 #define MERGE_FAMILIES_DIALOG  "Merge selection"

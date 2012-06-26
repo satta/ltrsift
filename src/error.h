@@ -23,6 +23,7 @@
 #define error_handle(toplevel, err)\
      _error_handle(toplevel, err, __func__, __FILE__, __LINE__)
 
-void _error_handle(GtkWidget *toplevel, GtError *err, const char *func, const char *file, int line);
+void _error_handle(GtkWidget *toplevel, GtError *err, const char *func,
+                   const char *file, int line);
 
 #endif

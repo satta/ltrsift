@@ -173,11 +173,11 @@ static gpointer project_wizard_start_job(gpointer data)
                        gtk_ltr_assistant_get_lentol(GTK_LTR_ASSISTANT(ltrassi));
 
     last_stream = ltr_classify_stream = gt_ltr_classify_stream_new(last_stream,
-                                                                   sel_features,
-                                                                   fam_prefix,
+                                                     sel_features,
+                                                     fam_prefix,
                                                      &threaddata->current_state,
-                                                                   NULL,
-                                                               threaddata->err);
+                                                     NULL,
+                                                     threaddata->err);
   }
   if (!threaddata->had_err) {
     nodes = gt_array_new(sizeof(GtGenomeNode*));
@@ -257,9 +257,8 @@ void project_wizard_apply(GtkAssistant *assistant, GUIData *ltrgui)
   if (!g_file_test(projecttmpdir, G_FILE_TEST_EXISTS))
     had_err = g_mkdir(projecttmpdir, 0755);
   if (had_err != 0) {
-    gt_error_set(ltrgui->err,
-                "Could not make dir: %s",
-                projecttmpdir);
+    gt_error_set(ltrgui->err, "Could not create directory %s",
+                 projecttmpdir);
     error_handle(ltrgui->main_window, ltrgui->err);
     return;
   }

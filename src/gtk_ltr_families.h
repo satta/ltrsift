@@ -107,7 +107,6 @@ struct _GtkLTRFamilies
   GtkWidget *hpaned;
   GtkWidget *vpaned;
   GtRDB *rdb;
-  GtAnnoDBSchema *adb;
   GtFeatureIndex *fi;
   GtDiagram *diagram;
   GtStyle *style;
@@ -141,12 +140,7 @@ GtFeatureIndex* gtk_ltr_families_get_fi(GtkLTRFamilies *ltrfams);
 
 GtRDB*          gtk_ltr_families_get_rdb(GtkLTRFamilies *ltrfams);
 
-GtAnnoDBSchema* gtk_ltr_families_get_adb(GtkLTRFamilies *ltrfams);
-
 void            gtk_ltr_families_set_rdb(GtRDB *rdb, GtkLTRFamilies *ltrfams);
-
-void            gtk_ltr_families_set_adb(GtAnnoDBSchema *adb,
-                                         GtkLTRFamilies *ltrfams);
 
 void            gtk_ltr_families_set_fi(GtFeatureIndex *fi,
                                         GtkLTRFamilies *ltrfams);

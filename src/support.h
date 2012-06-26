@@ -46,12 +46,14 @@ struct _ThreadData {
            save,
            save_as,
            open,
+           orf,
            bakfile,
            use_paramset;
   gchar *current_state,
         *filename,
         *tmp_filename,
         *projectfile,
+        *gff3file,
         *projectdir,
         *fam_prefix;
   const gchar *fullname;

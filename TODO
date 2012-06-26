@@ -1,4 +1,7 @@
-General:
-- mapping for all possible feature node types
-- implement save/load functions (sqlite)
-- Error handling!!
+- BLAST refmatch Farben
+- mehrfaches Speichern Match-Parameter
+- LAST Parametriesierung
+- Progressbars
+- ORF Detection fuer Submengen
+- Fehlerhandling testen!
+- Datenstrukturen vereinheitlichen (nicht redundant)

@@ -161,7 +161,7 @@ static gboolean update_progress_dialog(gpointer data)
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->progressbar),
                                   (gdouble) threaddata->progress /
                                   (2 * gt_array_size(threaddata->old_nodes)));
-  } else if (threaddata->save || threaddata->save_as) {
+  } else if (threaddata->save || threaddata->save_as || threaddata->orf) {
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(threaddata->progressbar),
                                   (gdouble) threaddata->progress /
                                   gt_array_size(threaddata->nodes));
@@ -281,26 +281,27 @@ void extract_project_settings(GUIData *ltrgui)
        plarge,
        gapopen,
        gapextend,
-       wordsize,
-       penalty,
-       reward,
-       num_threads,
+       mscoregapped,
+       mscoregapless,
+       stepsize,
+       matchscore,
+       mismatchcost,
+       xgapped,
+       xfinal,
+       xgapless,
        num_of_gff3files,
        num_of_features;
   const gchar *projectfile,
               *indexname,
-              *moreblast;
+              *morelast;
   gchar **gff3files,
         **features;
   GtkTreeView *list_view;
   GtkTreeSelection *sel;
   GtkTreeIter iter;
   GtkTreeModel *model;
-  gboolean dust, clustering, classification;
-  gdouble evalue,
-          seqid,
-          xdrop,
-          ltrtol,
+  gboolean clustering, classification;
+  gdouble ltrtol,
           candtol;
   GList *rows,
         *tmp;
@@ -332,19 +333,20 @@ void extract_project_settings(GUIData *ltrgui)
   indexname = gtk_ltr_assistant_get_indexname(ltrassi);
   clustering = gtk_ltr_assistant_get_clustering(ltrassi);
 
-  evalue = gtk_ltr_assistant_get_evalue(ltrassi);
-  dust =  gtk_ltr_assistant_get_dust(ltrassi);
+  morelast = gtk_ltr_assistant_get_morelast(ltrassi);
   gapopen = gtk_ltr_assistant_get_gapopen(ltrassi);
   gapextend = gtk_ltr_assistant_get_gapextend(ltrassi);
-  xdrop = gtk_ltr_assistant_get_xdrop(ltrassi);
-  penalty = gtk_ltr_assistant_get_penalty(ltrassi);
-  reward = gtk_ltr_assistant_get_reward(ltrassi);
-  num_threads = gtk_ltr_assistant_get_threads(ltrassi);
-  wordsize = gtk_ltr_assistant_get_wordsize(ltrassi);
-  seqid = gtk_ltr_assistant_get_seqid(ltrassi);
-  moreblast = gtk_ltr_assistant_get_moreblast(ltrassi);
+  xgapped = gtk_ltr_assistant_get_xgapped(ltrassi);
+  xfinal = gtk_ltr_assistant_get_xfinal(ltrassi);
+  xgapless = gtk_ltr_assistant_get_xgapless(ltrassi);
+  matchscore = gtk_ltr_assistant_get_matchscore(ltrassi);
+  mismatchcost = gtk_ltr_assistant_get_mismatchcost(ltrassi);
+  stepsize = gtk_ltr_assistant_get_stepsize(ltrassi);
+  mscoregapped = gtk_ltr_assistant_get_mscoregapped(ltrassi);
+  mscoregapless = gtk_ltr_assistant_get_mscoregapless(ltrassi);
   psmall = gtk_ltr_assistant_get_psmall(ltrassi);
   plarge = gtk_ltr_assistant_get_plarge(ltrassi);
+
   classification = gtk_ltr_assistant_get_classification(ltrassi);
 
   ltrtol = gtk_ltr_assistant_get_ltrtol(ltrassi);
@@ -369,9 +371,9 @@ void extract_project_settings(GUIData *ltrgui)
 
   gtk_project_settings_set_data(GTK_PROJECT_SETTINGS(ltrgui->projset),
                                 projectfile, gff3files, indexname, clustering,
-                                evalue, dust, gapopen, gapextend, xdrop,
-                                penalty, reward, num_threads, wordsize,
-                                seqid, moreblast, psmall, plarge,
+                                xgapped, xgapless, xfinal, mscoregapped,
+                                mscoregapless, gapopen, gapextend, matchscore,
+                                mismatchcost, stepsize, morelast, psmall, plarge,
                                 classification, ltrtol, candtol, features);
 
   for (i = 0; i < num_of_gff3files; i++)

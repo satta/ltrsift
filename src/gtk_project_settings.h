@@ -46,17 +46,17 @@ struct _GtkProjectSettings
   GtkWidget *label_gff3files;
   GtkWidget *label_indexname;
   GtkWidget *label_didclustering;
-  GtkWidget *label_evalue;
-  GtkWidget *label_dust;
+  GtkWidget *label_xgapped;
+  GtkWidget *label_xgapless;
+  GtkWidget *label_xfinal;
+  GtkWidget *label_mscoregapless;
+  GtkWidget *label_mscoregapped;
   GtkWidget *label_gapopen;
   GtkWidget *label_gapextend;
-  GtkWidget *label_xdrop;
-  GtkWidget *label_penalty;
-  GtkWidget *label_reward;
-  GtkWidget *label_threads;
-  GtkWidget *label_wordsize;
-  GtkWidget *label_seqidentity;
-  GtkWidget *label_moreblast;
+  GtkWidget *label_matchscore;
+  GtkWidget *label_mismatchcost;
+  GtkWidget *label_stepsize;
+  GtkWidget *label_morelast;
   GtkWidget *label_psmall;
   GtkWidget *label_plarge;
   GtkWidget *label_didclassification;
@@ -80,37 +80,36 @@ const gchar* gtk_project_settings_get_indexname(GtkProjectSettings *projset);
 void         gtk_project_settings_update_indexname(GtkProjectSettings *projset,
                                                    const gchar *indexname);
 
-void         gtk_project_settings_update_projectfile(GtkProjectSettings *projs,
-                                                     const gchar *projectfile);
-
 gint         gtk_project_settings_set_data_from_sqlite(GtkProjectSettings *proj,
                                                        const gchar *projectfile,
+                                                       GtRDB *rdb,
                                                        GtError *err);
 
-void         gtk_project_settings_set_data(GtkProjectSettings *projset,
-                                           const gchar *projectfile,
-                                           gchar **gff3files,
-                                           const gchar *indexname,
-                                           gboolean clustering,
-                                           gdouble evalue,
-                                           gboolean dust,
-                                           gint gapopen,
-                                           gint gapextend,
-                                           gdouble xdrop,
-                                           gint penalty,
-                                           gint reward,
-                                           gint threads,
-                                           gint wordsize,
-                                           gdouble seqid,
-                                           const gchar *moreblast,
-                                           gint psmall,
-                                           gint plarge,
-                                           gboolean classification,
-                                           gdouble ltrtol,
-                                           gdouble candtol,
-                                           gchar **features);
+void          gtk_project_settings_set_data(GtkProjectSettings *projset,
+                                             const gchar *projectfile,
+                                             gchar **gff3files,
+                                             const gchar *indexname,
+                                             gboolean clustering,
+                                             gint xgapped,
+                                             gint xgapless,
+                                             gint xfinal,
+                                             gint mscoregapped,
+                                             gint mscoregapless,
+                                             gint gapopen,
+                                             gint gapextend,
+                                             gint matchscore,
+                                             gint mismatchcost,
+                                             gint stepsize,
+                                             const gchar *morelast,
+                                             gint psmall,
+                                             gint plarge,
+                                             gboolean classification,
+                                             gdouble ltrtol,
+                                             gdouble candtol,
+                                             gchar **features);
 
 gint         gtk_project_settings_save_data(GtkProjectSettings *projset,
+                                            GtRDB *rdb,
                                             GtError *err);
 
 GtkWidget*   gtk_project_settings_new(GtRDB *rdb);

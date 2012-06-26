@@ -329,6 +329,6 @@ gint main(gint argc, gchar *argv[])
   gdk_threads_leave();
   /* free memory allocated for GUIData struct */
   free_gui(ltrgui);
-  gt_lib_clean();
+  /* gt_lib_clean(); */
   return EXIT_SUCCESS;
 }
