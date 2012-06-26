@@ -160,8 +160,8 @@ static void gtk_blastn_params_refseq_init(GtkBlastnParamsRefseq *blastparref)
   gtk_box_pack_start(GTK_BOX(blastparref), hbox, FALSE, FALSE, 1);
   blastparref->checkb_flcands =
           gtk_check_button_new_with_label("Match full length candidates only?");
-  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastparref->checkb_flcands),
-                              TRUE);
+  /* gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(blastparref->checkb_flcands),
+                              FALSE); */
   gtk_box_pack_start(GTK_BOX(blastparref), blastparref->checkb_flcands, FALSE,
                      FALSE, 1);
   g_signal_connect(G_OBJECT(blastparref), "destroy",
