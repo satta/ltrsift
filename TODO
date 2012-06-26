@@ -1,6 +1,5 @@
-- BLAST refmatch Farben
-- mehrfaches Speichern Match-Parameter
-- LAST Parametriesierung
+x mehrfaches Speichern Match-Parameter
+x LAST Parametriesierung
 - Progressbars
 - ORF Detection fuer Submengen
 - Fehlerhandling testen!
