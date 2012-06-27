@@ -399,6 +399,7 @@ static gboolean open_project_data_finished(gpointer data)
                                                  "source_id")));
   gtk_widget_destroy(threaddata->window);
   reset_progressbar(threaddata->progressbar);
+
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
     gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
@@ -452,9 +453,104 @@ static gboolean open_project_data_finished(gpointer data)
     error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
     gdk_threads_leave();
   }
+  gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
   threaddata_delete(threaddata);
 
   return FALSE;
+}
+
+static gboolean save_as_finished(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+  GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
+
+  g_source_remove(GPOINTER_TO_INT(
+                               g_object_get_data(G_OBJECT(threaddata->window),
+                                                 "source_id")));
+  gtk_widget_destroy(threaddata->window);
+  reset_progressbar(threaddata->progressbar);
+
+  if (!threaddata->had_err) {
+    gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
+                                     threaddata->filename);
+    gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
+    create_recently_used_resource(threaddata->filename);
+  }
+
+  if (threaddata->had_err) {
+    gdk_threads_enter();
+    error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+    gdk_threads_leave();
+  }
+  threaddata_delete(threaddata);
+
+  return FALSE;
+}
+
+static gpointer save_as_start(gpointer data)
+{
+  ThreadData *threaddata = (ThreadData*) data;
+  GtNodeStream *array_in_stream = NULL,
+               *gff3_out_stream = NULL;
+  GtFile *outfp;
+
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            "Saving data");
+  gt_rdb_delete(threaddata->rdb);
+  threaddata->rdb = gt_rdb_sqlite_new(threaddata->filename,
+                                      threaddata->ltrgui->err);
+  if (!threaddata->rdb)
+    threaddata->had_err = -1;
+  if (!threaddata->had_err)
+    gtk_ltr_families_set_rdb(threaddata->rdb,
+                             GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
+
+  outfp = gt_file_new(threaddata->gff3file, "w+", threaddata->err);
+  if (!outfp) {
+    threaddata->had_err = -1;
+  }
+
+  if (!threaddata->had_err) {
+    GtGenomeNode *gn;
+    gt_assert(outfp);
+    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                             &threaddata->progress,
+                                             threaddata->ltrgui->err);
+    gt_assert(array_in_stream);
+
+    gff3_out_stream = gt_gff3_out_stream_new(array_in_stream, outfp);
+    gt_assert(gff3_out_stream);
+
+    while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream,
+                                                       &gn,
+                                                       threaddata->err)) && gn);
+  }
+
+  gt_file_delete(outfp);
+  gt_node_stream_delete(gff3_out_stream);
+  gt_node_stream_delete(array_in_stream);
+
+  if (!threaddata->had_err) {
+    threaddata->had_err =
+                  gtk_project_settings_save_data(GTK_PROJECT_SETTINGS(
+                                                   threaddata->ltrgui->projset),
+                                                 threaddata->rdb,
+                                                 threaddata->ltrgui->err);
+    if (!threaddata->had_err)
+      threaddata->had_err = save_gui_settings(threaddata->ltrgui);
+    if (!threaddata->had_err)
+      threaddata->had_err = save_match_param_sets(threaddata->ltrgui);
+    if (threaddata->had_err) {
+      gdk_threads_enter();
+      error_handle(threaddata->ltrgui->main_window, threaddata->ltrgui->err);
+      gdk_threads_leave();
+    }
+
+  }
+  gt_free(threaddata->tmp_filename);
+
+  g_idle_add(save_as_finished, data);
+  return NULL;
 }
 
 static gpointer save_project_data_start(gpointer data)
@@ -581,11 +677,9 @@ static gpointer open_project_data_start(gpointer data)
 static gpointer save_and_reload_data_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
-  GT_UNUSED GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
   GtNodeStream *array_in_stream = NULL,
                *gff3_out_stream = NULL;
   GtFile *outfp;
-  GT_UNUSED unsigned long i;
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Handling data");
@@ -768,12 +862,14 @@ static void save_as_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   threaddata->save_as = TRUE;
   threaddata->bakfile = bakfile;
   threaddata->had_err = 0;
+  threaddata->nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  threaddata->rdb = gtk_ltr_families_get_rdb(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   threaddata->gff3file = g_strndup(threaddata->filename,
                           strlen(threaddata->filename) - strlen(SQLITE_PATTERN));
   threaddata->gff3file = g_strconcat(threaddata->gff3file, ".gff3", NULL);
   progress_dialog_init(threaddata, ltrgui->main_window);
 
-  if (!g_thread_create(save_project_data_start, (gpointer) threaddata,
+  if (!g_thread_create(save_as_start, (gpointer) threaddata,
                        FALSE, NULL)) {
     gt_error_set(ltrgui->err,
                 "Could not create new thread.");
