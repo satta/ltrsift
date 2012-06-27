@@ -193,7 +193,7 @@ style =
                                or type == "Integrase_Zn" or type == "Integrase" then
                                -- integrase domain
                                return {red=0.5, green=0.8, blue=0.8, alpha = 1.0}
-                             elseif type == "Rnase_H" then
+                             elseif type == "RNase_H" then
                                -- RNase H domain
                                return {red=0.8, green=0.8, blue=0.5, alpha = 1.0}
                              else
