@@ -738,20 +738,21 @@ static void ltrsift_track_selector_func(GtBlock *block, GtStr *name,
                                         GT_UNUSED void *data)
 {
   GtFeatureNode *fn = gt_block_get_top_level_feature(block);
-  if (strcmp(gt_feature_node_get_type(fn), "nucleotide_match") == 0) {
+  const char *type = gt_block_get_type(block);
+  if (strcmp(type, "nucleotide_match") == 0) {
     const char *params = gt_feature_node_get_attribute(fn, "params");
     if (params) {
       gt_str_append_cstr(name, "Reference match with parameter set ");
       gt_str_append_cstr(name, params);
     }
-  } else if (strcmp(gt_feature_node_get_type(fn), "RR_tract") == 0) {
+  } else if (strcmp(type, "RR_tract") == 0) {
     gt_str_append_cstr(name, "PPT");
-  } else if (strcmp(gt_feature_node_get_type(fn), "primer_binding_site") == 0) {
+  } else if (strcmp(type, "primer_binding_site") == 0) {
     gt_str_append_cstr(name, "PBS");
-  } else if (strcmp(gt_feature_node_get_type(fn), "protein_match") == 0) {
+  } else if (strcmp(type, "protein_match") == 0) {
     gt_str_append_cstr(name, "Protein domains");
   } else {
-    char *str = gt_cstr_dup(gt_block_get_type(block));
+    char *str = gt_cstr_dup(type);
     gt_cstr_rep(str, '_', ' ');
     gt_str_append_cstr(name, str);
     gt_free(str);
