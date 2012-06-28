@@ -130,11 +130,21 @@ static gpointer project_wizard_start_job(gpointer data)
       threaddata->had_err = -1;
     if (!threaddata->had_err) {
       last_stream = ltr_cluster_stream = gt_ltr_cluster_stream_new(last_stream,
-                                                                   encseq,
-                                                                   plarge,
-                                                                   psmall,
-                                                     &threaddata->current_state,
-                                                               threaddata->err);
+                encseq,
+                gtk_ltr_assistant_get_matchscore(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_mismatchcost(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_gapopen(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_gapextend(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_xgapped(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_xgapless(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_xfinal(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_stepsize(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_mscoregapped(GTK_LTR_ASSISTANT(ltrassi)),
+                gtk_ltr_assistant_get_mscoregapless(GTK_LTR_ASSISTANT(ltrassi)),
+                plarge,
+                psmall,
+                &threaddata->current_state,
+                threaddata->err);
     }
   }
   if (!threaddata->had_err &&
