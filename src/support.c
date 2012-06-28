@@ -587,7 +587,7 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
   }
 
   if (!had_err) {
-    for (i = 0; i < gt_array_size(nodes); i++) {
+    for (i = 0; !had_err && i < gt_array_size(nodes); i++) {
       gn = *(GtGenomeNode**) gt_array_get(nodes, i);
       fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
       curnode = gt_feature_node_iterator_next(fni);
@@ -612,7 +612,12 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
       startpos = gt_encseq_seqstartpos(encseq, seqnum);
       gt_encseq_extract_decoded(encseq, buffer, startpos + range.start - 1,
                                 startpos + range.end - 1);
-      gt_fasta_show_entry(header, buffer, gt_range_length(&range), 50, outfp);
+      if (gt_feature_node_get_strand(curnode) == GT_STRAND_REVERSE) {
+        had_err = gt_reverse_complement(buffer, gt_range_length(&range), err);
+      }
+      if (!had_err) {
+        gt_fasta_show_entry(header, buffer, gt_range_length(&range), 50, outfp);
+      }
       gt_free(buffer);
       gt_feature_node_iterator_delete(fni);
     }
