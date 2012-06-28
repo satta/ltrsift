@@ -129,7 +129,7 @@ gint gtk_ltr_assistant_get_mscoregapless(GtkLTRAssistant *ltrassi)
 
 const gchar* gtk_ltr_assistant_get_morelast(GtkLTRAssistant *ltrassi)
 {
-  return gtk_label_get_text(GTK_LABEL(ltrassi->label_moreblast));
+  return gtk_label_get_text(GTK_LABEL(ltrassi->label_morelast));
 }
 
 gint gtk_ltr_assistant_get_psmall(GtkLTRAssistant *ltrassi)
@@ -883,46 +883,47 @@ static void update_label_morelast(GtkLTRAssistant *ltrassi)
   g_hash_table_foreach(ltrassi->hasht_lastparams, (GHFunc) build_string,
                        (gpointer) string);
   buffer = g_string_free(string, FALSE);
-  gtk_label_set_text(GTK_LABEL(ltrassi->label_moreblast), buffer);
-  gtk_label_set_text(GTK_LABEL(ltrassi->label_moreblast2), buffer);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_morelast), buffer);
+  gtk_label_set_text(GTK_LABEL(ltrassi->label_morelast2), buffer);
   g_free(buffer);
 }
 
-static void combob_blast_changed(GtkComboBox *combob, GtkLTRAssistant *ltrassi)
+GT_UNUSED static void combob_last_changed(GtkComboBox *combob,
+                                           GtkLTRAssistant *ltrassi)
 {
   gchar *param;
   gpointer value;
 
   param = gtk_combo_box_get_active_text(combob);
   if (g_strcmp0(param, "") == 0) {
-    gtk_widget_set_sensitive(ltrassi->entry_blastvalues, FALSE);
-    gtk_widget_set_sensitive(ltrassi->button_addblastparam, FALSE);
-    gtk_widget_set_sensitive(ltrassi->button_rmblastparam, FALSE);
+    gtk_widget_set_sensitive(ltrassi->entry_lastvalues, FALSE);
+    gtk_widget_set_sensitive(ltrassi->button_addlastparam, FALSE);
+    gtk_widget_set_sensitive(ltrassi->button_rmlastparam, FALSE);
     g_free(param);
     return;
   }
-  gtk_widget_set_sensitive(ltrassi->entry_blastvalues, TRUE);
-  gtk_widget_set_sensitive(ltrassi->button_addblastparam, TRUE);
-  gtk_widget_set_sensitive(ltrassi->button_rmblastparam, TRUE);
+  gtk_widget_set_sensitive(ltrassi->entry_lastvalues, TRUE);
+  gtk_widget_set_sensitive(ltrassi->button_addlastparam, TRUE);
+  gtk_widget_set_sensitive(ltrassi->button_rmlastparam, TRUE);
 
   value = g_hash_table_lookup(ltrassi->hasht_lastparams,
                               (gconstpointer) param);
   if (value)
-    gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_blastvalues), (gchar*) value);
+    gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_lastvalues), (gchar*) value);
   else
-    gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_blastvalues), "");
+    gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_lastvalues), "");
   g_free(param);
 }
 
-static void add_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                    GtkLTRAssistant *ltrassi)
+GT_UNUSED static void add_last_param_clicked(GT_UNUSED GtkButton *button,
+                                              GtkLTRAssistant *ltrassi)
 {
   gchar *key;
   const gchar *value;
 
   key =
-      gtk_combo_box_get_active_text(GTK_COMBO_BOX(ltrassi->combob_blastparams));
-  value = gtk_entry_get_text(GTK_ENTRY(ltrassi->entry_blastvalues));
+      gtk_combo_box_get_active_text(GTK_COMBO_BOX(ltrassi->combob_lastparams));
+  value = gtk_entry_get_text(GTK_ENTRY(ltrassi->entry_lastvalues));
   if ((g_strcmp0(key, BLASTN_NO_GREEDY) == 0) ||
       (g_strcmp0(key, BLASTN_UNGAPPED) == 0))
     value = "";
@@ -935,18 +936,18 @@ static void add_blast_param_clicked(GT_UNUSED GtkButton *button,
   update_label_morelast(ltrassi);
 }
 
-static void remove_blast_param_clicked(GT_UNUSED GtkButton *button,
-                                       GtkLTRAssistant *ltrassi)
+GT_UNUSED static void remove_last_param_clicked(GT_UNUSED GtkButton *button,
+                                                 GtkLTRAssistant *ltrassi)
 {
   gchar *key;
 
   key =
-      gtk_combo_box_get_active_text(GTK_COMBO_BOX(ltrassi->combob_blastparams));
+      gtk_combo_box_get_active_text(GTK_COMBO_BOX(ltrassi->combob_lastparams));
   if (!g_hash_table_remove(ltrassi->hasht_lastparams, (gconstpointer) key)) {
     g_free(key);
     return;
   }
-  gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_blastvalues), "");
+  gtk_entry_set_text(GTK_ENTRY(ltrassi->entry_lastvalues), "");
   update_label_morelast(ltrassi);
   g_free(key);
 }
@@ -1025,9 +1026,8 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
             *sw,
             *align,
             *tmpbox,
-            *checkb,
-            *combob,
-            *image;
+            *checkb;
+  GT_UNUSED GtkWidget *image, *combob;
   GtkTreeViewColumn *column;
   GtkTreeSelection *sel;
   GtkCellRenderer *renderer;
@@ -1178,17 +1178,18 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  label = gtk_label_new("Select additional LAST parameter:");
+  /* label = gtk_label_new("Select additional LAST parameter:");
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
-  combob = ltrassi->combob_blastparams = gtk_combo_box_new_text();
+  combob = ltrassi->combob_lastparams = gtk_combo_box_new_text();
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), "");
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_OFF_DIAG);
   g_signal_connect(G_OBJECT(combob), "changed",
-                   G_CALLBACK(combob_blast_changed), ltrassi);
+                   G_CALLBACK(combob_last_changed), ltrassi);
   gtk_box_pack_start(GTK_BOX(vbox), combob, FALSE, FALSE, 1);
+  */
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
   vbox = gtk_vbox_new(TRUE, 1);
@@ -1327,26 +1328,26 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
 
 
-  label = gtk_label_new("Value for additional BLASTN paramter:");
+  /* label = gtk_label_new("Value for additional LAST paramter:");
   gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   tmpbox = gtk_hbox_new(FALSE, 1);
-  ltrassi->entry_blastvalues = gtk_entry_new();
-  gtk_widget_set_sensitive(ltrassi->entry_blastvalues, FALSE);
-  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->entry_blastvalues,
+  ltrassi->entry_lastvalues = gtk_entry_new();
+  gtk_widget_set_sensitive(ltrassi->entry_lastvalues, FALSE);
+  gtk_box_pack_start(GTK_BOX(tmpbox), ltrassi->entry_lastvalues,
                      TRUE, TRUE, 1);
   image = gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_SMALL_TOOLBAR);
-  button = ltrassi->button_addblastparam = gtk_button_new();
+  button = ltrassi->button_addlastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(add_blast_param_clicked),
+                   G_CALLBACK(add_last_param_clicked),
                    ltrassi);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_box_pack_start(GTK_BOX(tmpbox), button, FALSE, FALSE, 1);
   image = gtk_image_new_from_stock(GTK_STOCK_REMOVE,
                                    GTK_ICON_SIZE_SMALL_TOOLBAR);
-  button = ltrassi->button_rmblastparam = gtk_button_new();
+  button = ltrassi->button_rmlastparam = gtk_button_new();
   g_signal_connect(G_OBJECT(button), "clicked",
-                   G_CALLBACK(remove_blast_param_clicked),
+                   G_CALLBACK(remove_last_param_clicked),
                    ltrassi);
   gtk_widget_set_sensitive(button, FALSE);
   gtk_button_set_image(GTK_BUTTON(button), image);
@@ -1356,17 +1357,17 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   hsep = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      hbox, FALSE, FALSE, 1);
-  ltrassi->label_moreblast = gtk_label_new("");
-  gtk_label_set_line_wrap(GTK_LABEL(ltrassi->label_moreblast), TRUE);
-  gtk_label_set_line_wrap_mode(GTK_LABEL(ltrassi->label_moreblast),
+  ltrassi->label_morelast = gtk_label_new("");
+  gtk_label_set_line_wrap(GTK_LABEL(ltrassi->label_morelast), TRUE);
+  gtk_label_set_line_wrap_mode(GTK_LABEL(ltrassi->label_morelast),
                                PANGO_WRAP_WORD_CHAR);
-  gtk_label_set_justify(GTK_LABEL(ltrassi->label_moreblast), GTK_JUSTIFY_LEFT);
+  gtk_label_set_justify(GTK_LABEL(ltrassi->label_morelast), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), ltrassi->label_moreblast);
+  gtk_container_add(GTK_CONTAINER(align), ltrassi->label_morelast);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      align, TRUE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
-                     hsep, FALSE, FALSE, 1);
+                     hsep, FALSE, FALSE, 1); */
 
   label = gtk_label_new("Criteria for clustering");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
@@ -1653,7 +1654,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   align = gtk_alignment_new(1.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
   gtk_box_pack_start(GTK_BOX(vbox2), align, FALSE, FALSE, 1);
-  label = ltrassi->label_moreblast2 = gtk_label_new("");
+  label = ltrassi->label_morelast2 = gtk_label_new("");
   gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
   gtk_label_set_line_wrap_mode(GTK_LABEL(label), PANGO_WRAP_WORD_CHAR);
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);

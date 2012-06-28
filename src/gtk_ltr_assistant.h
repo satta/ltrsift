@@ -77,11 +77,11 @@ struct _GtkLTRAssistant
   GtkWidget *checkb_mscoregapped;
   GtkWidget *spinb_stepsize;
   GtkWidget *checkb_stepsize;
-  GtkWidget *combob_blastparams;
-  GtkWidget *entry_blastvalues;
-  GtkWidget *button_addblastparam;
-  GtkWidget *button_rmblastparam;
-  GtkWidget *label_moreblast;
+  GtkWidget *combob_lastparams;
+  GtkWidget *entry_lastvalues;
+  GtkWidget *button_addlastparam;
+  GtkWidget *button_rmlastparam;
+  GtkWidget *label_morelast;
   GtkWidget *spinb_psmall;
   GtkWidget *spinb_plarge;
   GtkWidget *checkb_classification;
@@ -106,7 +106,7 @@ struct _GtkLTRAssistant
   GtkWidget *label_matchscore;
   GtkWidget *label_mismatchcost;
   GtkWidget *label_stepsize;
-  GtkWidget *label_moreblast2;
+  GtkWidget *label_morelast2;
   GtkWidget *label_psmall;
   GtkWidget *label_plarge;
   GtkWidget *label_doclassification;
