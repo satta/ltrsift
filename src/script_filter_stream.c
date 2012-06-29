@@ -160,7 +160,7 @@ GtNodeStream* ltrgui_script_filter_stream_new(GtNodeStream *in_stream,
 {
   GtNodeStream *gs;
   LTRGuiScriptFilterStream *sfs;
-  gs = gt_node_stream_create(ltrgui_script_filter_stream_class(), true);
+  gs = gt_node_stream_create(ltrgui_script_filter_stream_class(), false);
   sfs = ltrgui_script_filter_stream_cast(gs);
   sfs->in_stream = gt_node_stream_ref(in_stream);
   sfs->nodes = gt_array_new(sizeof(GtGenomeNode*));
