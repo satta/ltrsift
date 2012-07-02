@@ -3,7 +3,7 @@ CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
 GT_FLAGS_STATIC := $(GT_FLAGS) -lbz2
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
-GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0` -export-dynamic
+GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0`
 SOURCES := $(wildcard src/*.c)
 OBJECTS := $(SOURCES:%.c=obj/%.o)
 
