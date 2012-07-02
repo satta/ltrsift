@@ -17,6 +17,7 @@
 
 #include <string.h>
 #include "error.h"
+#include "default_style.h"
 #include "gtk_ltr_families.h"
 #include "message_strings.h"
 #include "statusbar.h"
@@ -4431,7 +4432,7 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                      unsigned long noc)
 {
   gchar sb_text[BUFSIZ];
-  gint had_err;
+  gint had_err = 0;
 
   ltrfams->nodes = nodes;
   ltrfams->features = features;
@@ -4445,6 +4446,10 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                  ltrfams->err);
     if (had_err)
       error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
+  } else {
+    gt_warning("Style file not found, falling back to default!");
+    had_err = ltrsift_load_default_style(ltrfams->style, ltrfams->err);
+    gt_assert(!had_err);
   }
   notebook_create(ltrfams);
   update_main_tab_label(ltrfams);
