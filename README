@@ -1,0 +1,73 @@
+Quick Start
+-----------
+
+In this directory, run the following in a terminal:
+
+$ ./run_ltrsift
+
+This will run LTRsift with default settings, requiring LAST (and/or BLAST)
+to be installed in the system search path. 
+
+
+Running LTRsift (binary distribution)
+-------------------------------------
+
+To use LTRsift, run the ``ltrsift'' executable in the bin/
+subdirectory of the binary distribution. This requires that a
+current version of the GenomeTools library (http://genometools.org)
+is installed and can be found (e.g. by installing it in a system-wide
+location).
+
+If no GenomeTools library is present, or if you do not want to install it,
+run the ``ltrsift_static'' executable instead. This version does not require
+any installed version.
+
+The LAST binaries (lastal and lastdb) should be located in the system
+search path. If they are not, is it possible to specify their location
+using the ``GT_LAST_PATH" environment variable prior to running LTRsift.
+The same applies for the BLAST location. Use ``GT_BLAST_PATH'' to specify 
+the the full path to the ``blastall'' executable.
+
+Style files (describing how the linear diagram of the candidate features
+look like) can be set via the LTRSIFT_STYLE_FILE environment variable.
+A sensible default style is built into LTRsift.
+
+
+Building LTRsift from source
+----------------------------
+
+This section is only relevant if you want to compile a version of
+LTRsift by yourself. To run the binary executable version, this step is
+not required.
+
+You need to have the GenomeTools shared library installed in a location
+accessible by the dynamic linker. Installing GenomeTools system-wide as
+described in the GenomeTools INSTALL file should suffice.
+If a system-wide install is not possible, you can specify your
+GenomeTools installation directory by setting the environment variable
+``gt_prefix'' to the appropriate directory prior to building LTRsift.
+
+Invoke GNU make, e.g.:
+
+$ make [argument ...]
+
+to build LTRsift. You need at least version 3.80 of GNU make, you can check
+which version you have by invoking
+
+$ make --version
+
+On *BSD GNU make is often called ``gmake''.
+
+Possible arguments:
+
+- 64bit=yes to compile a 64-bit version (not available on all platforms)
+- opt=no to disable optimization
+- static=yes to build a static version as well (called ``ltrsift_static'')
+
+Example call to build LTRsift without assertions on a system where GNU make
+is called ``gmake'':
+
+$ gmake assert=no
+
+
+Enjoy!
