@@ -1,3 +1,20 @@
+Prerequisites
+-------------
+
+LTRsift needs the GTK+ version 2 library to work. If you are on a Linux desktop
+system (e.g. Ubuntu Linux, Red Hat, SuSE, ...), it is very likely that this
+library is already installed.
+On Mac OS X, however, it is not and needs to be installed. This can, for
+instance, be done using a package manager like Fink (http://www.finkproject.org).
+First install the Fink environment according to the instructions at
+http://www.finkproject.org/download/srcdist.php.  After the self-update, the
+command
+
+$ fink install cairo gtk+2-dev
+
+should suffice to build and install the required libraries. This will take
+some time!
+
 Quick Start
 -----------
 
@@ -6,7 +23,7 @@ In this directory, run the following in a terminal:
 $ ./run_ltrsift
 
 This will run LTRsift with default settings, requiring LAST (and/or BLAST)
-to be installed in the system search path. 
+to be installed in the system search path.
 
 To try out LTRsift with the supplied sample data in the
 sample_data/ directory, please consult the README file in that
@@ -28,7 +45,7 @@ any installed version.
 The LAST binaries (lastal and lastdb) should be located in the system
 search path. If they are not, is it possible to specify their location
 using the ``GT_LAST_PATH" environment variable prior to running LTRsift.
-The same applies for the BLAST location. Use ``GT_BLAST_PATH'' to specify 
+The same applies for the BLAST location. Use ``GT_BLAST_PATH'' to specify
 the the full path to the ``blastall'' executable.
 
 Style files (describing how the linear diagram of the candidate features
