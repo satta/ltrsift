@@ -11,9 +11,9 @@ function filter(gn)
   node = gfi:next()
   while not (node == nil) do
     if (node:get_type() == "protein_match") then
-      return true
+      return false
     end
     node = gfi:next()
   end
-  return false
+  return true
 end
