@@ -8,6 +8,9 @@ $ ./run_ltrsift
 This will run LTRsift with default settings, requiring LAST (and/or BLAST)
 to be installed in the system search path. 
 
+To try out LTRsift with the supplied sample data in the
+sample_data/ directory, please consult the README file in that
+directory for necessary preparation steps.
 
 Running LTRsift (binary distribution)
 -------------------------------------
@@ -32,6 +35,11 @@ Style files (describing how the linear diagram of the candidate features
 look like) can be set via the LTRSIFT_STYLE_FILE environment variable.
 A sensible default style is built into LTRsift.
 
+Example filtering rules
+-----------------------
+
+Some sample filtering rules (as described in the LTRsift paper)
+can be found in the filters/ subdirectory.
 
 Building LTRsift from source
 ----------------------------
