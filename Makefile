@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Wall -Wunused-parameter -Werror
+CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
 GT_FLAGS_STATIC := $(GT_FLAGS) -lbz2
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
@@ -41,9 +41,6 @@ gt_prefix ?= /usr/local
 # set prefix for installation
 prefix ?= /usr/local
 
-# set data prefix
-data_prefix ?= /usr/share
-
 .PREFIXES = .c .o
 
 .PHONY: all clean cleanup dirs install
@@ -71,8 +68,6 @@ bin obj obj/src:
 install: all
 	test -d $(prefix)/bin || mkdir -p $(prefix)/bin
 	cp bin/ltrsift $(prefix)/bin
-	test -d $(data_prefix)/ltrsift || mkdir -p $(data_prefix)/ltrsift
-	cp style/default.style $(data_prefix)/ltrsift
 
 clean:
 	rm -rf obj
