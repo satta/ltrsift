@@ -1182,7 +1182,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_label_set_justify(GTK_LABEL(label), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
   gtk_container_add(GTK_CONTAINER(align), label);
-  gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
+
   combob = ltrassi->combob_lastparams = gtk_combo_box_new_text();
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), "");
   gtk_combo_box_append_text(GTK_COMBO_BOX(combob), BLASTN_OFF_DIAG);
@@ -1190,11 +1190,10 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                    G_CALLBACK(combob_last_changed), ltrassi);
   gtk_box_pack_start(GTK_BOX(vbox), combob, FALSE, FALSE, 1);
   */
+  gtk_box_pack_start(GTK_BOX(vbox), align, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
 
   vbox = gtk_vbox_new(TRUE, 1);
-
-
   tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_gapopen = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
@@ -1223,7 +1222,6 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
                      FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
-
 
   tmpbox = gtk_hbox_new(TRUE, 1);
   adjust = gtk_adjustment_new(20.0, 5.0, 100.0, 1.0, 10.0, 0.0);
@@ -1327,8 +1325,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
 
-
-  /* label = gtk_label_new("Value for additional LAST paramter:");
+  /*label = gtk_label_new("Value for additional LAST paramter:");
   gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   tmpbox = gtk_hbox_new(FALSE, 1);
   ltrassi->entry_lastvalues = gtk_entry_new();
@@ -1353,21 +1350,23 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_button_set_image(GTK_BUTTON(button), image);
   gtk_box_pack_start(GTK_BOX(tmpbox), button, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
-  gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
+
   hsep = gtk_hseparator_new();
-  gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
-                     hbox, FALSE, FALSE, 1);
   ltrassi->label_morelast = gtk_label_new("");
   gtk_label_set_line_wrap(GTK_LABEL(ltrassi->label_morelast), TRUE);
   gtk_label_set_line_wrap_mode(GTK_LABEL(ltrassi->label_morelast),
                                PANGO_WRAP_WORD_CHAR);
   gtk_label_set_justify(GTK_LABEL(ltrassi->label_morelast), GTK_JUSTIFY_LEFT);
   align = gtk_alignment_new(0.0, 0.5, 0.0, 0.0);
-  gtk_container_add(GTK_CONTAINER(align), ltrassi->label_morelast);
+  gtk_container_add(GTK_CONTAINER(align), ltrassi->label_morelast); */
+
+  gtk_box_pack_start(GTK_BOX(hbox), vbox, FALSE, FALSE, 1);
+  gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
+                     hbox, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
                      align, TRUE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
-                     hsep, FALSE, FALSE, 1); */
+                     hsep, FALSE, FALSE, 1);
 
   label = gtk_label_new("Criteria for clustering");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLUSTERING].widget),
@@ -1403,9 +1402,9 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
   /* Classification settings page */
   page_info[PAGE_CLASSIFICATION].widget = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("PLACEHOLDER");
+  /* label = gtk_label_new("PLACEHOLDER");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
-                     label, FALSE, FALSE, 1);
+                     label, FALSE, FALSE, 1); */
   hbox = gtk_hbox_new(FALSE, 5);
   vbox = gtk_vbox_new(TRUE, 1);
   label = gtk_label_new(LTR_TOLERANCE);

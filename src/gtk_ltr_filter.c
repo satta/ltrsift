@@ -853,7 +853,7 @@ static void add_clicked(GT_UNUSED GtkWidget *button, GtkLTRFilter *ltrfilt)
   gboolean valid,
            skipped = FALSE;
 
-  filechooser = gtk_file_chooser_dialog_new("Select lua filter files",
+  filechooser = gtk_file_chooser_dialog_new("Select filter rule files",
                                             GTK_WINDOW(ltrfilt),
                                             GTK_FILE_CHOOSER_ACTION_OPEN,
                                             GTK_STOCK_CANCEL,
@@ -1139,7 +1139,7 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
                                  GTK_POLICY_AUTOMATIC);
   ltrfilt->list_view_all = gtk_tree_view_new();
   renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes("lua filter files",
+  column = gtk_tree_view_column_new_with_attributes("Available filter rule files",
                                                     renderer,
                                                     "markup",
                                                     LTR_FILTER_LV_FILE,
@@ -1183,7 +1183,7 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
                                  GTK_POLICY_AUTOMATIC);
   ltrfilt->list_view_sel = gtk_tree_view_new();
   renderer = gtk_cell_renderer_text_new();
-  column = gtk_tree_view_column_new_with_attributes("Selected lua filter files",
+  column = gtk_tree_view_column_new_with_attributes("Selected filter rule files",
                                                     renderer,
                                                     "markup",
                                                     LTR_FILTER_LV_FILE,
@@ -1248,7 +1248,7 @@ static void gtk_ltr_filter_init(GtkLTRFilter *ltrfilt)
   hsep2 = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(vbox), hsep2, FALSE, FALSE, 1);
 
-  label = gtk_label_new("Further script information");
+  label = gtk_label_new("Filter rule metadata");
   gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   ltrfilt->label_descr = gtk_label_new("");
   gtk_misc_set_alignment(GTK_MISC(ltrfilt->label_descr), 0.0, 0.5);

@@ -17,7 +17,7 @@
 #define ESQ_FILTER_PATTERN  "*.esq"
 
 #define NO_INDEX_DIALOG    "No indexname found. Do you want to select the "\
-                           "indename?"
+                           "indexname?"
 #define SELECT_INDEX       "Select indexname..."
 #define EXPORT_ANNO_TEXT   "Export annotation..."
 #define EXPORT_SEQS_TEXT   "Export sequences..."
@@ -151,11 +151,11 @@
                             "  return true -- return false\n" \
                             "end"
 
-#define LTR_FILTER_NOT_ADDED_FILES "Some files could not be added!\n" \
+#define LTR_FILTER_NOT_ADDED_FILES "Some files could not be added.\n" \
                                    "Possible reasons: Missing metadata, " \
                                    "missing function 'filter' or syntax " \
                                    "errors."
-#define LTR_FILTER_NOT_SAVED_FILE  "File could not be saved!\n" \
+#define LTR_FILTER_NOT_SAVED_FILE  "The rule file is invalid and will not be saved.\n" \
                                    "Possible reasons: Missing metadata, " \
                                    "missing function 'filter' or syntax " \
                                    "errors."
@@ -165,10 +165,10 @@
                                    "selected). %lu were unclassified and %lu "\
                                    "were deleted."
 
-#define LTR_FILTER_AND "All filters have to match (logical AND)"
-#define LTR_FILTER_OR  "Any filter has to match (logical OR)"
+#define LTR_FILTER_AND "if all filters match (logical AND)"
+#define LTR_FILTER_OR  "if any filter matches (logical OR)"
 
-#define LTR_FILTER_APPLY "_Perform on %lu candidates"
+#define LTR_FILTER_APPLY "_Run filtering on %lu candidates"
 
 #define LUA_PATTERN        ".lua"
 #define LUA_FILTER_PATTERN "*.lua"
@@ -177,7 +177,7 @@
 #define LTR_FILTER_ACTION_NEW_FAM_TEXT "Create new family"
 #define LTR_FILTER_NEW_FAM_NAME        "filtered"
 
-#define LTRFILT_WINDOW_TITLE "%s - Filter"
+#define LTRFILT_WINDOW_TITLE "%s - Candidate filters"
 
 /* gtk_project_settings */
 #define USED_DEFAULT "Default value used."
