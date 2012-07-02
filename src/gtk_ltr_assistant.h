@@ -40,8 +40,8 @@ typedef struct _GtkLTRAssistant GtkLTRAssistant;
 typedef struct _GtkLTRAssistantClass GtkLTRAssistantClass;
 
 typedef enum {
-  PAGE_INTRODUCTION = 0,
-  PAGE_GENERAL,
+  /* PAGE_INTRODUCTION, */
+  PAGE_GENERAL = 0,
   PAGE_CLUSTERING,
   PAGE_CLASSIFICATION,
   PAGE_SUMMARY,

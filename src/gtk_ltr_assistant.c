@@ -977,9 +977,9 @@ static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
   gboolean active;
 
   switch (current_page) {
-    case PAGE_INTRODUCTION:
+    /* case PAGE_INTRODUCTION:
       next_page = PAGE_GENERAL;
-      break;
+      break; */
     case PAGE_GENERAL:
       active =  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                                ltrassi->checkb_clustering));
@@ -1010,7 +1010,7 @@ static void cancel_clicked(GtkAssistant *assistant, GT_UNUSED gpointer data)
 static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 {
   LTRAssistantPageInfo page_info[N_PAGES] = {
-    {NULL, -1, "Introduction", GTK_ASSISTANT_PAGE_INTRO, TRUE},
+    /* {NULL, -1, "Introduction", GTK_ASSISTANT_PAGE_INTRO, TRUE}, */
     {NULL, -1, "General settings", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
     {NULL, -1, "Matching/Clustering", GTK_ASSISTANT_PAGE_CONTENT, TRUE},
     {NULL, -1, "Classification", GTK_ASSISTANT_PAGE_CONTENT, FALSE},
@@ -1036,16 +1036,16 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gint i;
 
   /* Introduction page */
-  page_info[PAGE_INTRODUCTION].widget = gtk_label_new("PLACEHOLDER");
+  /* page_info[PAGE_INTRODUCTION].widget = gtk_label_new("PLACEHOLDER"); */
 
   /* General settings page */
   page_info[PAGE_GENERAL].widget = gtk_vbox_new(FALSE, 5);
-  label = gtk_label_new("This page let you select files");
+  /* label = gtk_label_new("This page let you select files");
   hsep = gtk_hseparator_new();
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      label, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
-                     hsep, FALSE, FALSE, 1);
+                     hsep, FALSE, FALSE, 1); */
   label = gtk_label_new("Choose a directory and a name for the project");
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_GENERAL].widget),
                      label, FALSE, FALSE, 1);
