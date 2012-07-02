@@ -4440,10 +4440,12 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   ltrfams->n_features = noc;
   ltrfams->style = gt_style_new(ltrfams->err);
 
-  had_err = gt_style_load_file(ltrfams->style, ltrfams->style_file,
-                               ltrfams->err);
-  if (had_err)
-    error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
+  if (gt_file_exists((const char*) ltrfams->style_file))
+    had_err = gt_style_load_file(ltrfams->style, ltrfams->style_file,
+                                 ltrfams->err);
+    if (had_err)
+      error_handle(gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)), ltrfams->err);
+  }
   notebook_create(ltrfams);
   update_main_tab_label(ltrfams);
   gtk_widget_set_sensitive(GTK_WIDGET(ltrfams->new_fam), TRUE);
