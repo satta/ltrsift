@@ -1196,7 +1196,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
   vbox = gtk_vbox_new(TRUE, 1);
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(7.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_gapopen = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_gapopen, FALSE);
   checkb =
@@ -1209,7 +1209,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
 
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(1.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_gapextend = gtk_spin_button_new(GTK_ADJUSTMENT(adjust),
                                                  1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_gapextend, FALSE);
@@ -1261,7 +1261,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
 
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(20.0, 5.0, 100.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(24.0, 5.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_mscoregapless = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_mscoregapless, FALSE);
   checkb = ltrassi->checkb_mscoregapless = gtk_check_button_new_with_label(USE_DEFAULT);
@@ -1273,7 +1273,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
 
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(20.0, 5.0, 100.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(40.0, 5.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_mscoregapped = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_mscoregapped, FALSE);
   checkb = ltrassi->checkb_mscoregapped = gtk_check_button_new_with_label(USE_DEFAULT);
@@ -1286,7 +1286,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
 
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(0.0, 100.0, 0.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(1.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_mismatchcost = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_mismatchcost, FALSE);
   checkb =
@@ -1300,7 +1300,7 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
 
 
   tmpbox = gtk_hbox_new(TRUE, 1);
-  adjust = gtk_adjustment_new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0);
+  adjust = gtk_adjustment_new(1.0, 0.0, 100.0, 1.0, 10.0, 0.0);
   ltrassi->spinb_matchscore = gtk_spin_button_new(GTK_ADJUSTMENT(adjust), 1.0, 0);
   gtk_widget_set_sensitive(ltrassi->spinb_matchscore, FALSE);
   checkb =
