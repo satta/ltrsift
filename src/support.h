@@ -48,6 +48,7 @@ struct _ThreadData {
            save_as,
            open,
            orf,
+           match,
            bakfile,
            use_paramset;
   gchar *current_state,

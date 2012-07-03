@@ -395,12 +395,8 @@ static gboolean open_project_data_finished(gpointer data)
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
 
-  g_source_remove(GPOINTER_TO_INT(
-                               g_object_get_data(G_OBJECT(threaddata->window),
-                                                 "source_id")));
-  gtk_widget_destroy(threaddata->window);
-  reset_progressbar(threaddata->progressbar);
-
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                            "Building candidate list");
   if (!threaddata->had_err) {
     gtk_widget_destroy(ltrfams);
     gtk_widget_destroy(threaddata->ltrgui->ltrfilt);
@@ -455,6 +451,12 @@ static gboolean open_project_data_finished(gpointer data)
     gdk_threads_leave();
   }
   gtk_ltr_families_set_modified(GTK_LTR_FAMILIES(ltrfams), FALSE);
+
+  reset_progressbar(threaddata->progressbar);
+  g_source_remove(GPOINTER_TO_INT(
+                               g_object_get_data(G_OBJECT(threaddata->window),
+                                                 "source_id")));
+  gtk_widget_destroy(threaddata->window);
   threaddata_delete(threaddata);
 
   return FALSE;
@@ -567,7 +569,6 @@ static gpointer save_project_data_start(gpointer data)
 
   gtk_widget_set_sensitive(threaddata->ltrgui->menubar_save, FALSE);
   if (!threaddata->had_err) {
-    GtArray *nodes = NULL;
     unsigned long i = 0;
     GtFile *outfp = NULL;  /* XXX: protect this via mutex */
     GtGenomeNode *gn;
@@ -577,15 +578,21 @@ static gpointer save_project_data_start(gpointer data)
       threaddata->had_err = -1;
 
     if (!threaddata->had_err) {
-      nodes =
+      threaddata->progress = 0;
+      threaddata->nodes =
       gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
 
-      array_stream = gt_array_in_stream_new(nodes, &i, threaddata->err);
+      array_stream = gt_array_in_stream_new(threaddata->nodes, &i,
+                                            threaddata->err);
       gt_assert(array_stream);
       gff3_out_stream = gt_gff3_out_stream_new(array_stream, outfp);
       gt_assert(gff3_out_stream);
+
       while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream, &gn,
-                                                       threaddata->err)) && gn);
+                                                       threaddata->err)) && gn)
+      {
+        threaddata->progress++;
+      }
     }
     gt_file_delete(outfp);
   }
@@ -638,7 +645,6 @@ static gpointer open_project_data_start(gpointer data)
     nodes = gt_array_new(sizeof (GtFeatureNode*));
     gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                               "Preprocessing candidates");
-    reset_progressbar(threaddata->progressbar);
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
     n_features = LTRFAMS_LV_N_COLUMS;
 
@@ -651,10 +657,7 @@ static gpointer open_project_data_start(gpointer data)
                                            threaddata->ltrgui->err);
     while (!(threaddata->had_err = gt_node_stream_next(array_stream,
                                                        &gn,
-                                                       threaddata->err))
-             && gn) {
-      gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
-    }
+                                                       threaddata->err)) && gn);
   }
   if (!threaddata->had_err) {
     threaddata->nodes = nodes;
@@ -671,6 +674,7 @@ static gpointer open_project_data_start(gpointer data)
   gt_node_stream_delete(array_stream);
   gt_node_stream_delete(in_stream);
   gt_node_stream_delete(preprocess_stream);
+
   g_idle_add(open_project_data_finished, data);
   return NULL;
 }
@@ -1004,6 +1008,7 @@ static void open_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   threaddata->err = gt_error_new();
   threaddata->open = TRUE;
   progress_dialog_init(threaddata, ltrgui->main_window);
+
   if (!g_thread_create(open_project_data_start, (gpointer) threaddata,
                        FALSE, NULL)) {
     gt_error_set(ltrgui->err,

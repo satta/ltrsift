@@ -172,7 +172,6 @@ static gboolean update_progress_dialog(gpointer data)
     gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
   } else
     gtk_progress_bar_pulse(GTK_PROGRESS_BAR(threaddata->progressbar));
-
   return TRUE;
 }
 
@@ -189,20 +188,20 @@ void progress_dialog_init(ThreadData *threaddata, GtkWidget *toplevel)
   gtk_window_set_position(GTK_WINDOW(threaddata->window),
                           GTK_WIN_POS_CENTER_ON_PARENT);
   gtk_window_set_modal(GTK_WINDOW(threaddata->window), FALSE);
-  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Progress");
-  gtk_window_resize(GTK_WINDOW(threaddata->window), 200, 50);
-  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 5);
+  gtk_window_set_title(GTK_WINDOW(threaddata->window), "Activity");
+  gtk_window_resize(GTK_WINDOW(threaddata->window), 250, 50);
+  gtk_container_set_border_width(GTK_CONTAINER(threaddata->window), 7);
   g_signal_connect(threaddata->window, "delete_event",
                    G_CALLBACK(gtk_true), NULL);
   vbox = gtk_vbox_new(FALSE, 5);
   /* create label */
-  label = gtk_label_new("Please wait...");
+  label = gtk_label_new("Please wait, LTRsift is working...");
   gtk_container_add(GTK_CONTAINER(vbox), label);
   /* add vbox to dialog */
   gtk_container_add(GTK_CONTAINER(threaddata->window), vbox);
   gtk_widget_show_all(threaddata->window);
   /* refresh the progress dialog */
-  sid = g_timeout_add(100, update_progress_dialog, (gpointer) threaddata);
+  sid = g_timeout_add(50, update_progress_dialog, (gpointer) threaddata);
   g_object_set_data(G_OBJECT(threaddata->window),
                     "source_id", GINT_TO_POINTER(sid));
   gtk_widget_show(threaddata->progressbar);
@@ -252,6 +251,8 @@ ThreadData* threaddata_new()
   threaddata->projectw = FALSE;
   threaddata->save = FALSE;
   threaddata->save_as = FALSE;
+  threaddata->orf = FALSE;
+  threaddata->match = FALSE;
   threaddata->open = FALSE;
   threaddata->bakfile = FALSE;
   threaddata->current_state = NULL;

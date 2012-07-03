@@ -1096,6 +1096,9 @@ static gpointer refseq_match_cands_start(gpointer data)
                                        GTK_BLASTN_PARAMS_REFSEQ(blastn_params));
   gtk_widget_destroy(threaddata->dialog);
 
+  gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
+                              "Matching candidates...");
+
   indexname =
      gtk_project_settings_get_indexname(GTK_PROJECT_SETTINGS(
                                                  threaddata->ltrfams->projset));
@@ -1130,7 +1133,6 @@ static gpointer refseq_match_cands_start(gpointer data)
     g_snprintf(seq_out_file, BUFSIZ, SEQFILE_FOR_REFSEQ,
                g_get_home_dir());
   if (!threaddata->had_err) {
-    gdk_threads_enter();
     array_in_stream = gt_array_in_stream_new(threaddata->nodes,
                                              NULL, threaddata->err);
     refseq_match_stream = gt_ltr_refseq_match_stream_new(array_in_stream,
@@ -1148,7 +1150,6 @@ static gpointer refseq_match_cands_start(gpointer data)
                                                          threaddata->err);
     threaddata->had_err = gt_node_stream_pull(refseq_match_stream,
                                               threaddata->err);
-    gdk_threads_leave();
   }
   gt_node_stream_delete(refseq_match_stream);
   gt_node_stream_delete(array_in_stream);
@@ -1527,6 +1528,8 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
   threaddata->dialog = dialog;
   threaddata->blastn_refseq = blastn_params;
   threaddata->nodes = nodes;
+  threaddata->match = TRUE;
+  threaddata->progress = 0;
   threaddata->err = gt_error_new();
 
   if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkb))) {
@@ -1581,7 +1584,6 @@ static gpointer orffind_start(gpointer data)
   GtEncseqLoader *el = gt_encseq_loader_new();
   const gchar *indexname = NULL;
 
-  reset_progressbar(threaddata->progressbar);
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Detecting ORFs");
 
@@ -1595,7 +1597,6 @@ static gpointer orffind_start(gpointer data)
 
   if (!threaddata->had_err) {
     GtGenomeNode *gn;
-    gdk_threads_enter();
     gt_assert(encseq);
 
     array_in_stream = gt_array_in_stream_new(threaddata->nodes,
@@ -1611,9 +1612,8 @@ static gpointer orffind_start(gpointer data)
     while (!(threaddata->had_err = gt_node_stream_next(orf_stream, &gn,
                                                        threaddata->err)) && gn)
     {
-
+      threaddata->progress++;
     }
-    gdk_threads_leave();
   }
   gt_node_stream_delete(orf_stream);
   gt_node_stream_delete(array_in_stream);
@@ -1626,26 +1626,9 @@ static gpointer orffind_start(gpointer data)
 void gtk_ltr_families_orffind(GtArray *nodes, GtkLTRFamilies *ltrfams)
 {
   ThreadData *threaddata;
-  GtkWidget *dialog,
-            *toplevel;
+  GtkWidget *toplevel;
 
   toplevel = gtk_widget_get_toplevel(GTK_WIDGET(ltrfams));
-
-  if (!ltrfams->projectfile) {
-    dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                     GTK_DIALOG_MODAL ||
-                                     GTK_DIALOG_DESTROY_WITH_PARENT,
-                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
-                                     "%s",
-                                     NO_PROJECTFILE_FOR_PARAMS_DIALOG);
-    gtk_window_set_title(GTK_WINDOW(dialog), "Information!");
-    gtk_window_set_position(GTK_WINDOW(dialog), GTK_WIN_POS_CENTER_ALWAYS);
-    if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_YES) {
-      gtk_widget_destroy(dialog);
-      return;
-    }
-    gtk_widget_destroy(dialog);
-  }
 
   /* create thread for matching */
   threaddata = threaddata_new();
