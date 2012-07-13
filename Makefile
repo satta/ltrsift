@@ -58,8 +58,10 @@ prefix ?= /usr/local
 .PHONY: all clean cleanup dirs install
 
 all: dirs bin/ltrsift bin/ltrsift_encode $(STATICBIN)
-	@cp bin/ltrsift_encode sample_data
-
+	@(test -f bin/ltrsift_encode_static && \
+	   cp bin/ltrsift_encode_static sample_data) \
+	 || (test -f bin/ltrsift_encode && \
+	   cp bin/ltrsift_encode sample_data)
 dirs: bin obj obj/src
 
 obj/%.o: %.c
@@ -130,4 +132,5 @@ install: all
 	cp -r filters/* $(prefix)/filters
 	test -d $(prefix)/sample_data  || mkdir -p $(prefix)/sample_data
 	cp -r sample_data/* $(prefix)/sample_data
-	cp -r bin/ltrsift_encode $(prefix)/sample_data
+	test -d $(prefix)/style  || mkdir -p $(prefix)/style
+	cp -r style/* $(prefix)/style

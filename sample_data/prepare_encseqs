@@ -1,4 +1,14 @@
 #!/bin/sh
 
 rm -f dmel58.???
-./ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58 || ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58
+(command -v ./ltrsift_encode_static >/dev/null 2>&1 && \
+       ./ltrsift_encode_static dmel-2L-chromosome-r5.8.fasta.gz dmel58) \
+    ||
+(command -v ltrsift_encode_static >/dev/null 2>&1 && \
+       ltrsift_encode_static dmel-2L-chromosome-r5.8.fasta.gz dmel58) \
+    ||
+(command -v ./ltrsift_encode >/dev/null 2>&1 && \
+       ./ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58) \
+    ||
+(command -v ltrsift_encode >/dev/null 2>&1 && \
+       ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58)

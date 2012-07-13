@@ -1,3 +1,4 @@
 #!/bin/bash
-bin/ltrsift_static || ltrsift_static || bin/ltrsift || ltrsift
-
+(command -v bin/ltrsift_static >/dev/null 2>&1 && bin/ltrsift_static) \
+    ||
+(command -v bin/ltrsift >/dev/null 2>&1 && bin/ltrsift)
