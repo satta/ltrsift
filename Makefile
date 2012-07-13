@@ -1,3 +1,9 @@
+#
+# Copyright (c) 2012 Sascha Steinbiss <steinbiss@zbh.uni-hamburg.de>
+# Copyright (c) 2012 Sascha Kastens <mail@skastens.de>
+# Copyright (c) 2012 Center for Bioinformatics, University of Hamburg
+#
+
 CC = gcc
 CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
@@ -13,10 +19,12 @@ ifeq ($(64bit),yes)
   ifneq ($(MACHINE),x86_64)
     m64=yes
   endif
+  BIT:=64bit
 else
   ifeq ($(MACHINE),x86_64)
     m32=yes
   endif
+  BIT:=32bit
 endif
 
 ifneq ($(opt),no)
@@ -65,12 +73,48 @@ bin obj obj/src:
 	@echo '[create $(@)]'
 	@test -d $(@) || mkdir -p $(@)
 
-install: all
-	test -d $(prefix)/bin || mkdir -p $(prefix)/bin
-	cp bin/ltrsift $(prefix)/bin
-
 clean:
 	rm -rf obj
 
 cleanup: clean
 	rm -rf bin
+
+.PHONY: dist srcdist install
+
+SYSTEM:=$(shell uname -s)
+MACHINE:=$(shell uname -m)
+VERSION:="`cat $(CURDIR)/VERSION`"
+SYSTEMNAME:="$(SYSTEM)_$(MACHINE)"
+GTDISTBASENAME:="ltrsift-$(VERSION)-$(SYSTEMNAME)-${BIT}"
+DISTDIR:="$(CURDIR)/dist/$(SYSTEMNAME)"
+SCRIPTSDIR:="$(CURDIR)/scripts"
+GTDISTDIR:="$(DISTDIR)/$(GTDISTBASENAME)"
+
+dist: all
+	@echo "[build distribution]"
+	@rm -rf $(GTDISTDIR)
+	@rm -rf $(DISTDIR)/$(GTDISTBASENAME).tar.gz
+	@mkdir -p $(GTDISTDIR)/bin
+	@cp $(CURDIR)/LICENSE $(GTDISTDIR)
+	@cp $(CURDIR)/CHANGELOG $(GTDISTDIR)
+	@cp $(CURDIR)/VERSION $(GTDISTDIR)
+	@cp $(CURDIR)/bin/ltrsift $(GTDISTDIR)/bin
+	@strip $(GTDISTDIR)/bin/ltrsift
+	@(test -f bin/ltrsift_static && cp bin/ltrsift_static $(GTDISTDIR)/bin && strip $(GTDISTDIR)/bin/ltrsift_static) || true
+	@$(MAKE) prefix=$(GTDISTDIR) install
+	@cd $(DISTDIR) && $(SCRIPTSDIR)/tar_root.sh $(GTDISTBASENAME)
+	@cd $(DISTDIR) && gzip -f -9 $(GTDISTBASENAME).tar
+	@echo "$(DISTDIR)/$(GTDISTBASENAME).tar.gz"
+
+srcdist:
+	git archive --format=tar --prefix=ltrsift-`cat VERSION`/ HEAD | \
+        gzip -9 > ltrsift-`cat VERSION`-src.tar.gz
+
+install: all
+	test -d $(prefix)/bin || mkdir -p $(prefix)/bin
+	cp bin/ltrsift $(prefix)/bin
+	test -d $(prefix)/filters  || mkdir -p $(prefix)/filters
+	cp -r filters/* $(prefix)/filters
+	test -d $(prefix)/sample_data  || mkdir -p $(prefix)/sample_data
+	cp -r sample_data/* $(prefix)/sample_data
+
