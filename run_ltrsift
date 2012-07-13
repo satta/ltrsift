@@ -1,2 +1,3 @@
 #!/bin/bash
-bin/ltrsift_static
+bin/ltrsift_static || ltrsift_static || bin/ltrsift || ltrsift
+

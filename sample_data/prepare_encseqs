@@ -1,4 +1,4 @@
 #!/bin/sh
 
 rm -f dmel58.???
-genometools/gt encseq encode -indexname dmel58 dmel-2L-chromosome-r5.8.fasta.gz
+./ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58 || ltrsift_encode dmel-2L-chromosome-r5.8.fasta.gz dmel58

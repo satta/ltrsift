@@ -5,13 +5,13 @@
 #
 
 CC = gcc
-CFLAGS = -O3 -g -Wall -Wunused-parameter -Werror
+CFLAGS += -g -Wall -Wunused-parameter
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
 GT_FLAGS_STATIC := $(GT_FLAGS)
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
 GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0`
 SOURCES := $(wildcard src/*.c)
-OBJECTS := $(SOURCES:%.c=obj/%.o)
+OBJECTS := $(filter-out obj/src/ltrsift.o obj/src/ltrsift_encode.o, $(SOURCES:%.c=obj/%.o))
 
 # system specific stuff (concerning 64bit compilation)
 MACHINE:=$(shell uname -m)
@@ -32,7 +32,7 @@ ifneq ($(opt),no)
 endif
 
 ifeq ($(static),yes)
-  STATICBIN := bin/ltrsift_static
+  STATICBIN := bin/ltrsift_static bin/ltrsift_encode_static
 endif
 
 ifeq ($(m32),yes)
@@ -41,6 +41,10 @@ endif
 
 ifeq ($(m64),yes)
   CFLAGS += -m64
+endif
+
+ifneq ($(errorcheck),no)
+  CFLAGS += -Werror
 endif
 
 # set prefix for location of genometools
@@ -53,7 +57,8 @@ prefix ?= /usr/local
 
 .PHONY: all clean cleanup dirs install
 
-all: dirs bin/ltrsift $(STATICBIN)
+all: dirs bin/ltrsift bin/ltrsift_encode $(STATICBIN)
+	@cp bin/ltrsift_encode sample_data
 
 dirs: bin obj obj/src
 
@@ -61,13 +66,21 @@ obj/%.o: %.c
 	@echo "[compile $@]"
 	@$(CC) -c $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
 
-bin/ltrsift: $(OBJECTS)
+bin/ltrsift: $(OBJECTS) obj/src/ltrsift.o
 	@echo "[linking $@]"
-	@$(CC) $(OBJECTS) -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
+	@$(CC) $(OBJECTS) obj/src/ltrsift.o -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
 
-bin/ltrsift_static: $(OBJECTS) $(gt_prefix)/lib/libgenometools.a
+bin/ltrsift_encode: obj/src/ltrsift_encode.o
 	@echo "[linking $@]"
-	@$(CC) $(OBJECTS) $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS) $(GTK_FLAGS) $(GT_FLAGS_STATIC)
+	@$(CC) obj/src/ltrsift_encode.o -o $@ $(CFLAGS) $(GT_FLAGS)
+
+bin/ltrsift_static: obj/src/ltrsift.o $(OBJECTS) $(gt_prefix)/lib/libgenometools.a
+	@echo "[linking $@]"
+	@$(CC) $(OBJECTS) obj/src/ltrsift.o $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS)  $(GT_FLAGS_STATIC) $(GTK_FLAGS) -lbz2
+
+bin/ltrsift_encode_static: obj/src/ltrsift_encode.o $(gt_prefix)/lib/libgenometools.a
+	@echo "[linking $@]"
+	@$(CC) obj/src/ltrsift_encode.o $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS) $(GT_FLAGS_STATIC) -lbz2 -lz -lcairo -lm
 
 bin obj obj/src:
 	@echo '[create $(@)]'
@@ -77,7 +90,7 @@ clean:
 	rm -rf obj
 
 cleanup: clean
-	rm -rf bin
+	rm -rf bin sample_data/ltrsift_encode
 
 .PHONY: dist srcdist install
 
@@ -112,9 +125,9 @@ srcdist:
 
 install: all
 	test -d $(prefix)/bin || mkdir -p $(prefix)/bin
-	cp bin/ltrsift $(prefix)/bin
+	cp bin/* $(prefix)/bin
 	test -d $(prefix)/filters  || mkdir -p $(prefix)/filters
 	cp -r filters/* $(prefix)/filters
 	test -d $(prefix)/sample_data  || mkdir -p $(prefix)/sample_data
 	cp -r sample_data/* $(prefix)/sample_data
-
+	cp -r bin/ltrsift_encode $(prefix)/sample_data

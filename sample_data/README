@@ -1,5 +1,5 @@
 This directory contains sample data from the Drosophila melanogaster
-chromosome 2L, allowingto try out LTRsift on a small data set. 
+chromosome 2L, allowing to try out LTRsift on a small data set. 
 
 To use this sample data, an encoded sequence version of the genome sequence is
 required. Please run the following to create this encoded sequence using
