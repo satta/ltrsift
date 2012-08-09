@@ -240,7 +240,33 @@ static int fill_feature_list(void *key, GT_UNUSED void *value,
   return 0;
 }
 
+gboolean select_defaults(GtkTreeModel *model,
+                         GT_UNUSED GtkTreePath  *path,
+                         GT_UNUSED GtkTreeIter  *iter,
+                         gpointer      user_data)
+{
+  char *feature;
+  GtkLTRAssistant *ltrassi = (GtkLTRAssistant*) user_data;
+  GT_UNUSED GtkTreeSelection *selection =
+      gtk_tree_view_get_selection(GTK_TREE_VIEW(
+                                   ltrassi->list_view_features));
+  gtk_tree_model_get (model, iter, 0, &feature, -1);
+
+  if ((g_strcmp0(feature, "rLTR") == 0) ||
+      (g_strcmp0(feature, "lLTR") == 0) ||
+      (g_strcmp0(feature, "RR_tract") == 0) ||
+      (g_strcmp0(feature, "primer_binding_site") == 0) ||
+      (g_strcmp0(feature, "RVT_1") == 0) ||
+      (g_strcmp0(feature, "RVT_2") == 0)) {
+    gtk_tree_selection_select_iter(selection, iter);
+  }
+
+  g_free(feature);
+  return FALSE;
+}
+
 static void get_feature_list(GtkLTRAssistant *ltrassi)
+
 {
   GtkTreeView *list_view;
   GtkTreeIter iter;
@@ -288,11 +314,9 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
                                                    err);
   had_err = gt_node_stream_pull(preprocess_stream, err);
 
+  model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrassi->list_view_features));
   if (!had_err) {
-    gtk_list_store_clear(GTK_LIST_STORE(
-                           gtk_tree_view_get_model(
-                                          GTK_TREE_VIEW(
-                                                ltrassi->list_view_features))));
+    gtk_list_store_clear(GTK_LIST_STORE(model));
     gt_hashmap_foreach(features, fill_feature_list,
                        (void*) ltrassi->list_view_features, err);
   }
@@ -976,7 +1000,6 @@ static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
 {
   gint next_page;
   gboolean active;
-
   switch (current_page) {
     /* case PAGE_INTRODUCTION:
       next_page = PAGE_GENERAL;
@@ -989,8 +1012,12 @@ static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
     case PAGE_CLUSTERING:
       active = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                               ltrassi->checkb_classification));
-      if (active)
+      if (active) {
+        GtkTreeModel *model;
+        model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrassi->list_view_features));
         get_feature_list(ltrassi);
+        gtk_tree_model_foreach(GTK_TREE_MODEL(model), select_defaults, ltrassi);
+      }
       next_page = (active ? PAGE_CLASSIFICATION : PAGE_SUMMARY);
       break;
     case PAGE_CLASSIFICATION:
