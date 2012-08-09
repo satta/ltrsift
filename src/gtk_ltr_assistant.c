@@ -1500,6 +1500,10 @@ static void gtk_ltr_assistant_init(GtkLTRAssistant *ltrassi)
   gtk_container_add(GTK_CONTAINER(sw), ltrassi->list_view_features);
   gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget), sw,
                      TRUE, TRUE, 1);
+  label = gtk_label_new("Please hold <Ctrl> or <Command> while clicking to select "
+                        "multiple features.");
+  gtk_box_pack_start(GTK_BOX(page_info[PAGE_CLASSIFICATION].widget),
+                     label, FALSE, FALSE, 1);
 
   /* Summary page */
   ltrassi->notebook = page_info[PAGE_SUMMARY].widget = gtk_notebook_new();
