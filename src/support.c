@@ -590,9 +590,21 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
 
   if (!had_err) {
     for (i = 0; !had_err && i < gt_array_size(nodes); i++) {
+      const char *id;
+      bool found = false;
       gn = *(GtGenomeNode**) gt_array_get(nodes, i);
       fni = gt_feature_node_iterator_new((GtFeatureNode*) gn);
       curnode = gt_feature_node_iterator_next(fni);
+      while (!found) {
+        curnode = gt_feature_node_iterator_next(fni);
+        if (strcmp(gt_feature_node_get_type(curnode), FNT_LTRRETRO) == 0)
+          found = true;
+      }
+      if (!found) {
+        gt_feature_node_iterator_delete(fni);
+        continue;
+      }
+      gt_assert(strcmp(gt_feature_node_get_type(curnode), FNT_LTRRETRO) == 0);
       seqid = gt_genome_node_get_seqid((GtGenomeNode*) curnode);
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
       if (flcands) {
@@ -602,13 +614,14 @@ void export_sequences(GtArray *nodes, gchar *filen, const gchar *indexname,
           continue;
         }
       }
+      id = gt_feature_node_get_attribute(curnode, "ID");
       attr = gt_feature_node_get_attribute(curnode, ATTR_LTRFAM);
       if (attr)
-        g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu", attr, gt_str_get(seqid),
-                   range.start, range.end);
+        g_snprintf(header, BUFSIZ, "%s_%s_%lu_%lu%c%s", attr, gt_str_get(seqid),
+                   range.start, range.end, id ? '_' : ' ', id ? id : "");
       else
-        g_snprintf(header, BUFSIZ, "%s_%lu_%lu", gt_str_get(seqid),
-                   range.start, range.end);
+        g_snprintf(header, BUFSIZ, "%s_%lu_%lu%c%s", gt_str_get(seqid),
+                   range.start, range.end, id ? '_' : ' ', id ? id : "");
       sscanf(gt_str_get(seqid), "seq%lu", &seqnum);
       buffer = gt_calloc((size_t) gt_range_length(&range) + 1, sizeof (char));
       startpos = gt_encseq_seqstartpos(encseq, seqnum);
