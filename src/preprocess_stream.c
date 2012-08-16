@@ -69,10 +69,9 @@ const GtNodeStreamClass* ltrgui_preprocess_stream_class(void)
 }
 
 GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
-                                       GtHashmap *features,
-                                       unsigned long *num,
-                                       bool all_features,
-                                       GtError *err)
+                                           GtHashmap *features,
+                                           unsigned long *num,
+                                           bool all_features, GtError *err)
 {
   GtNodeStream *gs;
   LTRGuiPreprocessStream *ps;
@@ -80,8 +79,14 @@ GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
   ps = ltrgui_preprocess_stream_cast(gs);
   ps->in_stream = gt_node_stream_ref(in_stream);
   ps->pv = (LTRGuiPreprocessVisitor*) ltrgui_preprocess_visitor_new(features,
-                                                                    num,
+                                                                   num,
                                                                    all_features,
-                                                                    err);
+                                                                   err);
   return gs;
+}
+
+GtArray* ltrgui_preprocess_stream_get_region_nodes(LTRGuiPreprocessStream *ps)
+{
+  gt_assert(ps && ps->pv);
+  return ltrgui_preprocess_visitor_get_region_nodes(ps->pv);
 }

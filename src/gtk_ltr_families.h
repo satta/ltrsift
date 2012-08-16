@@ -112,6 +112,7 @@ struct _GtkLTRFamilies
   GtDiagram *diagram;
   GtStyle *style;
   GtArray *nodes;
+  GtArray *regions;
   GtHashmap *features,
             *colors;
   GtError *err;
@@ -148,6 +149,7 @@ void            gtk_ltr_families_set_fi(GtFeatureIndex *fi,
 
 void            gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                                 GtArray *nodes,
+                                                GtArray *regions,
                                                 GtHashmap *features,
                                                 unsigned long noc);
 
@@ -158,6 +160,8 @@ void            gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
 GtkNotebook*    gtk_ltr_families_get_notebook(GtkLTRFamilies *ltrfams);
 
 GtArray*        gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams);
+
+GtArray*        gtk_ltr_families_get_regions(GtkLTRFamilies *ltrfams);
 
 gboolean        gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams);
 

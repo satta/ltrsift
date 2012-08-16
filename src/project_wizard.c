@@ -26,6 +26,7 @@ static gboolean project_wizard_finished_job(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
+  (GTK_LTR_FAMILIES(ltrfams))->regions = threaddata->nodes;
   g_source_remove(GPOINTER_TO_INT(
                                g_object_get_data(G_OBJECT(threaddata->window),
                                                  "source_id")));
@@ -42,7 +43,7 @@ static gboolean project_wizard_finished_job(gpointer data)
     }
     extract_project_settings(threaddata->ltrgui);
     first_save_and_reload(threaddata->ltrgui, threaddata->nodes,
-                          threaddata->fullname);
+                          threaddata->regions, threaddata->fullname);
     create_recently_used_resource(threaddata->fullname);
   } else {
     gdk_threads_enter();
@@ -201,6 +202,8 @@ static gpointer project_wizard_start_job(gpointer data)
     threaddata->had_err = gt_node_stream_pull(last_stream, threaddata->err);
 
   if (!threaddata->had_err) {
+    threaddata->regions =
+                      gtk_ltr_assistant_get_regions(GTK_LTR_ASSISTANT(ltrassi));
     threaddata->nodes = nodes;
   }
   gt_node_stream_delete(ltr_classify_stream);

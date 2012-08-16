@@ -21,7 +21,7 @@
 
 #include "ltrsift.h"
 
-void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
+void first_save_and_reload(GUIData *ltrgui, GtArray *nodes, GtArray *regions,
                            const gchar *projectfile);
 
 void menubar_save_activate(GtkMenuItem *menuitem, GUIData *ltrgui);

@@ -119,6 +119,7 @@ struct _GtkLTRAssistant
   gchar *last_dir;
   gboolean added_features;
   GHashTable *hasht_lastparams;
+  GtArray *regions;
 };
 
 struct _GtkLTRAssistantClass
@@ -176,6 +177,8 @@ const gchar* gtk_ltr_assistant_get_fam_prefix(GtkLTRAssistant *ltrassi);
 GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi);
 
 gchar*       gtk_ltr_assistant_get_match_params(GtkLTRAssistant *ltrassi);
+
+GtArray*     gtk_ltr_assistant_get_regions(GtkLTRAssistant *ltrassi);
 
 GtkWidget*   gtk_ltr_assistant_new();
 

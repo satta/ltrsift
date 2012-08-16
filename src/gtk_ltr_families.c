@@ -54,6 +54,11 @@ GtArray* gtk_ltr_families_get_nodes(GtkLTRFamilies *ltrfams)
   return ltrfams->nodes;
 }
 
+GtArray* gtk_ltr_families_get_regions(GtkLTRFamilies *ltrfams)
+{
+  return ltrfams->regions;
+}
+
 gboolean gtk_ltr_families_get_modified(GtkLTRFamilies *ltrfams)
 {
   return ltrfams->modified;
@@ -2139,7 +2144,8 @@ static void list_view_families_menu_export_annotation(GtkLTRFamilies *ltrfams,
   GtkTreeIter iter;
   GtkTreeSelection *sel;
   GtArray *nodes,
-          *tmpnodes;
+          *tmpnodes,
+          *regions;
   GList *rows,
         *tmp;
   gboolean flcands;
@@ -2151,6 +2157,7 @@ static void list_view_families_menu_export_annotation(GtkLTRFamilies *ltrfams,
   tree_view = GTK_TREE_VIEW(ltrfams->list_view_families);
   model = gtk_tree_view_get_model(tree_view);
   sel = gtk_tree_view_get_selection(tree_view);
+  regions = gtk_ltr_families_get_regions(ltrfams);
 
   filechooser =
      gtk_file_chooser_dialog_new(multi ? CHOOSE_PREFIX_ANNO : CHOOSE_FILEN_ANNO,
@@ -2193,7 +2200,7 @@ static void list_view_families_menu_export_annotation(GtkLTRFamilies *ltrfams,
     }
     g_list_foreach(rows, (GFunc) gtk_tree_path_free, NULL);
     gt_genome_nodes_sort_stable(nodes);
-    export_annotation(nodes, filename, flcands,
+    export_annotation(nodes, regions, filename, flcands,
                       gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
     gt_array_delete(nodes);
     g_free(filename);
@@ -2211,7 +2218,7 @@ static void list_view_families_menu_export_annotation(GtkLTRFamilies *ltrfams,
                          -1);
       gt_genome_nodes_sort_stable(nodes);
       filen = g_strdup_printf("%s_%s", filename, famname);
-      export_annotation(nodes, filename, flcands,
+      export_annotation(nodes, regions, filename, flcands,
                         gtk_widget_get_toplevel(GTK_WIDGET(ltrfams)));
       g_free(famname);
       g_free(filen);
@@ -4412,6 +4419,7 @@ void gtk_ltr_families_determine_fl_cands(GtkLTRFamilies *ltrfams,
 
 void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
                                      GtArray *nodes,
+                                     GtArray *regions,
                                      GtHashmap *features,
                                      unsigned long noc)
 {
@@ -4419,6 +4427,7 @@ void gtk_ltr_families_fill_with_data(GtkLTRFamilies *ltrfams,
   gint had_err = 0;
 
   ltrfams->nodes = nodes;
+  ltrfams->regions = regions;
   ltrfams->features = features;
   ltrfams->colors = gt_hashmap_new(GT_HASH_STRING,
                                    free_str_hash, free_str_hash);

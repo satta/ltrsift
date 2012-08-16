@@ -35,7 +35,8 @@ struct _ThreadData {
   GList *references;
   GtArray *nodes,
           *old_nodes,
-          *new_nodes;
+          *new_nodes,
+          *regions;
   GtError *err;
   GtHashmap *sel_features,
             *features;
@@ -96,7 +97,7 @@ void          extract_project_settings(GUIData *ltrgui);
 
 GtArray*      create_region_nodes_from_node_array(GtArray *nodes);
 
-void          export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
+void          export_annotation(GtArray *nodes, GtArray *regions, gchar *filen, gboolean flcands,
                                 GtkWidget *toplevel);
 
 void          export_sequences(GtArray *nodes, gchar *filen,
@@ -111,6 +112,6 @@ unsigned long determine_full_length_candidates(GtArray *nodes,
                                                gfloat ltrtolerance,
                                                gfloat lentolerance);
 
-gchar*         double_underscores(const gchar *str);
+gchar*        double_underscores(const gchar *str);
 
 #endif

@@ -22,9 +22,18 @@
 struct LTRGuiPreprocessVisitor {
   const GtNodeVisitor parent_instance;
   GtHashmap *features;
+  GtArray *regions;
   unsigned long *num;
   bool all_features;
 };
+
+void ltrgui_preprocess_visitor_free(GtNodeVisitor *nv)
+{
+  LTRGuiPreprocessVisitor *pv;
+  pv = ltrgui_preprocess_visitor_cast(nv);
+  gt_assert(pv);
+  gt_array_delete(pv->regions);
+}
 
 static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
                                                   GtFeatureNode *fn,
@@ -38,12 +47,11 @@ static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   int had_err = 0;
   bool first_ltr = true,
        in_ltrretro = false;
-
   pv = ltrgui_preprocess_visitor_cast(gv);
   gt_assert(pv);
   gt_error_check(err);
-  fni = gt_feature_node_iterator_new(fn);
 
+  fni = gt_feature_node_iterator_new(fn);
   while (!had_err && (curnode = gt_feature_node_iterator_next(fni))) {
     fnt = gt_feature_node_get_type(curnode);
     if (strcmp(fnt, FNT_LTRRETRO) == 0) {
@@ -90,15 +98,31 @@ static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
   return had_err;
 }
 
+static int ltrgui_preprocess_visitor_region_node(GtNodeVisitor *gv,
+                                                 GtRegionNode *rn,
+                                                 GtError *err)
+{
+  LTRGuiPreprocessVisitor *pv;
+  int had_err = 0;
+  GtGenomeNode *gn;
+  pv = ltrgui_preprocess_visitor_cast(gv);
+  gt_assert(pv);
+  gt_error_check(err);
+
+  gn = gt_genome_node_ref((GtGenomeNode*) rn);
+  gt_array_add(pv->regions, gn);
+  return had_err;
+}
+
 const GtNodeVisitorClass* ltrgui_preprocess_visitor_class(void)
 {
   static const GtNodeVisitorClass *gvc = NULL;
   if (!gvc) {
     gvc = gt_node_visitor_class_new(sizeof (LTRGuiPreprocessVisitor),
-                                    NULL,
+                                    ltrgui_preprocess_visitor_free,
                                     NULL,
                                     ltrgui_preprocess_visitor_feature_node,
-                                    NULL,
+                                    ltrgui_preprocess_visitor_region_node,
                                     NULL,
                                     NULL);
   }
@@ -116,7 +140,14 @@ GtNodeVisitor* ltrgui_preprocess_visitor_new(GtHashmap *features,
   pv = ltrgui_preprocess_visitor_cast(nv);
   gt_assert(pv);
   pv->features = features;
+  pv->regions = gt_array_new(sizeof (GtRegionNode*));
   pv->num = num;
   pv->all_features = all_features;
   return nv;
+}
+
+GtArray* ltrgui_preprocess_visitor_get_region_nodes(LTRGuiPreprocessVisitor *v)
+{
+  gt_assert(v);
+  return gt_array_ref(v->regions);
 }

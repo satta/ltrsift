@@ -426,12 +426,11 @@ GtArray* create_region_nodes_from_node_array(GtArray *nodes)
   return region_nodes;
 }
 
-void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
-                       GtkWidget *toplevel)
+void export_annotation(GtArray *nodes, GT_UNUSED GtArray *regions, gchar *filen,
+                       gboolean flcands, GtkWidget *toplevel)
 {
   GtkWidget *dialog;
-  GtArray *region_nodes,
-          *export_nodes;
+  GtArray *export_nodes;
   GtGenomeNode *gn;
   GtFeatureNode *curnode;
   GtFeatureNodeIterator *fni;
@@ -488,15 +487,13 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
         gt_array_add(tmp, gn);
       gt_feature_node_iterator_delete(fni);
     }
-    region_nodes = create_region_nodes_from_node_array(tmp);
     export_nodes = gt_array_new(sizeof (GtGenomeNode*));
-    gt_array_add_array(export_nodes, region_nodes);
+    gt_array_add_array(export_nodes, regions);
     gt_array_add_array(export_nodes, tmp);
     gt_array_delete(tmp);
   } else {
-    region_nodes = create_region_nodes_from_node_array(nodes);
     export_nodes = gt_array_new(sizeof (GtGenomeNode*));
-    gt_array_add_array(export_nodes, region_nodes);
+    gt_array_add_array(export_nodes, regions);
     gt_array_add_array(export_nodes, nodes);
   }
 
@@ -519,9 +516,6 @@ void export_annotation(GtArray *nodes, gchar *filen, gboolean flcands,
   gt_node_stream_delete(array_in_stream);
   gt_node_stream_delete(gff3_out_stream);
   gt_array_delete(export_nodes);
-  for (i = 0; i < gt_array_size(region_nodes); i++)
-    gt_genome_node_delete(*(GtGenomeNode**) gt_array_get(region_nodes, i));
-  gt_array_delete(region_nodes);
   gt_error_delete(err);
 }
 

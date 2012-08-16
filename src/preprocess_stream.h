@@ -33,4 +33,7 @@ GtNodeStream* ltrgui_preprocess_stream_new(GtNodeStream *in_stream,
                                            bool all_features,
                                            GtError *err);
 
+GtArray*      ltrgui_preprocess_stream_get_region_nodes(
+                                                    LTRGuiPreprocessStream *ps);
+
 #endif

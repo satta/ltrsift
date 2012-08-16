@@ -418,16 +418,16 @@ static gboolean open_project_data_finished(gpointer data)
                        0);
     gtk_ltr_families_fill_with_data(GTK_LTR_FAMILIES(ltrfams),
                                     threaddata->nodes,
+                                    threaddata->regions,
                                     threaddata->features,
                                     threaddata->n_features);
     gtk_ltr_families_set_projectfile(GTK_LTR_FAMILIES(ltrfams),
                                      threaddata->filename);
     threaddata->had_err = gtk_project_settings_set_data_from_sqlite(
-                                                           GTK_PROJECT_SETTINGS(
-                                                   threaddata->ltrgui->projset),
-                                                   threaddata->filename,
-                                                   threaddata->rdb,
-                                                   threaddata->ltrgui->err);
+                              GTK_PROJECT_SETTINGS(threaddata->ltrgui->projset),
+                              threaddata->filename,
+                              threaddata->rdb,
+                              threaddata->ltrgui->err);
   }
 
   if (!threaddata->had_err) {
@@ -493,8 +493,13 @@ static gboolean save_as_finished(gpointer data)
 static gpointer save_as_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
-  GtNodeStream *array_in_stream = NULL,
+  GtNodeStream *node_in_stream = NULL,
+               *node_sort_stream = NULL,
+               *regions_in_stream = NULL,
+               *regions_sort_stream = NULL,
+               *merge_stream = NULL,
                *gff3_out_stream = NULL;
+  GtArray *streams;
   GtFile *outfp;
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
@@ -508,6 +513,24 @@ static gpointer save_as_start(gpointer data)
     gtk_ltr_families_set_rdb(threaddata->rdb,
                              GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
 
+  regions_in_stream = gt_array_in_stream_new(threaddata->regions,
+                                             &threaddata->progress,
+                                             threaddata->ltrgui->err);
+  regions_sort_stream = gt_sort_stream_new(regions_in_stream);
+  gt_assert(regions_sort_stream);
+
+  node_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                          &threaddata->progress,
+                                          threaddata->ltrgui->err);
+  node_sort_stream = gt_sort_stream_new(node_in_stream);
+  gt_assert(node_in_stream);
+
+  streams = gt_array_new(sizeof (GtNodeStream*));
+  gt_array_add(streams, node_sort_stream);
+  gt_array_add(streams, regions_sort_stream);
+
+  merge_stream = gt_merge_stream_new(streams);
+
   outfp = gt_file_new(threaddata->gff3file, "w+", threaddata->err);
   if (!outfp) {
     threaddata->had_err = -1;
@@ -516,12 +539,8 @@ static gpointer save_as_start(gpointer data)
   if (!threaddata->had_err) {
     GtGenomeNode *gn;
     gt_assert(outfp);
-    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
-                                             &threaddata->progress,
-                                             threaddata->ltrgui->err);
-    gt_assert(array_in_stream);
 
-    gff3_out_stream = gt_gff3_out_stream_new(array_in_stream, outfp);
+    gff3_out_stream = gt_gff3_out_stream_new(merge_stream, outfp);
     gt_assert(gff3_out_stream);
 
     while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream,
@@ -531,7 +550,12 @@ static gpointer save_as_start(gpointer data)
 
   gt_file_delete(outfp);
   gt_node_stream_delete(gff3_out_stream);
-  gt_node_stream_delete(array_in_stream);
+  gt_node_stream_delete(merge_stream);
+  gt_node_stream_delete(node_in_stream);
+  gt_node_stream_delete(node_sort_stream);
+  gt_node_stream_delete(regions_in_stream);
+  gt_node_stream_delete(regions_sort_stream);
+  gt_array_delete(streams);
 
   if (!threaddata->had_err) {
     threaddata->had_err =
@@ -560,8 +584,13 @@ static gpointer save_project_data_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
   GT_UNUSED GtkWidget *ltrfams = threaddata->ltrgui->ltrfams;
-  GtNodeStream *array_stream = NULL,
+  GtNodeStream *node_in_stream = NULL,
+               *node_sort_stream = NULL,
+               *regions_in_stream = NULL,
+               *regions_sort_stream = NULL,
+               *merge_stream = NULL,
                *gff3_out_stream = NULL;
+  GtArray *streams;
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                             "Saving data");
@@ -569,32 +598,54 @@ static gpointer save_project_data_start(gpointer data)
 
   gtk_widget_set_sensitive(threaddata->ltrgui->menubar_save, FALSE);
   if (!threaddata->had_err) {
-    unsigned long i = 0;
     GtFile *outfp = NULL;  /* XXX: protect this via mutex */
-    GtGenomeNode *gn;
-
-    outfp = gt_file_new(threaddata->gff3file, "w+", threaddata->err);
-    if (!outfp)
-      threaddata->had_err = -1;
-
-    if (!threaddata->had_err) {
-      threaddata->progress = 0;
-      threaddata->nodes =
+    threaddata->progress = 0;
+     threaddata->nodes =
       gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
 
-      array_stream = gt_array_in_stream_new(threaddata->nodes, &i,
-                                            threaddata->err);
-      gt_assert(array_stream);
-      gff3_out_stream = gt_gff3_out_stream_new(array_stream, outfp);
+    regions_in_stream = gt_array_in_stream_new(threaddata->regions,
+                                               &threaddata->progress,
+                                               threaddata->ltrgui->err);
+    regions_sort_stream = gt_sort_stream_new(regions_in_stream);
+    gt_assert(regions_sort_stream);
+
+    node_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                            &threaddata->progress,
+                                            threaddata->ltrgui->err);
+    node_sort_stream = gt_sort_stream_new(node_in_stream);
+    gt_assert(node_in_stream);
+
+    streams = gt_array_new(sizeof (GtNodeStream*));
+    gt_array_add(streams, node_sort_stream);
+    gt_array_add(streams, regions_sort_stream);
+
+    merge_stream = gt_merge_stream_new(streams);
+
+    outfp = gt_file_new(threaddata->gff3file, "w+", threaddata->err);
+    if (!outfp) {
+      threaddata->had_err = -1;
+    }
+
+    if (!threaddata->had_err) {
+      GtGenomeNode *gn;
+      gt_assert(outfp);
+
+      gff3_out_stream = gt_gff3_out_stream_new(merge_stream, outfp);
       gt_assert(gff3_out_stream);
 
-      while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream, &gn,
-                                                       threaddata->err)) && gn)
-      {
-        threaddata->progress++;
-      }
+      while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream,
+                                                       &gn,
+                                                       threaddata->err)) && gn);
     }
+
     gt_file_delete(outfp);
+    gt_node_stream_delete(gff3_out_stream);
+    gt_node_stream_delete(merge_stream);
+    gt_node_stream_delete(node_in_stream);
+    gt_node_stream_delete(node_sort_stream);
+    gt_node_stream_delete(regions_in_stream);
+    gt_node_stream_delete(regions_sort_stream);
+    gt_array_delete(streams);
   }
 
   if (threaddata->had_err) {
@@ -603,8 +654,6 @@ static gpointer save_project_data_start(gpointer data)
     gdk_threads_leave();
   }
 
-  gt_node_stream_delete(array_stream);
-  gt_node_stream_delete(gff3_out_stream);
   g_idle_add(save_project_data_finished, data);
   return NULL;
 }
@@ -661,6 +710,9 @@ static gpointer open_project_data_start(gpointer data)
   }
   if (!threaddata->had_err) {
     threaddata->nodes = nodes;
+    threaddata->regions =
+                   ltrgui_preprocess_stream_get_region_nodes(
+                                   (LTRGuiPreprocessStream*) preprocess_stream);
     threaddata->features = features;
     threaddata->n_features = n_features;
   }
@@ -682,8 +734,13 @@ static gpointer open_project_data_start(gpointer data)
 static gpointer save_and_reload_data_start(gpointer data)
 {
   ThreadData *threaddata = (ThreadData*) data;
-  GtNodeStream *array_in_stream = NULL,
-               *gff3_out_stream = NULL;
+  GtNodeStream *node_in_stream = NULL,
+               *regions_in_stream = NULL,
+               *node_sort_stream = NULL,
+               *regions_sort_stream = NULL,
+               *gff3_out_stream = NULL,
+               *merge_stream = NULL;
+  GtArray *streams;
   GtFile *outfp;
 
   gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
@@ -696,6 +753,25 @@ static gpointer save_and_reload_data_start(gpointer data)
     gtk_ltr_families_set_rdb(threaddata->rdb,
                              GTK_LTR_FAMILIES(threaddata->ltrgui->ltrfams));
 
+  regions_in_stream = gt_array_in_stream_new(threaddata->regions,
+                                             &threaddata->progress,
+                                             threaddata->ltrgui->err);
+  regions_sort_stream = gt_sort_stream_new(regions_in_stream);
+
+  gt_assert(regions_sort_stream);
+
+  node_in_stream = gt_array_in_stream_new(threaddata->nodes,
+                                          &threaddata->progress,
+                                          threaddata->ltrgui->err);
+  node_sort_stream = gt_sort_stream_new(node_in_stream);
+  gt_assert(node_in_stream);
+
+  streams = gt_array_new(sizeof (GtNodeStream*));
+  gt_array_add(streams, node_sort_stream);
+  gt_array_add(streams, regions_sort_stream);
+
+  merge_stream = gt_merge_stream_new(streams);
+
   outfp = gt_file_new(threaddata->gff3file, "w+", threaddata->err);
   if (!outfp) {
     threaddata->had_err = -1;
@@ -704,12 +780,8 @@ static gpointer save_and_reload_data_start(gpointer data)
   if (!threaddata->had_err) {
     GtGenomeNode *gn;
     gt_assert(outfp);
-    array_in_stream = gt_array_in_stream_new(threaddata->nodes,
-                                             &threaddata->progress,
-                                             threaddata->ltrgui->err);
-    gt_assert(array_in_stream);
 
-    gff3_out_stream = gt_gff3_out_stream_new(array_in_stream, outfp);
+    gff3_out_stream = gt_gff3_out_stream_new(merge_stream, outfp);
     gt_assert(gff3_out_stream);
 
     while (!(threaddata->had_err = gt_node_stream_next(gff3_out_stream,
@@ -719,7 +791,12 @@ static gpointer save_and_reload_data_start(gpointer data)
 
   gt_file_delete(outfp);
   gt_node_stream_delete(gff3_out_stream);
-  gt_node_stream_delete(array_in_stream);
+  gt_node_stream_delete(merge_stream);
+  gt_node_stream_delete(node_in_stream);
+  gt_node_stream_delete(node_sort_stream);
+  gt_node_stream_delete(regions_in_stream);
+  gt_node_stream_delete(regions_sort_stream);
+  gt_array_delete(streams);
 
   if (!threaddata->had_err) {
     GtNodeStream *preprocess_stream = NULL,
@@ -754,6 +831,9 @@ static gpointer save_and_reload_data_start(gpointer data)
                                                        threaddata->err)) && gn);
     }
     if (!threaddata->had_err) {
+      threaddata->regions =
+                   ltrgui_preprocess_stream_get_region_nodes(
+                                   (LTRGuiPreprocessStream*) preprocess_stream);
       threaddata->features = features;
       threaddata->n_features = n_features;
     }
@@ -772,12 +852,14 @@ static gpointer save_and_reload_data_start(gpointer data)
   return NULL;
 }
 
-void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
+void first_save_and_reload(GUIData *ltrgui, GtArray *nodes, GtArray *regions,
                            const gchar *projectfile)
 {
   ThreadData *threaddata;
 
   threaddata = threaddata_new();
+  threaddata->regions =
+                gtk_ltr_families_get_regions(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   threaddata->filename = g_strdup(projectfile);
   threaddata->gff3file = g_strndup(projectfile,
                           strlen(projectfile) - strlen(SQLITE_PATTERN));
@@ -785,6 +867,7 @@ void first_save_and_reload(GUIData *ltrgui, GtArray *nodes,
   threaddata->ltrgui = ltrgui;
   threaddata->progressbar = ltrgui->progressbar;
   threaddata->progress = 0;
+  threaddata->regions = regions;
   threaddata->had_err = 0;
   threaddata->nodes = nodes;
   progress_dialog_init(threaddata, ltrgui->main_window);
@@ -840,6 +923,8 @@ static void save_as_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   gtk_widget_destroy(filechooser);
 
   threaddata = threaddata_new();
+  threaddata->regions =
+                gtk_ltr_families_get_regions(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   threaddata->tmp_filename = NULL;
   if (g_file_test(filename, G_FILE_TEST_EXISTS)) {
     gchar buffer[BUFSIZ];
@@ -894,6 +979,8 @@ void menubar_save_activate(GT_UNUSED GtkMenuItem *menuitem, GUIData *ltrgui)
   threaddata = threaddata_new();
   threaddata->filename = projectfile;
   threaddata->ltrgui = ltrgui;
+  threaddata->regions =
+                gtk_ltr_families_get_regions(GTK_LTR_FAMILIES(ltrgui->ltrfams));
   threaddata->progressbar = ltrgui->progressbar;
   threaddata->save = TRUE;
   threaddata->err = gt_error_new();
@@ -917,11 +1004,12 @@ static void export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
                                  GUIData *ltrgui)
 {
   GtkWidget *dialog;
-  GtArray *nodes;
+  GtArray *nodes, *regions;
   gchar *filename;
   const gchar *projectfile;
 
   nodes = gtk_ltr_families_get_nodes(GTK_LTR_FAMILIES(ltrgui->ltrfams));
+  regions = gtk_ltr_families_get_regions(GTK_LTR_FAMILIES(ltrgui->ltrfams));
 
   dialog = gtk_file_chooser_dialog_new(CHOOSE_FILEN_ANNO,
                                        GTK_WINDOW(ltrgui->main_window),
@@ -942,7 +1030,7 @@ static void export_gff3_activate(GT_UNUSED GtkMenuItem *menuitem,
   if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
     filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
     gtk_widget_destroy(dialog);
-    export_annotation(nodes, filename, FALSE, ltrgui->main_window);
+    export_annotation(nodes, regions, filename, FALSE, ltrgui->main_window);
     g_free(filename);
   } else
     gtk_widget_destroy(dialog);

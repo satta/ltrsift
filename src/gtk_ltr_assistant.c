@@ -171,6 +171,11 @@ GtkTreeView* gtk_ltr_assistant_get_list_view_features(GtkLTRAssistant *ltrassi)
   return GTK_TREE_VIEW(ltrassi->list_view_features);
 }
 
+GtArray* gtk_ltr_assistant_get_regions(GtkLTRAssistant *ltrassi)
+{
+  return ltrassi->regions;
+}
+
 static void show_hide_tab(GtkNotebook *notebook, int pagenumber, gboolean show)
 {
   GtkWidget *page;
@@ -320,7 +325,8 @@ static void get_feature_list(GtkLTRAssistant *ltrassi)
     gt_hashmap_foreach(features, fill_feature_list,
                        (void*) ltrassi->list_view_features, err);
   }
-
+  ltrassi->regions = ltrgui_preprocess_stream_get_region_nodes(
+                                   (LTRGuiPreprocessStream*) preprocess_stream);
   gt_error_delete(err);
   gt_hashmap_delete(features);
   gt_node_stream_delete(gff3_in_stream);

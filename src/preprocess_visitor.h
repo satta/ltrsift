@@ -44,6 +44,9 @@ GtNodeVisitor* ltrgui_preprocess_visitor_new(GtHashmap *features,
                                              bool all_features,
                                              GtError *err);
 
+GtArray*       ltrgui_preprocess_visitor_get_region_nodes(
+                                                    LTRGuiPreprocessVisitor *v);
+
 #define ltrgui_preprocess_visitor_cast(GV)\
         gt_node_visitor_cast(ltrgui_preprocess_visitor_class(), GV)
 
