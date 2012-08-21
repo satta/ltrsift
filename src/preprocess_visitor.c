@@ -67,6 +67,7 @@ static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
         if (!attr)
           continue;
         if (!gt_hashmap_get(pv->features, (void*) attr)) {
+          printf("added %s with num %lu\n", attr, num);
           gt_hashmap_add(pv->features, (void*) gt_cstr_dup(attr), (void*) num);
           *pv->num = *pv->num + 1;
         }
@@ -81,6 +82,7 @@ static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
         }
         if (!gt_hashmap_get(pv->features, (void*) tmp)) {
           gt_hashmap_add(pv->features, (void*) gt_cstr_dup(tmp), (void*) num);
+          printf("added %s with num %lu\n", tmp, num);
           *pv->num = *pv->num + 1;
           gt_free(tmp);
         } else
@@ -88,6 +90,7 @@ static int ltrgui_preprocess_visitor_feature_node(GtNodeVisitor *gv,
       } else {
         if (!gt_hashmap_get(pv->features, (void*) fnt)) {
           gt_hashmap_add(pv->features, (void*) gt_cstr_dup(fnt), (void*) num);
+          printf("added %s with num %lu\n", fnt, num);
           *pv->num = *pv->num + 1;
         }
       }

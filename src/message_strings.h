@@ -80,6 +80,7 @@
 
 /* gtk_ltr_families.h */
 #define LTRFAMS_LV_CAPTION_SEQID   "SeqID"
+#define LTRFAMS_LV_CAPTION_ID      "ID"
 #define LTRFAMS_LV_CAPTION_STRAND  "S"
 #define LTRFAMS_LV_CAPTION_START   "From"
 #define LTRFAMS_LV_CAPTION_END     "To"

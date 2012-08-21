@@ -2907,9 +2907,9 @@ static int add_feature_columns(void *key, void *value, void *lv,
                                   GINT_TO_POINTER(num), NULL);
   gtk_tree_view_column_set_sort_column_id(column, num);
   if (g_strcmp0((const char*) key, FNT_LLTR) == 0)
-    gtk_tree_view_insert_column(list_view, column, 7);
-  else if (g_strcmp0((const char*) key, FNT_RLTR) == 0)
     gtk_tree_view_insert_column(list_view, column, 8);
+  else if (g_strcmp0((const char*) key, FNT_RLTR) == 0)
+    gtk_tree_view_insert_column(list_view, column, 9);
   else
     gtk_tree_view_append_column(list_view, column);
   return 0;
@@ -3313,10 +3313,14 @@ void gtk_ltr_families_notebook_list_view_append_gn(GtkLTRFamilies *ltrfams,
       GtRange range;
       GtStrand strand = gt_feature_node_get_strand(curnode);
       gchar c[2];
+      const char *id;
 
       g_snprintf(c, 2, "%c", GT_STRAND_CHARS[strand]);
       range = gt_genome_node_get_range((GtGenomeNode*) curnode);
+      id = gt_feature_node_get_attribute(curnode, "ID");
+
       gtk_list_store_set(store, &iter,
+                         LTRFAMS_LV_ID, (id ? id : ""),
                          LTRFAMS_LV_STRAND, c,
                          LTRFAMS_LV_START, range.start,
                          LTRFAMS_LV_END, range.end,
@@ -3388,6 +3392,7 @@ static gint notebook_list_view_sort_function(GtkTreeModel *model,
   switch (sortcol) {
     case LTRFAMS_LV_FLCAND:
     case LTRFAMS_LV_SEQID:
+    case LTRFAMS_LV_ID:
     case LTRFAMS_LV_STRAND:
       gtk_tree_model_get(model, a,
                          sortcol, &val1,
@@ -3462,17 +3467,18 @@ static void notebook_list_view_create(GtkTreeView *list_view, GtArray *nodes,
   GtError *err = NULL;
   unsigned long i;
 
-  types = g_new0(GType, ltrfams->n_features);
+  types = g_new0(GType, ltrfams->n_features+1);
 
   types[0] = G_TYPE_POINTER; /* GtGenomeNode* */
   types[1] = G_TYPE_POINTER; /* GtkTreeRowReference* */
   types[2] = G_TYPE_STRING; /* Full length candidate */
   types[3] = G_TYPE_STRING; /* SequenceID */
-  types[4] = G_TYPE_STRING; /* Strand information */
-  types[5] = G_TYPE_ULONG; /* Start */
-  types[6] = G_TYPE_ULONG; /* End */
-  types[7] = G_TYPE_ULONG; /* LTR length */
-  types[8] = G_TYPE_ULONG; /* LTR Retrotransposon length */
+  types[4] = G_TYPE_STRING; /* ID */
+  types[5] = G_TYPE_STRING; /* Strand information */
+  types[6] = G_TYPE_ULONG; /* Start */
+  types[7] = G_TYPE_ULONG; /* End */
+  types[8] = G_TYPE_ULONG; /* LTR length */
+  types[9] = G_TYPE_ULONG; /* LTR Retrotransposon length */
 
   for (i = LTRFAMS_LV_N_COLUMS; i < ltrfams->n_features; i++) {
     types[i] = G_TYPE_STRING;
@@ -3482,7 +3488,6 @@ static void notebook_list_view_create(GtkTreeView *list_view, GtArray *nodes,
   gtk_tree_selection_set_mode(sel, GTK_SELECTION_MULTIPLE);
 
   store = gtk_list_store_newv(ltrfams->n_features, types);
-
   sortable = GTK_TREE_SORTABLE(store);
 
   renderer = gtk_cell_renderer_text_new();
@@ -3503,6 +3508,16 @@ static void notebook_list_view_create(GtkTreeView *list_view, GtArray *nodes,
                                   notebook_list_view_sort_function,
                                   GINT_TO_POINTER(LTRFAMS_LV_SEQID), NULL);
   gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_SEQID);
+  gtk_tree_view_append_column(list_view, column);
+
+  renderer = gtk_cell_renderer_text_new();
+  column = gtk_tree_view_column_new_with_attributes(LTRFAMS_LV_CAPTION_ID,
+                                                    renderer, "text",
+                                                    LTRFAMS_LV_ID, NULL);
+  gtk_tree_sortable_set_sort_func(sortable, LTRFAMS_LV_ID,
+                                  notebook_list_view_sort_function,
+                                  GINT_TO_POINTER(LTRFAMS_LV_ID), NULL);
+  gtk_tree_view_column_set_sort_column_id(column, LTRFAMS_LV_ID);
   gtk_tree_view_append_column(list_view, column);
 
   renderer = gtk_cell_renderer_text_new();

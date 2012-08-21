@@ -695,7 +695,7 @@ static gpointer open_project_data_start(gpointer data)
     gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                               "Preprocessing candidates");
     features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-    n_features = LTRFAMS_LV_N_COLUMS;
+    n_features = LTRFAMS_LV_N_COLUMS+1;
 
     in_stream = gt_gff3_in_stream_new_unsorted(1,
                                           (const char**) &threaddata->gff3file);
@@ -818,7 +818,7 @@ static gpointer save_and_reload_data_start(gpointer data)
       gtk_progress_bar_set_text(GTK_PROGRESS_BAR(threaddata->progressbar),
                                 "Preprocessing candidates");
       features = gt_hashmap_new(GT_HASH_STRING, free_gt_hash_elem, NULL);
-      n_features = LTRFAMS_LV_N_COLUMS;
+      n_features = LTRFAMS_LV_N_COLUMS+1;
 
       array_in_stream = gt_array_in_stream_new(threaddata->nodes, NULL,
                                                threaddata->ltrgui->err);
