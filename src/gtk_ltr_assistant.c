@@ -1013,6 +1013,7 @@ static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
     case PAGE_GENERAL:
       active =  gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(
                                                ltrassi->checkb_clustering));
+      get_feature_list(ltrassi);
       next_page = (active ? PAGE_CLUSTERING : PAGE_SUMMARY);
       break;
     case PAGE_CLUSTERING:
@@ -1021,7 +1022,6 @@ static gint page_forward(gint current_page, GtkLTRAssistant *ltrassi)
       if (active) {
         GtkTreeModel *model;
         model = gtk_tree_view_get_model(GTK_TREE_VIEW(ltrassi->list_view_features));
-        get_feature_list(ltrassi);
         gtk_tree_model_foreach(GTK_TREE_MODEL(model), select_defaults, ltrassi);
       }
       next_page = (active ? PAGE_CLASSIFICATION : PAGE_SUMMARY);
