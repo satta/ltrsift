@@ -115,6 +115,7 @@ dist: all
 	@cp $(CURDIR)/LICENSE $(GTDISTDIR)
 	@cp $(CURDIR)/CHANGELOG $(GTDISTDIR)
 	@cp $(CURDIR)/VERSION $(GTDISTDIR)
+	@cp $(CURDIR)/README $(GTDISTDIR)
 	@cp $(CURDIR)/run_ltrsift $(GTDISTDIR)
 	@cp $(CURDIR)/bin/ltrsift $(GTDISTDIR)/bin
 	@strip $(GTDISTDIR)/bin/ltrsift
