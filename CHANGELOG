@@ -1,3 +1,11 @@
+v1.0.1 (2012-08-30)
+-------------------
+
+- bug fixes
+- show element ID (if present) in table
+- export sequence regions exactly as input in GFF3
+
+
 v1.0.0 (2012-07-02)
 -------------------
 
