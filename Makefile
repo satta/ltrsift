@@ -7,7 +7,7 @@
 CC = gcc
 CFLAGS += -g -Wall -Wunused-parameter
 GT_FLAGS = -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
-GT_FLAGS_STATIC := $(GT_FLAGS)
+GT_FLAGS_STATIC := $(GT_FLAGS) `pkg-config --cflags --libs pango pangocairo`
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib
 GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0`
 SOURCES := $(wildcard src/*.c)
@@ -78,11 +78,13 @@ bin/ltrsift_encode: obj/src/ltrsift_encode.o
 
 bin/ltrsift_static: obj/src/ltrsift.o $(OBJECTS) $(gt_prefix)/lib/libgenometools.a
 	@echo "[linking $@]"
-	@$(CC) $(OBJECTS) obj/src/ltrsift.o $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS)  $(GT_FLAGS_STATIC) $(GTK_FLAGS) -lbz2
+	@$(CC) $(OBJECTS) obj/src/ltrsift.o $(gt_prefix)/lib/libgenometools.a \
+	  -o $@ $(CFLAGS)  $(GT_FLAGS_STATIC) $(GTK_FLAGS) -lbz2
 
 bin/ltrsift_encode_static: obj/src/ltrsift_encode.o $(gt_prefix)/lib/libgenometools.a
 	@echo "[linking $@]"
-	@$(CC) obj/src/ltrsift_encode.o $(gt_prefix)/lib/libgenometools.a -o $@ $(CFLAGS) $(GT_FLAGS_STATIC) -lbz2 -lz -lcairo -lm
+	@$(CC) obj/src/ltrsift_encode.o $(gt_prefix)/lib/libgenometools.a \
+	   -o $@ $(CFLAGS) \$(GT_FLAGS_STATIC) -lbz2 -lz -lcairo -lm
 
 bin obj obj/src:
 	@echo '[create $(@)]'
