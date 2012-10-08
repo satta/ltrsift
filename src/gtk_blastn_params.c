@@ -642,7 +642,7 @@ static void gtk_blastn_params_init(GtkBlastnParams *blastpar)
   gtk_box_pack_start(GTK_BOX(tmpbox), blastpar->spinb_seqid, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(tmpbox), checkb, FALSE, FALSE, 1);
   gtk_box_pack_start(GTK_BOX(vbox), tmpbox, FALSE, FALSE, 1);
-  label = gtk_label_new("Value for additional BLASTN paramter:");
+  label = gtk_label_new("Value for additional BLASTN parameter:");
   gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 1);
   tmpbox = gtk_hbox_new(FALSE, 1);
   blastpar->entry_blastvalues = gtk_entry_new();
