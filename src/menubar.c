@@ -1342,7 +1342,7 @@ static void export_fasta_activate(GT_UNUSED GtkMenuItem *menuitem,
   if ((g_strcmp0(indexname, "") == 0) ||
       !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
     dialog = gtk_message_dialog_new(GTK_WINDOW(ltrgui->main_window),
-                                    GTK_DIALOG_MODAL ||
+                                    GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
                                     "%s",

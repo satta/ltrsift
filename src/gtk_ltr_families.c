@@ -1380,7 +1380,7 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
 
   if (!ltrfams->projectfile) {
     dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_MODAL |
                                      GTK_DIALOG_DESTROY_WITH_PARENT,
                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
                                      "%s",
@@ -1476,7 +1476,7 @@ void gtk_ltr_families_refseq_match(GtArray *nodes, GtkLTRFamilies *ltrfams)
   if ((g_strcmp0(indexname, "") == 0) ||
       !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
     dialog2 = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                     GTK_DIALOG_MODAL ||
+                                     GTK_DIALOG_MODAL |
                                      GTK_DIALOG_DESTROY_WITH_PARENT,
                                      GTK_MESSAGE_QUESTION, GTK_BUTTONS_YES_NO,
                                      "%s",
@@ -2265,7 +2265,7 @@ static void list_view_families_menu_export_sequences(GtkLTRFamilies *ltrfams,
   if ((g_strcmp0(indexname, "") == 0) ||
       !g_file_test(tmp_index, G_FILE_TEST_EXISTS)) {
     dialog = gtk_message_dialog_new(GTK_WINDOW(toplevel),
-                                    GTK_DIALOG_MODAL ||
+                                    GTK_DIALOG_MODAL |
                                     GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION,
                                     GTK_BUTTONS_YES_NO,
