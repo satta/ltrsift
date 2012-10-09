@@ -4,10 +4,12 @@
 # Copyright (c) 2012 Center for Bioinformatics, University of Hamburg
 #
 
-CC = gcc
+ifndef CC
+  CC:=gcc
+endif
 CFLAGS += -g -Wall -Wunused-parameter
-GT_FLAGS = -I$(gt_prefix)/include/genometools \
-           -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
+GT_FLAGS := -I$(gt_prefix)/include/genometools \
+            -I$(gt_prefix)/include/genometools -I$(GTDIR)/src
 GT_FLAGS_STATIC := $(GT_FLAGS) `pkg-config --cflags --libs pango pangocairo`
 GT_FLAGS += -lgenometools -L$(gt_prefix)/lib $(LDFLAGS)
 GTK_FLAGS = `pkg-config --cflags --libs gtk+-2.0 gthread-2.0`
@@ -67,15 +69,15 @@ dirs: bin obj obj/src
 
 obj/%.o: %.c
 	@echo "[compile $@]"
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
+	@$(CC) -c $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GTK_FLAGS) $(GT_FLAGS) $< -o $(@)
 
 bin/ltrsift: $(OBJECTS) obj/src/ltrsift.o
 	@echo "[linking $@]"
-	$(CC) $(OBJECTS) obj/src/ltrsift.o -o $@ $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
+	@$(CC) $(OBJECTS) obj/src/ltrsift.o -o $@ $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GTK_FLAGS) $(GT_FLAGS)
 
 bin/ltrsift_encode: obj/src/ltrsift_encode.o
 	@echo "[linking $@]"
-	$(CC) obj/src/ltrsift_encode.o -o $@ $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GT_FLAGS)
+	@$(CC) obj/src/ltrsift_encode.o -o $@ $(CFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(GT_FLAGS)
 
 bin/ltrsift_static: obj/src/ltrsift.o $(OBJECTS) $(gt_prefix)/lib/libgenometools.a
 	@echo "[linking $@]"
