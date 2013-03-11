@@ -1,8 +1,6 @@
-#
-# Copyright (c) 2012 Sascha Steinbiss <steinbiss@zbh.uni-hamburg.de>
-# Copyright (c) 2012 Sascha Kastens <mail@skastens.de>
-# Copyright (c) 2012 Center for Bioinformatics, University of Hamburg
-#
+# Copyright (c) 2012-2013 Sascha Steinbiss <steinbiss@zbh.uni-hamburg.de>
+# Copyright (c) 2012      Sascha Kastens <mail@skastens.de>
+# Copyright (c) 2012-2013 Center for Bioinformatics, University of Hamburg
 
 ifndef CC
   CC:=gcc
@@ -98,7 +96,7 @@ clean:
 	rm -rf obj
 
 cleanup: clean
-	rm -rf bin sample_data/ltrsift_encode
+	rm -rf bin sample_data/ltrsift_encode sample_data/ltrsift_encode_static
 
 .PHONY: dist srcdist install
 
