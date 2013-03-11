@@ -41,7 +41,11 @@ ifeq ($(m32),yes)
 endif
 
 ifeq ($(m64),yes)
-  CFLAGS += -m64
+  ifneq ($(MACHINE),ia64)
+    ifneq ($(MACHINE),alpha)
+      CFLAGS += -m64
+    endif
+  endif
 endif
 
 ifneq ($(errorcheck),no)
