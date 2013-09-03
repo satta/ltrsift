@@ -46,7 +46,7 @@ The LAST binaries (lastal and lastdb) should be located in the system
 search path. If they are not, is it possible to specify their location
 using the ``GT_LAST_PATH" environment variable prior to running LTRsift.
 The same applies for the BLAST location. Use ``GT_BLAST_PATH'' to specify
-the the full path to the ``blastall'' executable.
+the full path to the ``blastall'' executable.
 
 Style files (describing how the linear diagram of the candidate features
 look like) can be set via the LTRSIFT_STYLE_FILE environment variable.
